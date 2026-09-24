@@ -1,0 +1,18 @@
+[
+  {
+    "id": "card_1",
+    "brand": "Visa",
+    "lastFour": "4111",
+    "expMonth": "12",
+    "expYear": "2028",
+    "holderName": "John Doe"
+  },
+  {
+    "id": "card_2",
+    "brand": "Mastercard",
+    "lastFour": "4242",
+    "expMonth": "10",
+    "expYear": "2027",
+    "holderName": "Jane Smith"
+  }
+]

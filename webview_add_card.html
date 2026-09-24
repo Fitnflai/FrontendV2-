@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asociar Tarjeta | Fitnflai</title>
+  <!-- PG JS SDK -->
+  <!-- jQuery CDN (Required by Nuvei/Paymentez JS SDK) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.paymentez.com/ccapi/sdk/payment_sdk_stable.min.js" charset="UTF-8"></script>
+  <style>
+    :root {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --primary-color: #ff6d00;
+      --primary-hover: #e65100;
+      --text-color: #ffffff;
+      --text-muted: #aaaaaa;
+      --border-color: #2c2c2c;
+      --error-color: #f44336;
+      --success-color: #4caf50;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      padding: 30px 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .header h2 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Paymentez container customization */
+    #tokenize_example {
+      margin-bottom: 24px;
+    }
+
+    /* Customizing internal elements painted by Nuvei/Paymentez CCAPI SDK */
+    .pm-card-form {
+      color: var(--text-color) !important;
+    }
+
+    .btn-submit {
+      background: var(--primary-color);
+      color: #fff;
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      display: block;
+      text-align: center;
+    }
+
+    .btn-submit:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-submit:active {
+      transform: scale(0.98);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #response-message {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      display: none;
+      line-height: 1.4;
+    }
+
+    .error-msg {
+      background-color: rgba(244, 67, 54, 0.1);
+      border: 1px solid var(--error-color);
+      color: #ff8a80;
+      display: block !important;
+    }
+
+    .success-msg {
+      background-color: rgba(76, 175, 80, 0.1);
+      border: 1px solid var(--success-color);
+      color: #b9f6ca;
+      display: block !important;
+    }
+
+    .loader {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h2>Asociar Tarjeta</h2>
+      <p>Ingresa los datos de tu tarjeta de crédito o débito de forma segura. La tarjeta se guardará para tus suscripciones futuras.</p>
+    </div>
+
+    <!-- Contenedor del formulario dinámico de Nuvei -->
+    <div id="tokenize_example"></div>
+
+    <button id="tokenize_btn" class="btn-submit">Guardar Tarjeta</button>
+    <div id="response-message"></div>
+  </div>
+
+  <script>
+    (function () {
+      window.onerror = function(message, source, lineno, colno, error) {
+        const responseBox = document.querySelector('#response-message');
+        if (responseBox) {
+          responseBox.textContent = `JS Error: ${message} on line ${lineno}`;
+          responseBox.className = 'error-msg';
+          responseBox.style.display = 'block';
+        }
+        return false;
+      };
+      // 1. Obtener parámetros de configuración de la URL (Query Params)
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      const environment = urlParams.get('environment') || 'stg'; // 'stg' o 'prod'
+      const applicationCode = urlParams.get('application_code') || 'NUVEISTG-EC-CLIENT'; // Llave pública del cliente
+      const appKeyClient = urlParams.get('app_key_client') || 'rvpKAv2tc49x6YL38fvtv5jJxRRiPs'; // Llave secreta del cliente (si aplica)
+      const userId = urlParams.get('user_id') || 'test-user-id';
+      const email = urlParams.get('email') || 'test@fitnflai.com';
+      const returnUrl = urlParams.get('return_url') || 'fitnflai://payment-methods'; // Deep link para volver a la app
+
+      const submitButton = document.querySelector('#tokenize_btn');
+      const responseBox = document.querySelector('#response-message');
+      const submitInitialText = submitButton.textContent;
+
+      // Ocultar mensaje de mensaje de respuesta
+      const showMsg = (text, isSuccess) => {
+        responseBox.textContent = text;
+        responseBox.className = isSuccess ? 'success-msg' : 'error-msg';
+      };
+
+      // 2. Definir datos de inicialización para Nuvei SDK
+      const get_tokenize_data = () => {
+        return {
+          locale: 'es',
+          user: {
+            id: String(userId),
+            email: String(email),
+          },
+          configuration: {
+            default_country: 'ECU',
+            use_dropdowns: "true"
+          }
+        };
+      };
+
+      // 3. Callback de formulario incompleto
+      const notCompletedFormCallback = message => {
+        showMsg(`Formulario incompleto: ${message}. Por favor, llena todos los campos.`, false);
+        submitButton.textContent = submitInitialText;
+        submitButton.removeAttribute('disabled');
+      };
+
+      // 4. Callback de respuesta exitosa de tokenización
+      const responseCallback = response => {
+        if (response.card && response.card.token) {
+          showMsg("¡Tarjeta tokenizada con éxito! Redirigiéndote de vuelta a Fitnflai...", true);
+          submitButton.textContent = "Redirigiendo...";
+          
+          // Construir URL de retorno con la información del token para que la app lo lea
+          const token = response.card.token;
+          const lastFour = response.card.number;
+          const brand = response.card.type; // 'vi', 'mc', etc.
+          const expMonth = response.card.expiry_month;
+          const expYear = response.card.expiry_year;
+
+          // Redirigir usando Deep Linking para que la App Móvil tome el token y finalice la asociación
+          const finalReturnUrl = `${returnUrl}?status=success&token=${encodeURIComponent(token)}&last_four=${encodeURIComponent(lastFour)}&brand=${encodeURIComponent(brand)}&exp_month=${encodeURIComponent(expMonth)}&exp_year=${encodeURIComponent(expYear)}`;
+          
+          setTimeout(() => {
+            window.location.href = finalReturnUrl;
+          }, 1500);
+
+        } else if (response.error) {
+          const errDescription = response.error.type || response.error.help || "Ocurrió un error al procesar la tarjeta.";
+          showMsg(`Error: ${errDescription}`, false);
+          submitButton.textContent = submitInitialText;
+          submitButton.removeAttribute('disabled');
+        } else {
+          showMsg("No se pudo obtener el token de la tarjeta. Intenta nuevamente.", false);
+          submitButton.textContent = submitInitialText;
+          submitButton.removeAttribute('disabled');
+        }
+      };
+
+      try {
+        // 5. Instanciar e Inicializar el SDK de Nuvei/Paymentez
+        const pg_sdk = new PaymentGateway(environment, applicationCode, appKeyClient);
+        pg_sdk.generate_tokenize(get_tokenize_data(), '#tokenize_example', responseCallback, notCompletedFormCallback);
+
+        // 6. Configurar evento click del botón de envío
+        submitButton.addEventListener('click', event => {
+          event.preventDefault();
+          responseBox.style.display = 'none';
+          submitButton.innerHTML = '<span class="loader"></span>Procesando tarjeta...';
+          submitButton.setAttribute('disabled', 'disabled');
+          pg_sdk.tokenize();
+        });
+      } catch (e) {
+        showMsg(`Error al inicializar la pasarela: ${e.message}`, false);
+        submitButton.setAttribute('disabled', 'disabled');
+      }
+
+    })();
+  </script>
+</body>
+</html>

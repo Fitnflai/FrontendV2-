@@ -1,0 +1,28 @@
+class AppRoutes {
+  static const splash    = '/';
+  static const welcome   = '/welcome';
+  static const login     = '/login';
+  static const register     = '/register';
+  static const parq         = '/parq';
+  static const parqClear    = '/parq/clear';
+  static const parqWarning  = '/parq/warning';
+  static const step6Sport   = '/onboarding/sport';
+  static const step2Profile = '/onboarding/profile';
+  static const step3Fitness = '/onboarding/fitness';
+  static const step4Body    = '/onboarding/body';
+  static const generating   = '/onboarding/generating';
+  static const step5Test        = '/onboarding/test';
+  static const step5TestTimer   = '/onboarding/test/timer';
+  static const step5TestFeedback= '/onboarding/test/feedback';
+  static const onboardingFeedback = '/onboarding/feedback';
+  static const home         = '/home';
+  static const testResults  = '/test/results';
+  static const plan         = '/plan';
+  static const progress     = '/progress';
+  static const profile      = '/profile';
+  static const editProfile   = '/profile/edit';
+  static const reporteConfig = '/profile/reporte';
+  static const nutrition        = '/nutrition';
+  static const nutritionSession = '/nutrition/session';
+  static const nutritionSweat   = '/nutrition/sweat';
+}

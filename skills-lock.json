@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "flutter-apply-architecture-best-practices": {
+      "source": "flutter/skills",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-apply-architecture-best-practices/SKILL.md",
+      "computedHash": "baeb208b1cab90c559677626dbd101b96ba93f803cbed85122abdadeb3283a8b"
+    },
+    "flutter-architecture": {
+      "source": "madteacher/mad-agents-skills",
+      "sourceType": "github",
+      "skillPath": "flutter-architecture/SKILL.md",
+      "computedHash": "5d4081d771331dd81dd88f20c98b11f2844ef9a4feb3c6ee012a276b31c8f157"
+    },
+    "flutter-frontend-design": {
+      "source": "syeduzaif/flutter-frontend-design",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "462bfd561f443fbfe20c13d9722f89754e84353af841ccf318402ed07ed83c33"
+    }
+  }
+}

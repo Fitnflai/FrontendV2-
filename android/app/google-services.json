@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "534984050804",
+    "project_id": "fitnflai-ca639",
+    "storage_bucket": "fitnflai-ca639.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:534984050804:android:8e174dc58c2f478e042921",
+        "android_client_info": {
+          "package_name": "com.fitnflai.frontend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "534984050804-nfbgd9vhfjh240gpdivvbm9pptres87m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCyEG1Z405pX5WOtwEtQ-QkT7Va91yXr3s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "534984050804-nfbgd9vhfjh240gpdivvbm9pptres87m.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "534984050804-6u4an7dfqnastu807tqqrurl0cd7he9g.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.fitnflai.frontend"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

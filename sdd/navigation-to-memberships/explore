@@ -1,0 +1,29 @@
+## Exploration: navigation-to-memberships
+
+### Current State
+The `NutritionScreen` (lib/screens/nutrition/nutrition_screen.dart) displays an `_AIBanner` when the user is not a premium subscriber. This banner contains a button, labeled `l10n.nutritionAIBannerProBtn` (likely "Ver plan pro"), which currently has an empty `onPressed` callback. The application uses a centralized routing system defined in `lib/config/app_routes.dart`, but the `MembershipScreen` does not yet have a named route.
+
+### Affected Areas
+-   `lib/screens/nutrition/nutrition_screen.dart` — Needs modification to the `onPressed` callback of the `ElevatedButton` within the `_AIBanner` widget to enable navigation.
+-   `lib/screens/membership/membership_screen.dart` — This is the target screen for navigation, where users can view and subscribe to membership plans.
+
+### Approaches
+1.  **Direct Navigation using `MaterialPageRoute`** — {brief description}
+    -   Pros: Simple and quick to implement. No changes required to the central routing configuration.
+    -   Cons: Not ideal for larger applications that benefit from named routes for better organization, deep linking, and easier argument passing. Does not leverage the existing `AppRoutes` pattern.
+    -   Effort: Low
+
+2.  **Add Named Route for `MembershipScreen`** — {brief description}
+    -   Pros: Aligns with the existing routing pattern (`AppRoutes`). Provides a cleaner way to navigate using `Navigator.pushNamed`. Allows for easier argument passing if `MembershipScreen` ever needs them (though it doesn't currently).
+    -   Cons: Requires modifying `lib/config/app_routes.dart` and `lib/main.dart` to add the new route.
+    -   Effort: Medium
+
+### Recommendation
+I recommend **Approach 2: Add Named Route for `MembershipScreen`**. While Approach 1 is simpler, consistency with the existing `AppRoutes` pattern is beneficial for maintainability and scalability. Adding a named route will make the application's navigation more organized and explicit, which aligns with good architectural practices for a Flutter application.
+
+### Risks
+-   **Routing Conflicts:** Introducing a new named route might inadvertently conflict with existing routes if not carefully chosen. (Low risk as we're adding a new, distinct route).
+-   **Typo in Route Name:** A typo in the route name in `AppRoutes` or `main.dart` could lead to runtime errors (easily caught during testing).
+
+### Ready for Proposal
+Yes — The orchestrator should now proceed with a design phase to implement the chosen approach.
