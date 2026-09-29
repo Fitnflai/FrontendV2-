@@ -52,13 +52,6 @@ class _MembershipScreenState extends State<MembershipScreen> {
   }
 
   String _period(Map<String, dynamic> planData, bool isAnnual) {
-    final precios = planData['precios'] as List<dynamic>;
-    final priceInfo = precios.firstWhere((p) => p['frecuencia'].contains(isAnnual ? 'anual' : 'mensual'));
-
-
-    if (planData['nombre'] == 'Essential' && !isAnnual) {
-      return '21 días gratis · luego \\\$${(priceInfo['precio'] as num).toStringAsFixed(2)}/mes';
-    }
     return isAnnual ? 'por año' : 'por mes';
   }
 
@@ -132,10 +125,6 @@ class _MembershipScreenState extends State<MembershipScreen> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(children: [
-                  // Banner prueba gratis
-                  _TrialBanner(),
-                  const SizedBox(height: 16),
-
                   // Toggle mensual / anual
                   _BillingToggle(
                     annual: _isAnnual,
@@ -1071,46 +1060,6 @@ class _MembershipScreenState extends State<MembershipScreen> {
 // ═══════════════════════════════════════════════════════════════
 // TRIAL BANNER
 // ═══════════════════════════════════════════════════════════════
-class _TrialBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Color(0xFF1A2E1A), Color(0xFF1A1A0A)],
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-      ),
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: AppColors.greenText.withValues(alpha: 0.4)),
-    ),
-    child: Row(children: [
-      Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: AppColors.greenBg,
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.card_giftcard_outlined,
-            color: AppColors.greenText, size: 22),
-      ),
-      const SizedBox(width: 14),
-      Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('21 días gratis incluidos',
-              style: TextStyle(color: Colors.white, fontSize: 15,
-                  fontWeight: FontWeight.w800)),
-          const SizedBox(height: 2),
-          const Text('Plan Essential completo · Sin tarjeta de crédito',
-              style: TextStyle(color: AppColors.greyLight,
-                  fontSize: 12, height: 1.3)),
-        ]),
-      ),
-    ]),
-  );
-}
-
 // ═══════════════════════════════════════════════════════════════
 // BILLING TOGGLE
 // ═══════════════════════════════════════════════════════════════
@@ -1350,9 +1299,7 @@ class _PlanCard extends StatelessWidget {
             child: Text(
               isActivePlan
                   ? 'Tu plan actual'
-                  : plan.id == 0 ? 'Comenzar gratis'
-                      : plan.id == 1 ? 'Suscribirme al Pro'
-                      : 'Suscribirme al Elite',
+                  : 'Suscribirme a ${plan.name}',
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
             ),
           ),
