@@ -43,6 +43,8 @@ import 'screens/profile/edit_profile_screen.dart';
 import 'screens/profile/reporte_config_screen.dart';
 import 'screens/profile/notifications_panel_screen.dart';
 import 'screens/profile/payment_methods_screen.dart';
+import 'screens/legal/terms_and_conditions_screen.dart';
+import 'screens/legal/privacy_policy_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -159,6 +161,8 @@ class FitnflaiAppState extends State<FitnflaiApp> {
         AppRoutes.profile:       (_) => const ProfileScreen(),
         AppRoutes.editProfile:   (_) => const EditProfileScreen(),
         AppRoutes.reporteConfig: (_) => const ReporteConfigScreen(),
+        AppRoutes.termsConditions: (_) => const TermsAndConditionsScreen(),
+        AppRoutes.privacyPolicy: (_) => const PrivacyPolicyScreen(),
         '/notifications':        (_) => const NotificationsPanelScreen(),
       },
       onGenerateRoute: (settings) {

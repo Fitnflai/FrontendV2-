@@ -152,6 +152,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               // Name Text
                               Text(apodo.isNotEmpty ? apodo : (nombre.isNotEmpty ? nombre : 'Usuario'),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                       color: theme.white,
                                       fontSize: 18, // Changed from 20 to 18
@@ -160,6 +162,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               // Email Text
                               if (user.email.isNotEmpty)
                                 Text(user.email,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                         color: theme.grey, fontSize: 12)),
                               // City & Altitude Row
@@ -171,7 +175,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       if (user.ciudad != null && user.ciudad!.isNotEmpty) ...[
                                         Icon(Icons.location_on_outlined, color: theme.grey, size: 12),
                                         const SizedBox(width: 4),
-                                        Text(user.ciudad!, style: TextStyle(color: theme.grey, fontSize: 12)),
+                                        Flexible(
+                                          child: Text(
+                                            user.ciudad!,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(color: theme.grey, fontSize: 12),
+                                          ),
+                                        ),
                                         if (user.altitud != null && user.altitud!.isNotEmpty) const SizedBox(width: 8),
                                       ],
                                       if (user.altitud != null && user.altitud!.isNotEmpty) ...[
@@ -190,7 +201,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     children: [
                                       Icon(Icons.directions_run_outlined, color: theme.primary, size: 12),
                                       const SizedBox(width: 4),
-                                      Text(user.nombreDisciplina!, style: TextStyle(color: theme.primary, fontSize: 12)),
+                                      Flexible(
+                                        child: Text(
+                                          user.nombreDisciplina!,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(color: theme.primary, fontSize: 12),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -1204,6 +1222,32 @@ class _FooterLinks extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
+    final isEs = Localizations.localeOf(context).languageCode == 'es';
+
+    final links = [
+      (
+        isEs ? 'TÉRMINOS Y CONDICIONES' : 'TERMS & CONDITIONS',
+        () => Navigator.pushNamed(context, AppRoutes.termsConditions),
+      ),
+      (
+        isEs ? 'POLÍTICA DE PRIVACIDAD' : 'PRIVACY POLICY',
+        () => Navigator.pushNamed(context, AppRoutes.privacyPolicy),
+      ),
+      (
+        isEs ? 'EMPLEO' : 'CAREERS',
+        () async {
+          final emailUri = Uri(
+            scheme: 'mailto',
+            path: 'legal@fitnflai.com',
+            query: 'subject=${Uri.encodeComponent(isEs ? 'Empleo FITNFLAI' : 'Careers FITNFLAI')}',
+          );
+          if (await canLaunchUrl(emailUri)) {
+            await launchUrl(emailUri, mode: LaunchMode.externalApplication);
+          }
+        },
+      ),
+    ];
+
     return Column(children: [
       Divider(color: theme.border),
       const SizedBox(height: 8),
@@ -1211,18 +1255,16 @@ class _FooterLinks extends StatelessWidget {
         alignment: WrapAlignment.center,
         spacing: 20,
         runSpacing: 8,
-        children: [
-          'TÉRMINOS Y CONDICIONES',
-          'POLÍTICA DE PRIVACIDAD',
-          'EMPLEO',
-        ].map((t) => GestureDetector(
-          onTap: () {},
-          child: Text(t,
-              style: TextStyle(
-                  color: theme.grey,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.3)),
+        children: links.map((item) => GestureDetector(
+          onTap: item.$2,
+          child: Text(
+            item.$1,
+            style: TextStyle(
+                color: theme.grey,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3),
+          ),
         )).toList(),
       ),
       const SizedBox(height: 12),

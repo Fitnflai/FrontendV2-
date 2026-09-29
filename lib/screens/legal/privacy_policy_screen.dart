@@ -32,14 +32,14 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _buildHeader(theme, isEs),
             const SizedBox(height: 24),
             _buildSection(
-              theme as AppThemeExtension,
+              theme,
               isEs ? '1. RESPONSABLE DEL TRATAMIENTO' : '1. DATA CONTROLLER',
               isEs
                   ? 'MEDICALHUB S.A.S., con domicilio en Ecuador, es el responsable del tratamiento de los datos personales que se recogen a través de la Aplicación FITNFLAI. Puede contactar con el Delegado de Protección de Datos en: legal@fitnflai.com'
                   : 'MEDICALHUB S.A.S., based in Ecuador, is the data controller for personal data collected through the FITNFLAI Application. You may contact the Data Protection Officer at: legal@fitnflai.com',
             ),
             _buildSection(
-              theme as AppThemeExtension,
+              theme,
               isEs ? '2. DATOS QUE RECOPILAMOS' : '2. DATA WE COLLECT',
               isEs
                   ? '• Datos de identidad: nombre, email, nombre de usuario, foto de perfil.\n'
@@ -56,7 +56,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     '• Payment data: managed by external gateways (Stripe, Google Play, Apple App Store). FITNFLAI does not store full card numbers.',
             ),
             _buildSection(
-              theme as AppThemeExtension,
+              theme,
               isEs ? '3. FINALIDAD DEL TRATAMIENTO' : '3. PURPOSE OF PROCESSING',
               isEs
                   ? '• Ejecución del contrato: generar planes de entrenamiento personalizados, seguimiento de progreso.\n'
@@ -69,7 +69,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     '• Legal obligation: billing, LOPDP compliance.',
             ),
             _buildSection(
-              theme as AppThemeExtension,
+              theme,
               isEs ? '4. COMPARTICIÓN DE DATOS' : '4. DATA SHARING',
               isEs
                   ? '• Proveedores de servicios: pasarelas de pago, hosting, analíticas (Firebase), notificaciones push.\n'
@@ -82,14 +82,14 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     '• Competent authorities: when required by law.',
             ),
             _buildSection(
-              theme as AppThemeExtension,
+              theme,
               isEs ? '5. TRANSFERENCIAS INTERNACIONALES' : '5. INTERNATIONAL TRANSFERS',
               isEs
                   ? 'Sus datos pueden ser tratados en servidores ubicados fuera de Ecuador (ej. Google Cloud, Firebase en EE. UU.). Dichas transferencias se realizan bajo cláusulas contractuales tipo aprobadas y garantías adecuadas según LOPDP.'
                   : 'Your data may be processed on servers located outside Ecuador (e.g., Google Cloud, Firebase in the USA). Such transfers are carried out under approved standard contractual clauses and adequate safeguards per LOPDP.',
             ),
             _buildSection(
-              theme as AppThemeExtension,
+              theme,
               isEs ? '6. CONSERVACIÓN DE DATOS' : '6. DATA RETENTION',
               isEs
                   ? '• Datos de cuenta: mientras la cuenta esté activa.\n'
@@ -104,7 +104,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     '• You may request early deletion (right to be forgotten).',
             ),
             _buildSection(
-              theme as AppThemeExtension,
+              theme,
               isEs ? '7. SUS DERECHOS (LOPDP)' : '7. YOUR RIGHTS (LOPDP)',
               isEs
                   ? '• Acceso: obtener confirmación y copia de sus datos.\n'
@@ -125,28 +125,28 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     'To exercise: legal@fitnflai.com or from the app in Profile > Privacy.',
             ),
             _buildSection(
-              theme as AppThemeExtension,
+              theme,
               isEs ? '8. SEGURIDAD' : '8. SECURITY',
               isEs
                   ? 'Implementamos medidas técnicas y organizativas apropiadas: cifrado TLS 1.3 en tránsito, cifrado en reposo (AES-256), autenticación segura (JWT, OAuth), acceso basado en roles, auditorías periódicas, y plan de respuesta a incidentes.'
                   : 'We implement appropriate technical and organizational measures: TLS 1.3 encryption in transit, encryption at rest (AES-256), secure authentication (JWT, OAuth), role-based access, periodic audits, and incident response plan.',
             ),
             _buildSection(
-              theme as AppThemeExtension,
+              theme,
               isEs ? '9. CAMBIOS EN ESTA POLÍTICA' : '9. CHANGES TO THIS POLICY',
               isEs
                   ? 'Cualquier modificación será notificada en la app y/o por email con 30 días de antelación. El uso continuado implica aceptación.'
                   : 'Any modification will be notified in the app and/or by email with 30 days\' notice. Continued use implies acceptance.',
             ),
             _buildSection(
-              theme as AppThemeExtension,
+              theme,
               isEs ? '10. CONTACTO' : '10. CONTACT',
               isEs
                   ? 'MEDICALHUB S.A.S.\nEmail: legal@fitnflai.com\nWeb: https://fitnflai.com/privacy'
                   : 'MEDICALHUB S.A.S.\nEmail: legal@fitnflai.com\nWeb: https://fitnflai.com/privacy',
             ),
             const SizedBox(height: 24),
-            _buildFooter(theme as AppThemeExtension, isEs),
+            _buildFooter(theme, isEs),
           ],
         ),
       ),
@@ -192,7 +192,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSection(AppThemeExtension theme, String title, String content) {
+  Widget _buildSection(AppThemeExtensionWrapper theme, String title, String content) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
@@ -221,7 +221,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFooter(AppThemeExtension theme, bool isEs) {
+  Widget _buildFooter(AppThemeExtensionWrapper theme, bool isEs) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),

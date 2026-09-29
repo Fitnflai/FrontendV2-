@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 
+import '../../config/app_routes.dart';
 import '../../config/app_theme_extension.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../providers/profile_provider.dart';
@@ -62,13 +63,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
           const SizedBox(height: 20),
           _SectionLabel(l10n.settingsSectionPrivacy),
           _SettingsGroup(items: [
-            _NavRow(icon: Icons.privacy_tip_outlined, label: l10n.settingsPrivacyPolicy, onTap: () {}),
+            _NavRow(icon: Icons.privacy_tip_outlined, label: l10n.settingsPrivacyPolicy, onTap: () => Navigator.pushNamed(context, AppRoutes.privacyPolicy)),
             _NavRow(
               icon: Icons.monetization_on_outlined,
               label: l10n.settingsRefundRequest,
               onTap: () => _showRefundDialog(context),
             ),
-            _NavRow(icon: Icons.description_outlined, label: l10n.settingsTermsConditions, onTap: () {}, isLast: true),
+            _NavRow(icon: Icons.description_outlined, label: l10n.settingsTermsConditions, onTap: () => Navigator.pushNamed(context, AppRoutes.termsConditions), isLast: true),
           ]),
           const SizedBox(height: 32),
           PrimaryButton(labelWidget: Text(l10n.settingsSaveChanges, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)), onTap: _save),
