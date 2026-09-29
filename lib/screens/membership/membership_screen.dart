@@ -1285,13 +1285,11 @@ class _PlanCard extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: isActivePlan
                   ? AppColors.cardDark
-                  : plan.id == 1
-                      ? AppColors.orange
-                      : AppColors.cardDark,
+                  : AppColors.orange,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
-              side: plan.id != 1 || isActivePlan
+              side: isActivePlan
                   ? const BorderSide(color: AppColors.border)
                   : BorderSide.none,
               elevation: 0,
