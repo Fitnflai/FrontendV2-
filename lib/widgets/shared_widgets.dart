@@ -8,6 +8,8 @@ import '../config/app_routes.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
+import '../providers/specialist_provider.dart';
+import '../providers/profile_provider.dart';
 
 import '../providers/theme_provider.dart';
 
@@ -474,6 +476,22 @@ class _AppHeaderState extends State<AppHeader> {
           _disciplina = d['nombre_disciplina'] as String?;
         });
         debugPrint('HEADER → avatarUrl: $_avatarUrl | apodo: $_apodo | disciplina: $_disciplina');
+
+        // Cargar de forma preventiva el especialista asignado si el usuario es Elite
+        final user = context.read<AuthProvider>().user;
+        if (user != null && user.isElite && mounted) {
+          final profileProvider = context.read<ProfileProvider>();
+          if (profileProvider.profileData == null) {
+            await profileProvider.loadAll(token);
+          }
+          final specialistId = profileProvider.profileData?['id_especialista'];
+          if (specialistId != null && mounted) {
+            final idInt = int.tryParse(specialistId.toString());
+            if (idInt != null) {
+              await context.read<SpecialistProvider>().loadAssignedSpecialist(token, idInt);
+            }
+          }
+        }
       }
     } catch (e) {
       debugPrint('HEADER LOAD ERROR: $e');
@@ -501,30 +519,61 @@ class _AppHeaderState extends State<AppHeader> {
         border: Border(bottom: BorderSide(color: theme.border)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Texto izquierda
+          // Avatar del usuario a la izquierda
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: theme.primary,
+              shape: BoxShape.circle,
+              image: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+                  ? DecorationImage(
+                      image: NetworkImage(_avatarUrl!),
+                      fit: BoxFit.cover)
+                  : null,
+            ),
+            child: (_avatarUrl == null || _avatarUrl!.isEmpty)
+                ? Center(
+                    child: Text(
+                      inicial,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 12),
+          // Texto del encabezado
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (widget.showGreeting) ...[
-                  Row(children: [
-                    Text(greeting,
-                        style: TextStyle(
-                            color: theme.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            height: 1.1)),
-                    Flexible(child: Text(nombre,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            color: theme.primary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            height: 1.1))),
-                  ]),
+                  Row(
+                    children: [
+                      Text(greeting,
+                          style: TextStyle(
+                              color: theme.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              height: 1.1)),
+                      Flexible(
+                        child: Text(nombre,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: theme.primary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                height: 1.1)),
+                      ),
+                    ],
+                  ),
                 ] else
                   Text('$prefix${widget.section}',
                       style: TextStyle(
@@ -538,223 +587,205 @@ class _AppHeaderState extends State<AppHeader> {
             ),
           ),
           const SizedBox(width: 8),
-          // ── Columna: 3 puntos arriba, avatar+campana abajo ───
-          Column(
+          // Campana de notificaciones y menú (hamburguesa de tres líneas) a la derecha
+          Row(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // ··· tres puntos (más grandes)
-              SizedBox(
-                height: 24,
-                child: PopupMenuButton<String>(
-                padding: EdgeInsets.zero,
-                icon: Icon(Icons.more_horiz,
-                    color: theme.grey, size: 26),
-                color: theme.card,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: theme.border),
-                ),
-                offset: const Offset(-8, 32),
-                onSelected: (val) {
-                  if (val == 'dark') {
-                    themeProvider.toggleTheme(true);
-                  } else if (val == 'light') {
-                    themeProvider.toggleTheme(false);
-                  } else if (val == 'config') {
-                    if (!mounted) return;
-                    Navigator.pushNamed(context, AppRoutes.reporteConfig);
-                  }
-                },
-                itemBuilder: (_) => [
-
-                  PopupMenuItem(
-                    enabled: false, height: 32,
-                    child: Text('MODO', style: TextStyle(
-                        color: theme.primary, fontSize: 11,
-                        fontWeight: FontWeight.w700, letterSpacing: 0.6)),
+              // Campana de notificaciones
+              Consumer<NotificationProvider>(
+                builder: (ctx, prov, __) => PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  offset: const Offset(0, 32),
+                  color: theme.card,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: BorderSide(color: theme.border),
                   ),
-                  PopupMenuItem(
-                    value: 'dark', height: 44,
-                    child: Row(children: [
-                      Icon(Icons.dark_mode_outlined,
-                          color: theme.grey, size: 18),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text('Oscuro',
-                          style: TextStyle(color: theme.white, fontSize: 14))),
-                      if (themeProvider.isDarkMode)
-                        Icon(Icons.check, color: theme.primary, size: 16),
-                    ]),
-                  ),
-                  PopupMenuItem(
-                    value: 'light', height: 44,
-                    child: Row(children: [
-                      Icon(Icons.light_mode_outlined,
-                          color: theme.grey, size: 18),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text('Claro',
-                          style: TextStyle(color: theme.white, fontSize: 14))),
-                      if (!themeProvider.isDarkMode)
-                        Icon(Icons.check, color: theme.primary, size: 16),
-                    ]),
-                  ),
-                  const PopupMenuDivider(),
-                  PopupMenuItem(
-                    value: 'config', height: 44,
-                    child: Row(children: [
-                      Icon(Icons.settings_outlined, color: theme.grey, size: 18),
-                      const SizedBox(width: 10),
-                      Text('Configuración',
-                          style: TextStyle(color: theme.white, fontSize: 14)),
-                    ]),
-                  ),
-                ],
-              ),
-              ),
-              // Avatar + campana
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 38, height: 38,
-                    decoration: BoxDecoration(
-                        color: theme.primary,
-                        shape: BoxShape.circle,
-                        image: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
-                            ? DecorationImage(
-                                image: NetworkImage(_avatarUrl!),
-                                fit: BoxFit.cover)
-                            : null),
-                    child: (_avatarUrl == null || _avatarUrl!.isEmpty)
-                        ? Center(child: Text(inicial,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700)))
-                        : null,
-                  ),
-                  Positioned(
-                    right: -4, bottom: -4,
-                    child: Consumer<NotificationProvider>(
-                      builder: (ctx, prov, __) => PopupMenuButton<String>(
-                        padding: EdgeInsets.zero,
-                        offset: const Offset(0, 32),
-                        color: theme.card,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          side: BorderSide(color: theme.border),
-                        ),
-                        onSelected: (val) {
-                          final token = ctx.read<AuthProvider>().token;
-                          if (val == 'read_all' && token != null) {
-                            prov.marcarTodasLeidas(token);
-                          }
-                          if (val == 'view_all' || val.startsWith('notif_')) {
-                            if (val.startsWith('notif_')) {
-                              prov.marcarLeida(val.replaceFirst('notif_', ''));
-                            }
-                            Navigator.pushNamed(ctx, '/notifications');
-                          }
-                        },
-                        itemBuilder: (_) {
-                          final notifs = prov.all.take(3).toList();
-                          return [
-                            PopupMenuItem(
-                              enabled: false, height: 36,
-                              child: Row(children: [
-                                Expanded(child: Text('Notificaciones',
-                                    style: TextStyle(color: theme.white,
-                                        fontSize: 13, fontWeight: FontWeight.w700))),
-                                if (prov.hasUnread)
-                                  GestureDetector(
-                                    onTap: () {
-                                      final token = ctx.read<AuthProvider>().token;
-                                      if (token != null) {
-                                        prov.marcarTodasLeidas(token);
-                                      }
-                                    },
-                                    child: Text('Marcar todas',
-                                        style: TextStyle(color: theme.primary,
-                                            fontSize: 11, fontWeight: FontWeight.w600)),
-                                  ),
-                              ]),
-                            ),
-                            const PopupMenuDivider(),
-                            if (notifs.isEmpty)
-                              PopupMenuItem(
-                                enabled: false, height: 44,
-                                child: Row(children: [
-                                  const Text('🔔', style: TextStyle(fontSize: 16)),
-                                  const SizedBox(width: 8),
-                                  Text('Sin notificaciones nuevas',
-                                      style: TextStyle(color: theme.grey,
-                                          fontSize: 12)),
-                                ]),
-                              )
-                            else
-                              ...notifs.map((n) => PopupMenuItem<String>(
-                                value: 'notif_${n.id}',
-                                height: 52,
-                                child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                  Text(n.tipo == 'entrenamiento' ? '🏃'
-                                      : n.tipo == 'logro' ? '🏆'
-                                      : n.tipo == 'plan' ? '📋' : '🔔',
-                                      style: const TextStyle(fontSize: 16)),
-                                  const SizedBox(width: 8),
-                                  Expanded(child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                    Text(n.titulo, maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                            color: n.leida ? theme.greyLight
-                                                : theme.white,
-                                            fontSize: 12,
-                                            fontWeight: n.leida
-                                                ? FontWeight.w400 : FontWeight.w600)),
-                                    Text(n.cuerpo, maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                            color: theme.grey, fontSize: 11)),
-                                  ])),
-                                  if (!n.leida)
-                                    Container(width: 7, height: 7,
-                                        margin: const EdgeInsets.only(top: 4, left: 4),
-                                        decoration: BoxDecoration(
-                                            color: theme.primary,
-                                            shape: BoxShape.circle)),
-                                ]),
-                              )),
-                            const PopupMenuDivider(),
-                            PopupMenuItem<String>(
-                              value: 'view_all', height: 40,
-                              child: Center(child: Text(
-                                  'Ver todas las notificaciones',
-                                  style: TextStyle(color: theme.primary,
-                                      fontSize: 13, fontWeight: FontWeight.w600))),
-                            ),
-                          ];
-                        },
-                        child: Stack(clipBehavior: Clip.none, children: [
-                          const Text('🔔', style: TextStyle(fontSize: 14)),
+                  onSelected: (val) {
+                    final token = ctx.read<AuthProvider>().token;
+                    if (val == 'read_all' && token != null) {
+                      prov.marcarTodasLeidas(token);
+                    }
+                    if (val == 'view_all' || val.startsWith('notif_')) {
+                      if (val.startsWith('notif_')) {
+                        prov.marcarLeida(val.replaceFirst('notif_', ''));
+                      }
+                      Navigator.pushNamed(ctx, '/notifications');
+                    }
+                  },
+                  itemBuilder: (_) {
+                    final notifs = prov.all.take(3).toList();
+                    return [
+                      PopupMenuItem(
+                        enabled: false, height: 36,
+                        child: Row(children: [
+                          Expanded(child: Text('Notificaciones',
+                              style: TextStyle(color: theme.white,
+                                  fontSize: 13, fontWeight: FontWeight.w700))),
                           if (prov.hasUnread)
-                            Positioned(
-                              right: -2, top: -2,
-                              child: Container(
-                                width: 7, height: 7,
-                                decoration: BoxDecoration(
-                                    color: theme.redText,
-                                    shape: BoxShape.circle),
-                              ),
+                            GestureDetector(
+                              onTap: () {
+                                final token = ctx.read<AuthProvider>().token;
+                                if (token != null) {
+                                  prov.marcarTodasLeidas(token);
+                                }
+                              },
+                              child: Text('Marcar todas',
+                                  style: TextStyle(color: theme.primary,
+                                      fontSize: 11, fontWeight: FontWeight.w600)),
                             ),
                         ]),
                       ),
+                      const PopupMenuDivider(),
+                      if (notifs.isEmpty)
+                        PopupMenuItem(
+                          enabled: false, height: 44,
+                          child: Row(children: [
+                            const Text('🔔', style: TextStyle(fontSize: 16)),
+                            const SizedBox(width: 8),
+                            Text('Sin notificaciones nuevas',
+                                style: TextStyle(color: theme.grey,
+                                    fontSize: 12)),
+                          ]),
+                        )
+                      else
+                        ...notifs.map((n) => PopupMenuItem<String>(
+                          value: 'notif_${n.id}',
+                          height: 52,
+                          child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            Text(n.tipo == 'entrenamiento' ? '🏃'
+                                : n.tipo == 'logro' ? '🏆'
+                                : n.tipo == 'plan' ? '📋' : '🔔',
+                                style: const TextStyle(fontSize: 16)),
+                            const SizedBox(width: 8),
+                            Expanded(child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                              Text(n.titulo, maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      color: n.leida ? theme.greyLight
+                                          : theme.white,
+                                      fontSize: 12,
+                                      fontWeight: n.leida
+                                          ? FontWeight.w400 : FontWeight.w600)),
+                              Text(n.cuerpo, maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      color: theme.grey, fontSize: 11)),
+                            ])),
+                            if (!n.leida)
+                              Container(width: 7, height: 7,
+                                  margin: const EdgeInsets.only(top: 4, left: 4),
+                                  decoration: BoxDecoration(
+                                      color: theme.primary,
+                                      shape: BoxShape.circle)),
+                          ]),
+                        )),
+                      const PopupMenuDivider(),
+                      PopupMenuItem<String>(
+                        value: 'view_all', height: 40,
+                        child: Center(child: Text(
+                            'Ver todas las notificaciones',
+                            style: TextStyle(color: theme.primary,
+                                fontSize: 13, fontWeight: FontWeight.w600))),
+                      ),
+                    ];
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Text('🔔', style: TextStyle(fontSize: 18)),
+                        if (prov.hasUnread)
+                          Positioned(
+                            right: -2,
+                            top: -2,
+                            child: Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                  color: theme.redText,
+                                  shape: BoxShape.circle),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              // Menú con ícono de tres líneas (Icons.menu)
+              SizedBox(
+                height: 38,
+                width: 38,
+                child: PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(Icons.menu,
+                      color: theme.grey, size: 26),
+                  color: theme.card,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: theme.border),
+                  ),
+                  offset: const Offset(-8, 32),
+                  onSelected: (val) {
+                    if (val == 'dark') {
+                      themeProvider.toggleTheme(true);
+                    } else if (val == 'light') {
+                      themeProvider.toggleTheme(false);
+                    } else if (val == 'config') {
+                      if (!mounted) return;
+                      Navigator.pushNamed(context, AppRoutes.reporteConfig);
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      enabled: false, height: 32,
+                      child: Text('MODO', style: TextStyle(
+                          color: theme.primary, fontSize: 11,
+                          fontWeight: FontWeight.w700, letterSpacing: 0.6)),
+                    ),
+                    PopupMenuItem(
+                      value: 'dark', height: 44,
+                      child: Row(children: [
+                        Icon(Icons.dark_mode_outlined,
+                            color: theme.grey, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text('Oscuro',
+                            style: TextStyle(color: theme.white, fontSize: 14))),
+                        if (themeProvider.isDarkMode)
+                          Icon(Icons.check, color: theme.primary, size: 16),
+                      ]),
+                    ),
+                    PopupMenuItem(
+                      value: 'light', height: 44,
+                      child: Row(children: [
+                        Icon(Icons.light_mode_outlined,
+                            color: theme.grey, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text('Claro',
+                            style: TextStyle(color: theme.white, fontSize: 14))),
+                        if (!themeProvider.isDarkMode)
+                          Icon(Icons.check, color: theme.primary, size: 16),
+                      ]),
+                    ),
+                    const PopupMenuDivider(),
+                    PopupMenuItem(
+                      value: 'config', height: 44,
+                      child: Row(children: [
+                        Icon(Icons.settings_outlined, color: theme.grey, size: 18),
+                        const SizedBox(width: 10),
+                        Text('Configuración',
+                            style: TextStyle(color: theme.white, fontSize: 14)),
+                      ]),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -821,6 +852,130 @@ class CoachCommentCard extends StatelessWidget {
         ? Border.all(color: theme.vuelta.border, width: 1.2)
         : Border.all(color: theme.primary.withValues(alpha: 0.25), width: 1.0);
 
+    // Obtener información del especialista asignado si es Elite
+    String headerText = 'FITNFLAI';
+    Widget avatarWidget;
+
+    if (isElite) {
+      final specialistProvider = context.watch<SpecialistProvider>();
+      final assignedSpecialist = specialistProvider.assignedSpecialist;
+
+      if (assignedSpecialist != null) {
+        headerText = assignedSpecialist.nombre.toUpperCase();
+        if (assignedSpecialist.fotoUrl != null && assignedSpecialist.fotoUrl!.isNotEmpty) {
+          avatarWidget = ClipRRect(
+            borderRadius: BorderRadius.circular(23),
+            child: Image.network(
+              assignedSpecialist.fotoUrl!,
+              width: 46, height: 46,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 46, height: 46,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFFF1A80A),
+                      Color(0xFFE8622A),
+                      Color(0xFFD62A8A),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Container(
+                  width: 42, height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: theme.cardDark,
+                  ),
+                  child: Center(
+                    child: Text(
+                      assignedSpecialist.nombre.isNotEmpty ? assignedSpecialist.nombre[0].toUpperCase() : 'E',
+                      style: TextStyle(color: theme.primary, fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        } else {
+          avatarWidget = Container(
+            width: 46, height: 46,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFFF1A80A),
+                  Color(0xFFE8622A),
+                  Color(0xFFD62A8A),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Container(
+              width: 42, height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: theme.cardDark,
+              ),
+              child: Center(
+                child: Text(
+                  assignedSpecialist.nombre.isNotEmpty ? assignedSpecialist.nombre[0].toUpperCase() : 'E',
+                  style: TextStyle(color: theme.primary, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          );
+        }
+      } else {
+        headerText = 'ESPECIALISTA FITNFLAI';
+        avatarWidget = Container(
+          width: 46, height: 46,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFFF1A80A),
+                Color(0xFFE8622A),
+                Color(0xFFD62A8A),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Container(
+            width: 42, height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: theme.cardDark,
+            ),
+            child: Icon(Icons.person, color: theme.primary, size: 24),
+          ),
+        );
+      }
+    } else {
+      // Non-elite: logo de Fitnflai y título "FITNFLAI"
+      headerText = 'FITNFLAI';
+      avatarWidget = ClipRRect(
+        borderRadius: BorderRadius.circular(23),
+        child: Image.asset(
+          'assets/images/favicon.png',
+          width: 46, height: 46,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Container(
+            width: 46, height: 46,
+            color: theme.cardDark,
+            child: Icon(Icons.fitness_center, color: theme.primary, size: 24),
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -832,55 +987,17 @@ class CoachCommentCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar del coach
-          if (isElite)
-            Container(
-              width: 46, height: 46,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFFF1A80A),
-                    Color(0xFFE8622A),
-                    Color(0xFFD62A8A),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Container(
-                width: 42, height: 42, // Inner circle for background
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: theme.cardDark,
-                ),
-                child: Icon(Icons.person, color: theme.primary, size: 24),
-              ),
-            )
-          else
-            ClipRRect(
-              borderRadius: BorderRadius.circular(23),
-              child: Image.asset(
-                'assets/images/favicon.png',
-                width: 46, height: 46,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 46, height: 46,
-                  color: theme.cardDark,
-                  child: Icon(Icons.fitness_center, color: theme.primary, size: 24),
-                ),
-              ),
-            ),
+          // Avatar
+          avatarWidget,
           const SizedBox(width: 16),
 
-          // Mensaje del coach
+          // Mensaje
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "COACH FITNFLAI".toUpperCase(),
+                  headerText,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -922,6 +1039,8 @@ class SocialSvgIcons {
   static const String x = r'''<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M36.6526 3.80782H43.3995L28.6594 20.6548L46 43.5798H32.4225L21.7881 29.6759L9.61989 43.5798H2.86886L18.6349 25.56L2 3.80782H15.9222L25.5348 16.5165L36.6526 3.80782ZM34.2846 39.5414H38.0232L13.8908 7.63408H9.87892L34.2846 39.5414Z" fill="white"/>
 </svg>''';
+
+  static const String tiktok = r'''<svg height="2500" width="2179" xmlns="http://www.w3.org/2000/svg" viewBox="-0.32296740998066475 -3.1283528999801873 42.68446958125966 42.128352899980186"><g fill="none"><path d="M14 15.599v-1.486A13.1 13.1 0 0 0 12.337 14C5.535 14 0 19.18 0 25.547 0 29.452 2.086 32.91 5.267 35c-2.13-2.132-3.315-4.942-3.313-7.861 0-6.276 5.377-11.394 12.046-11.54" fill="#00f2ea"/><path d="M14.327 32c2.876 0 5.221-2.273 5.328-5.107l.01-25.292h4.65A8.72 8.72 0 0 1 24.164 0h-6.35l-.011 25.293c-.106 2.832-2.453 5.105-5.328 5.105a5.329 5.329 0 0 1-2.476-.61A5.34 5.34 0 0 0 14.327 32m18.672-21.814V8.78a8.818 8.818 0 0 1-4.81-1.421A8.85 8.85 0 0 0 33 10.186" fill="#00f2ea"/><path d="M28 7.718A8.63 8.63 0 0 1 25.832 2h-1.697A8.735 8.735 0 0 0 28 7.718M12.325 20.065c-2.94.004-5.322 2.361-5.325 5.27A5.267 5.267 0 0 0 9.854 30a5.2 5.2 0 0 1-1.008-3.073c.003-2.91 2.385-5.268 5.325-5.271.55 0 1.075.09 1.572.244v-6.4a11.72 11.72 0 0 0-1.572-.114c-.092 0-.183.006-.274.007v4.916a5.286 5.286 0 0 0-1.572-.244" fill="#ff004f"/><path d="M32.153 11v4.884a15.15 15.15 0 0 1-8.813-2.811V25.84c0 6.377-5.23 11.565-11.658 11.565-2.485 0-4.789-.778-6.682-2.097A11.67 11.67 0 0 0 13.528 39c6.429 0 11.659-5.188 11.659-11.564V14.668A15.15 15.15 0 0 0 34 17.478v-6.283A8.87 8.87 0 0 1 32.153 11" fill="#ff004f"/><path d="M23.979 25.42V12.632A15.741 15.741 0 0 0 33 15.448v-4.89a9.083 9.083 0 0 1-4.912-2.82C26.016 6.431 24.586 4.358 24.132 2h-4.747l-.01 25.215c-.11 2.824-2.505 5.09-5.44 5.09-1.754-.002-3.398-.822-4.42-2.204-1.794-.913-2.919-2.716-2.92-4.682.003-2.92 2.44-5.285 5.45-5.289.56 0 1.098.09 1.608.245v-4.933C7.202 15.589 2 20.722 2 27.016c0 3.045 1.219 5.816 3.205 7.885A12.115 12.115 0 0 0 12.045 37c6.58 0 11.934-5.195 11.934-11.58" fill="#fff"/></g></svg>''';
 
   static const String instagram = r'''<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_17_27)">

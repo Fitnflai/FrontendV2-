@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/app_theme_extension.dart';
@@ -10,8 +12,29 @@ class SupportScreen extends StatefulWidget {
   State<SupportScreen> createState() => _SupportScreenState();
 }
 
-class _SupportScreenState extends State<SupportScreen> {
+class _SupportScreenState extends State<SupportScreen> with WidgetsBindingObserver {
   int? _openFaq;
+  bool _waitingForEmailReturn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _waitingForEmailReturn) {
+      _waitingForEmailReturn = false;
+      _showSuccessDialog();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,30 +84,12 @@ class _SupportScreenState extends State<SupportScreen> {
           _sectionLabel(l10n.supportContact),
           const SizedBox(height: 10),
           _ContactCard(
-            icon: Icons.chat_bubble_outline,
-            title: l10n.supportLiveChat,
-            subtitle: l10n.supportLiveChatSub,
-            badge: l10n.supportAvailable,
-            badgeColor: theme.greenText,
-            onTap: () => _launch('https://wa.me/573001234567'),
-          ),
-          const SizedBox(height: 8),
-          _ContactCard(
             icon: Icons.email_outlined,
             title: l10n.supportEmail,
-            subtitle: 'soporte@fitnflai.com',
+            subtitle: 'info@fitnflai.com',
             badge: '24–48h',
             badgeColor: theme.orange,
-            onTap: () => _launch('mailto:soporte@fitnflai.com'),
-          ),
-          const SizedBox(height: 8),
-          _ContactCard(
-            icon: Icons.article_outlined,
-            title: l10n.supportHelpCenter,
-            subtitle: l10n.supportHelpCenterSub,
-            badge: null,
-            badgeColor: theme.textMuted,
-            onTap: () => _launch('https://help.fitnflai.com'),
+            onTap: () => _showSupportForm(context),
           ),
           const SizedBox(height: 24),
 
@@ -108,7 +113,7 @@ class _SupportScreenState extends State<SupportScreen> {
           Row(children: [
             Expanded(child: _SocialBtn(
               icon: const SocialSvgIcon(svgData: SocialSvgIcons.facebook, size: 22), label: 'Facebook',
-              onTap: () => _launch('https://facebook.com/fitnflai'),
+              onTap: () => _launch('https://www.facebook.com/profile.php?id=61593229000325&mibextid=wwXIfr&rdid=sTyvzMS3lpiXv5Ul&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1MMtubbg3W%2F%3Fmibextid%3DwwXIfr#'),
             )),
             const SizedBox(width: 10),
             Expanded(child: _SocialBtn(
@@ -117,8 +122,8 @@ class _SupportScreenState extends State<SupportScreen> {
             )),
             const SizedBox(width: 10),
             Expanded(child: _SocialBtn(
-              icon: const SocialSvgIcon(svgData: SocialSvgIcons.x, size: 20), label: 'X',
-              onTap: () => _launch('https://x.com/fitnflai'),
+              icon: const SocialSvgIcon(svgData: SocialSvgIcons.tiktok, size: 20), label: 'TikTok',
+              onTap: () => _launch('https://www.tiktok.com/@fit.n.flai?_r=1&_t=ZS-9A7asfhayHM'),
             )),
           ]),
           const SizedBox(height: 24),
@@ -150,6 +155,230 @@ class _SupportScreenState extends State<SupportScreen> {
   Future<void> _launch(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) launchUrl(uri);
+  }
+
+  void _showSupportForm(BuildContext context) {
+    final theme = context.themeColors;
+    final authProvider = context.read<AuthProvider>();
+    final user = authProvider.user;
+
+    final nombre = user?.nombre ?? 'No especificado';
+    final email = user?.email ?? 'No especificado';
+    final membresia = user?.nombrePlanActivo ?? 'Ninguna / TRIAL';
+    final userId = user?.id ?? 'No especificado';
+
+    String? selectedSubject = 'Problemas con mi entrenamiento';
+    final messageController = TextEditingController();
+
+    final List<String> subjects = [
+      'Problemas con mi entrenamiento',
+      'Problemas con mi especialista',
+      'Problemas con mi perfil',
+      'Reembolso',
+      'Otros',
+    ];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: theme.card,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: theme.border),
+              ),
+              title: Row(
+                children: [
+                  Icon(Icons.email_outlined, color: theme.orange, size: 24),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Formulario de Soporte',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Asunto:',
+                      style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: theme.cardDark,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: theme.border),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedSubject,
+                          dropdownColor: theme.cardDark,
+                          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white70),
+                          isExpanded: true,
+                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                          items: subjects.map((s) {
+                            return DropdownMenuItem<String>(
+                              value: s,
+                              child: Text(s),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setDialogState(() {
+                                selectedSubject = val;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Mensaje:',
+                      style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: messageController,
+                      maxLines: 6,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: theme.cardDark,
+                        hintText: 'Coloque su mensaje aquí...',
+                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: theme.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: theme.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: theme.orange),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Cancelar',
+                    style: TextStyle(color: theme.grey, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.orange,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () async {
+                    final msg = messageController.text.trim();
+                    if (msg.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Por favor, ingrese un mensaje.'),
+                          backgroundColor: theme.redMid,
+                        ),
+                      );
+                      return;
+                    }
+
+                    // Construir el correo electrónico
+                    final String emailBody =
+                        'Asunto de soporte: $selectedSubject\n\n'
+                        'Mensaje:\n$msg\n\n'
+                        '----------------------------------------\n'
+                        'Información de Soporte:\n'
+                        '- Nombre del usuario: $nombre\n'
+                        '- Correo electrónico del usuario: $email\n'
+                        '- Tipo de membresía: $membresia\n'
+                        '- ID de usuario: $userId\n'
+                        '----------------------------------------';
+
+                    final Uri emailUri = Uri(
+                      scheme: 'mailto',
+                      path: 'info@fitnflai.com',
+                      query: 'subject=${Uri.encodeComponent('soporteAPP')}&body=${Uri.encodeComponent(emailBody)}',
+                    );
+
+                    // Lanzar el cliente de correo
+                    try {
+                      final launched = await launchUrl(emailUri, mode: LaunchMode.externalApplication);
+                      if (launched) {
+                        _waitingForEmailReturn = true;
+                      }
+                    } catch (e) {
+                      debugPrint('🚨 Error abriendo el cliente de correo: $e');
+                    }
+
+                    // Cerrar el diálogo del formulario
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  child: const Text('Enviar', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showSuccessDialog() {
+    if (!mounted) return;
+    final theme = context.themeColors;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: theme.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: theme.border),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: theme.greenText, size: 24),
+              const SizedBox(width: 8),
+              const Text(
+                'Envío exitoso',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Nos pondremos en contacto vía correo electrónico lo más pronto posible.',
+            style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Entendido',
+                style: TextStyle(color: theme.orange, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 
