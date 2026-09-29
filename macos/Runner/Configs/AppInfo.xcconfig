@@ -8,7 +8,7 @@
 PRODUCT_NAME = fitnflaifrontendv2
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.fitnflaifrontendv2
+PRODUCT_BUNDLE_IDENTIFIER = com.fitnflai.frontend
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 com.fitnflai. All rights reserved.
