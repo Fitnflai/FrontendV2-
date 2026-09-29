@@ -997,6 +997,9 @@ class _PremiumBanner extends StatelessWidget {
     final l10n  = AppLocalizations.of(context);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
+    final profileProvider = context.watch<ProfileProvider>();
+    final planes = profileProvider.planes;
+
     final tienePlan = user?.tienePlanActivo == true;
     final planNombre = user?.nombrePlanActivo ?? '';
 
@@ -1004,8 +1007,31 @@ class _PremiumBanner extends StatelessWidget {
         ? 'Membresía Activa: ${planNombre.toUpperCase()}'
         : l10n.profilePremiumTitle(nombre);
 
+    String? planDesc;
+    if (tienePlan && planes != null) {
+      try {
+        final activePlanData = planes.firstWhere(
+          (p) => p['nombre']?.toString().toLowerCase() == planNombre.toLowerCase(),
+          orElse: () => null,
+        );
+        if (activePlanData != null) {
+          planDesc = activePlanData['descripcion'] as String?;
+        }
+      } catch (_) {}
+    }
+
+    if (planDesc == null || planDesc.isEmpty) {
+      if (user?.isElite == true) {
+        planDesc = 'Plan premium completo con acompañamiento de deportólogo, nutricionista y entrenador de cabecera.';
+      } else if (user?.isPro == true) {
+        planDesc = 'Plan de entrenamiento inteligente con planes de alimentación e hidratación personalizados.';
+      } else {
+        planDesc = 'Plan de entrenamiento adaptativo 100% inteligente generado por IA.';
+      }
+    }
+
     final descText = tienePlan
-        ? 'Disfrutás del acceso completo a todos los entrenamientos y beneficios de tu plan.'
+        ? planDesc
         : l10n.profilePremiumDesc;
 
     final buttonText = tienePlan
