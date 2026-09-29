@@ -30,6 +30,9 @@ class AppleHealthKitService implements BaseHealthService {
 
   @override
   Future<bool> checkAvailability() async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      return false;
+    }
     await _ensureConfigured();
     return true;
   }

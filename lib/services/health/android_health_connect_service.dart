@@ -31,6 +31,9 @@ class AndroidHealthConnectService implements BaseHealthService {
 
   @override
   Future<bool> checkAvailability() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return false;
+    }
     await _ensureConfigured();
     return true;
   }

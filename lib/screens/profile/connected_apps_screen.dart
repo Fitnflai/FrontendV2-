@@ -247,16 +247,6 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
     }
   }
 
-  Future<void> _openTikTokProfile() async {
-    const tikTokUrl = 'https://www.tiktok.com/@fit.n.flai?_r=1&_t=ZS-9A7asfhayHM';
-    final uri = Uri.parse(tikTokUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      debugPrint('Could not launch TikTok URL');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = context.themeColors;
@@ -349,18 +339,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
               enabled: _userId != null,
               onTap: _handleStrava,
             ),
-            _NavItem(
-              icon: SvgPicture.asset(
-                'assets/images/tiktok.svg',
-                width: 28,
-                height: 28,
-              ),
-              label: 'TikTok',
-              subtitle: null,
-              badgeConnected: false,
-              showInfo: true,
-              onTap: _openTikTokProfile,
-            ),
+
           ]),
           const SizedBox(height: 24),
           _SectionLabel(isEs ? 'APLICACIONES DE SALUD Y SEGUIMIENTO' : 'HEALTH & TRACKING APPS'),
@@ -478,10 +457,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
           duration: const Duration(seconds: 3)));
     } else {
       // Not connected to any health provider, attempt to connect to this one
-      bool isAvailable = true; // Permite intentar conectar y guiar al usuario
-      if (providerType == HealthProviderType.healthConnect || providerType == HealthProviderType.huaweiHealth) {
-        isAvailable = await healthProvider.checkAvailability(providerType);
-      }
+      bool isAvailable = await healthProvider.checkAvailability(providerType);
       if (mounted) {
         if (isAvailable) {
           await healthProvider.connectProvider(providerType);

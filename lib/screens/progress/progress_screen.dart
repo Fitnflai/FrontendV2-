@@ -550,7 +550,7 @@ class _WellnessIndexCard extends StatelessWidget {
                             return Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                '${factor.getName(context)} (${(factor.weight * 100).toInt()}%)',
+                                factor.getName(context),
                                 style: TextStyle(
                                   color: theme.white,
                                   fontSize: 13,
@@ -575,7 +575,7 @@ class _WellnessIndexCard extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  '${factor.getName(context)} (${(factor.weight * 100).toInt()}%)',
+                                  factor.getName(context),
                                   style: TextStyle(
                                     color: theme.white,
                                     fontSize: 13,
@@ -610,7 +610,7 @@ class _WellnessIndexCard extends StatelessWidget {
                   lineColor: factorLineColor,
                   gridColor: theme.border,
                   textColor: theme.grey,
-                  highlightColor: theme.primary,
+                  highlightColor: factorLineColor,
                   maxRefColor: factorLineColor.withValues(alpha: 0.4),
                   minRefColor: theme.grey.withValues(alpha: 0.4),
                   minY: chartMinY,
@@ -626,7 +626,7 @@ class _WellnessIndexCard extends StatelessWidget {
               const SizedBox(width: 14),
               _LegendDot(color: theme.grey, dashed: true, label: minLabel),
               const SizedBox(width: 14),
-              _LegendDot(color: theme.primary, dashed: false, label: actualLabel),
+              _LegendDot(color: factorLineColor, dashed: false, label: actualLabel),
             ]),
           ]);
         },
