@@ -1078,17 +1078,6 @@ class _PremiumBanner extends StatelessWidget {
                         fontSize: 12,
                         fontWeight: FontWeight.w700)),
               ),
-              if (!tienePlan) ...[
-                const SizedBox(width: 14),
-                GestureDetector(
-                  onTap: () {},
-                  child: Text(l10n.profilePremiumRestore,
-                      style: TextStyle(
-                          color: theme.primary.withValues(alpha: 0.6),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700)),
-                ),
-              ],
             ]),
           ]),
         ),
