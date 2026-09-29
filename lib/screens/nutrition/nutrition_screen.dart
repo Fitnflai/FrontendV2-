@@ -98,6 +98,17 @@ class _NutritionScreenState extends State<NutritionScreen> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
+    final tienePlan = user?.tienePlanActivo == true;
+    final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
+
+    if (!tienePlan) {
+      return Scaffold(
+        backgroundColor: theme.bg,
+        body: const BlockingMembershipOverlay(),
+        bottomNavigationBar: const AppBottomNav(selectedIndex: 3),
+      );
+    }
+
     final isLoadingAuth = authProvider.isLoading;
     final nutritionProvider = context.watch<NutritionProvider>();
     final profileProvider = context.watch<ProfileProvider>();
@@ -107,7 +118,6 @@ class _NutritionScreenState extends State<NutritionScreen> {
     final canSeeNutrition = user?.canSeeNutrition == true || isProOrEliteProfile;
     debugPrint('🥗 NUTRITION DIAGNOSTIC: hasUser=${user != null}, tienePlanActivo=${user?.tienePlanActivo}, nombrePlanActivo="${user?.nombrePlanActivo}", isPro=${user?.isPro}, isElite=${user?.isElite}, canSeeNutrition=$canSeeNutrition');
 
-    final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
     final l10n = AppLocalizations.of(context);
     final isEs = Localizations.localeOf(context).languageCode == 'es';
     final day     = _selectedDay;

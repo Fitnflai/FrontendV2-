@@ -1108,3 +1108,68 @@ class SocialSvgIcon extends StatelessWidget {
     );
   }
 }
+
+// ─── Blocking Membership Overlay ───────────────────────────────
+class BlockingMembershipOverlay extends StatelessWidget {
+  const BlockingMembershipOverlay({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.themeColors;
+    return Scaffold(
+      backgroundColor: theme.bg,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: theme.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.lock_person_outlined,
+                  color: theme.primary,
+                  size: 64,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Tu membresía está inactiva',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Activá una membresía para continuar con tu entrenamiento y disfrutar de sus beneficios.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: theme.textSecondary,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              PrimaryButton(
+                labelWidget: const Text(
+                  'Activar membresía',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                onTap: () {
+                  Navigator.pushNamed(context, AppRoutes.membership);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -285,6 +285,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
     final l10n  = AppLocalizations.of(context);
+
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.user;
+    final tienePlan = user?.tienePlanActivo == true;
+
+    if (!tienePlan) {
+      return Scaffold(
+        backgroundColor: theme.bg,
+        body: const BlockingMembershipOverlay(),
+        bottomNavigationBar: const AppBottomNav(selectedIndex: 0),
+      );
+    }
+
     // ── Datos hardcoded (se reemplazarán con API) ────────────────
 
 
