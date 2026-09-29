@@ -104,5 +104,15 @@
 		<string>https</string>
 		<string>http</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Permitimos tomar fotos de perfil y subir informes de composición corporal.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Permitimos seleccionar fotos de perfil e informes desde la galería.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Usamos el micrófono para notas de voz en entrenamientos (opcional).</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Tu actividad nos ayuda a personalizar tu plan de entrenamiento.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

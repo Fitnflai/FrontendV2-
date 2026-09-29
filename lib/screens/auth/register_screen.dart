@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/gestures.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_routes.dart';
 import '../../config/onboarding_router.dart';
@@ -189,11 +190,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     style: const TextStyle(color: AppColors.grey, fontSize: 13, height: 1.5),
                     children: [
                       TextSpan(text: l10n.registerTermsAccept),
-                      TextSpan(text: l10n.registerTermsLink,
-                          style: const TextStyle(color: AppColors.orange, fontWeight: FontWeight.w600)),
+                      TextSpan(
+                        text: l10n.registerTermsLink,
+                        style: const TextStyle(color: AppColors.orange, fontWeight: FontWeight.w600),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () => Navigator.pushNamed(context, AppRoutes.termsConditions),
+                      ),
                       TextSpan(text: l10n.registerAnd),
-                      TextSpan(text: l10n.registerPrivacyLink,
-                          style: const TextStyle(color: AppColors.orange, fontWeight: FontWeight.w600)),
+                      TextSpan(
+                        text: l10n.registerPrivacyLink,
+                        style: const TextStyle(color: AppColors.orange, fontWeight: FontWeight.w600),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () => Navigator.pushNamed(context, AppRoutes.privacyPolicy),
+                      ),
                     ],
                   )),
                 ),

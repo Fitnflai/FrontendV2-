@@ -7,6 +7,7 @@ import '../../providers/profile_provider.dart';
 import '../../config/app_colors.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/blocking_loading_overlay.dart'; // Import the new overlay widget
+import '../../widgets/specialist_selection_bottom_sheet.dart';
 
 class _Plan {
   final int id;
@@ -76,7 +77,9 @@ class _MembershipScreenState extends State<MembershipScreen> {
         debugPrint('Error: Token de autenticación no encontrado. Regresando de pantalla.');
         Navigator.pop(context);
       } else {
-        context.read<ProfileProvider>().loadPlanes(token);
+        final profileProvider = context.read<ProfileProvider>();
+        profileProvider.loadPlanes(token);
+        profileProvider.loadSavedCards(token);
       }
     });
   }
@@ -153,6 +156,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                     plan: _currentPlans[_selected],
                     price: _price(_currentPlans[_selected].originalData, _isAnnual),
                     period: _period(_currentPlans[_selected].originalData, _isAnnual),
+                    isActivePlan: (context.watch<AuthProvider>().user?.nombrePlanActivo?.toLowerCase() ?? '') == _currentPlans[_selected].name.toLowerCase(),
                     onSubscribe: () => _subscribe(
                       _currentPlans[_selected],
                       _getPriceId(_currentPlans[_selected].originalData, _isAnnual),
@@ -178,7 +182,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
       int id = 0;
       if (name.toLowerCase().contains('pro')) {
         id = 1;
-      } else if (name.toLowerCase().contains('elite')) {
+      } else if (name.toLowerCase().contains('elite') || name.toLowerCase().contains('élite')) {
         id = 2;
       }
       final tagline = planData['descripcion'] as String? ?? '';
@@ -258,6 +262,17 @@ class _MembershipScreenState extends State<MembershipScreen> {
 
   void _subscribe(_Plan plan, String priceId) {
     final pageContext = context;
+    final token = context.read<AuthProvider>().token;
+    if (token != null) {
+      context.read<ProfileProvider>().loadSavedCards(token);
+    }
+
+    final TextEditingController cvvController = TextEditingController();
+    int checkoutStep = 0; // 0: Card selection, 1: Nuvei Webview, 2: Processing, 3: Success
+    String? errorMessageCheckout;
+    int selectedCardIndex = 0;
+    bool showCvvPrompt = false;
+    String? cvvError;
 
     showModalBottomSheet(
       context: context,
@@ -266,25 +281,14 @@ class _MembershipScreenState extends State<MembershipScreen> {
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (BuildContext context) {
-        int checkoutStep = 0; // 0: Card selection, 1: Nuvei Webview, 2: Processing, 3: Success
-        String? errorMessageCheckout;
 
 
         return StatefulBuilder(
           builder: (BuildContext dialogContext, StateSetter setModalState) {
             final l10n = AppLocalizations.of(pageContext);
             final authProvider = pageContext.read<AuthProvider>();
-            final profileProvider = pageContext.watch<ProfileProvider>();
+            final profileProvider = dialogContext.watch<ProfileProvider>();
             final token = authProvider.token;
-
-            // Ensure cards are loaded safely after the build frame is complete
-            if (profileProvider.savedCards.isEmpty && !profileProvider.isLoadingCards && token != null && checkoutStep == 0) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (dialogContext.mounted) {
-                  profileProvider.loadSavedCards(token);
-                }
-              });
-            }
 
 
 
@@ -295,7 +299,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
 
             if (checkoutStep == 0) {
               // Card Selection / Add Card Step
-              if (profileProvider.isLoadingCards) {
+              if (profileProvider.isLoadingCards && profileProvider.savedCards.isEmpty) {
                 return _buildLoadingBottomSheet(l10n, l10n.loadingCards);
               }
 
@@ -307,8 +311,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
               }
 
               if (profileProvider.savedCards.isNotEmpty) {
-                // User has saved cards, show one-click option or select card
-                final selectedCard = profileProvider.savedCards.first;
+                final cards = profileProvider.savedCards;
+                final selectedCard = cards[selectedCardIndex];
 
                 return Padding(
                   padding: EdgeInsets.fromLTRB(20, 20, 20, bottomPadding),
@@ -317,93 +321,361 @@ class _MembershipScreenState extends State<MembershipScreen> {
                     children: [
                       _buildDragHandle(),
                       const SizedBox(height: 20),
-                      Text(l10n.subscribeToPlan(plan.name),
-                          style: const TextStyle(
-                              color: AppColors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 8),
-                      Text(
-                          '${_price(plan.originalData, _isAnnual)} ${_period(plan.originalData, _isAnnual)}',
-                          style: const TextStyle(
-                              color: AppColors.orange,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppColors.cardDark,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Row(
+                      if (showCvvPrompt) ...[
+                        Row(
                           children: [
-                            const Icon(Icons.credit_card_outlined, color: AppColors.grey, size: 16),
-                            const SizedBox(width: 10),
-                            Expanded(
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back, color: AppColors.white, size: 20),
+                              onPressed: () => setModalState(() => showCvvPrompt = false),
+                            ),
+                            const Expanded(
                               child: Text(
-                                l10n.payWithCardEnding(selectedCard.brand, selectedCard.lastFour),
-                                style: const TextStyle(color: AppColors.grey, fontSize: 12, height: 1.4),
+                                'Confirmación de Seguridad',
+                                style: TextStyle(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.w800),
+                                textAlign: TextAlign.center,
                               ),
                             ),
-                            // Option to select another card or add a new one if multiple cards exist
+                            const SizedBox(width: 40), // Balance back button
                           ],
                         ),
-                      ),
-                      if (errorMessageCheckout != null) ...[
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 15),
                         Text(
-                          errorMessageCheckout!,
-                          style: const TextStyle(color: Colors.red, fontSize: 14),
+                          'Ingresá el código de seguridad (CVV) de tu tarjeta ${selectedCard.brand} finalizada en ${selectedCard.lastFour} para procesar tu suscripción.',
+                          style: const TextStyle(color: AppColors.greyLight, fontSize: 13, height: 1.4),
                           textAlign: TextAlign.center,
                         ),
-                      ],
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: profileProvider.isProcessingOneClick || profileProvider.isAssociatingCard
-                              ? null
-                              : () async {
-                            setModalState(() {
-                              errorMessageCheckout = null;
-                            });
-                            // Charge with saved card
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: 140,
+                          child: TextField(
+                            controller: cvvController,
+                            keyboardType: TextInputType.number,
+                            obscureText: true,
+                            maxLength: 4,
+                            style: const TextStyle(color: AppColors.white, fontSize: 20, letterSpacing: 8, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                            decoration: InputDecoration(
+                              hintText: '•••',
+                              hintStyle: const TextStyle(color: AppColors.grey, fontSize: 20, letterSpacing: 8),
+                              counterText: '',
+                              errorText: cvvError,
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppColors.orange, width: 2),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppColors.border),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (errorMessageCheckout != null) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            errorMessageCheckout!,
+                            style: const TextStyle(color: Colors.red, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                        const SizedBox(height: 25),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: profileProvider.isProcessingOneClick
+                                ? null
+                                : () async {
+                              final cvv = cvvController.text.trim();
+                              final isNumeric = RegExp(r'^\d+$').hasMatch(cvv);
+                              if (cvv.length < 3 || cvv.length > 4 || !isNumeric) {
+                                setModalState(() {
+                                  cvvError = 'CVV inválido (debe tener 3 o 4 dígitos)';
+                                });
+                                return;
+                              }
+                              setModalState(() {
+                                cvvError = null;
+                                errorMessageCheckout = null;
+                              });
+                              try {
+                                profileProvider.isProcessingOneClick = true;
+                                final mediaQuery = MediaQuery.of(context);
+                                final screenWidth = mediaQuery.size.width.toInt();
+                                final screenHeight = mediaQuery.size.height.toInt();
+                                final timezoneOffset = DateTime.now().timeZoneOffset.inMinutes;
+
+                                await profileProvider.subscribeNuveiAction(
+                                  token!,
+                                  priceId,
+                                  cvc: cvv,
+                                  screenWidth: screenWidth,
+                                  screenHeight: screenHeight,
+                                  timezoneOffset: timezoneOffset,
+                                );
+                                if (profileProvider.subscriptionError != null) {
+                                  setModalState(() {
+                                    errorMessageCheckout = profileProvider.subscriptionError;
+                                  });
+                                } else {
+                                  setModalState(() {
+                                    checkoutStep = 3;
+                                    showCvvPrompt = false;
+                                  });
+                                  cvvController.clear();
+                                  await authProvider.refreshUser();
+                                }
+                              } catch (e) {
+                                setModalState(() {
+                                  errorMessageCheckout = e.toString();
+                                });
+                              } finally {
+                                profileProvider.isProcessingOneClick = false;
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.orange,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            child: profileProvider.isProcessingOneClick
+                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                : const Text('Confirmar y Suscribirse',
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                      ] else ...[
+                        Text(l10n.subscribeToPlan(plan.name),
+                            style: const TextStyle(
+                                color: AppColors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 8),
+                        Text(
+                            '${_price(plan.originalData, _isAnnual)} ${_period(plan.originalData, _isAnnual)}',
+                            style: const TextStyle(
+                                color: AppColors.orange,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 20),
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 180),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: List.generate(cards.length, (index) {
+                                final card = cards[index];
+                                final isSelected = selectedCardIndex == index;
+                                return GestureDetector(
+                                  onTap: () => setModalState(() => selectedCardIndex = index),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? AppColors.cardDark : AppColors.card,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: isSelected ? AppColors.orange : AppColors.border,
+                                          width: isSelected ? 1.5 : 1),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                            isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                                            color: isSelected ? AppColors.orange : AppColors.grey,
+                                            size: 18),
+                                        const SizedBox(width: 12),
+                                        Icon(Icons.credit_card_outlined,
+                                            color: isSelected ? AppColors.white : AppColors.grey,
+                                            size: 18),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            l10n.payWithCardEnding(card.brand, card.lastFour),
+                                            style: TextStyle(
+                                                color: isSelected ? AppColors.white : AppColors.grey,
+                                                fontSize: 13,
+                                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () async {
+                            Navigator.pop(dialogContext); // Close modal
                             try {
-                              profileProvider.isProcessingOneClick = true;
-                              await profileProvider.subscribeNuveiAction(token!, priceId);
-                              if (profileProvider.subscriptionError != null) {
-                                setModalState(() {
-                                  errorMessageCheckout = profileProvider.subscriptionError;
-                                });
-                              } else {
-                                setModalState(() {
-                                  checkoutStep = 3;
-                                });
-                                await authProvider.refreshUser();
+                              profileProvider.pendingSubscribePriceId = priceId;
+                              profileProvider.isAssociatingCard = true;
+                              final returnUrl = 'fitnflai://payment-methods/membership/$priceId';
+                              final checkoutUrl = await profileProvider.associateCard(token!, returnUrl: returnUrl);
+                              if (checkoutUrl != null) {
+                                if (!await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.inAppBrowserView)) {
+                                  await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
+                                }
                               }
                             } catch (e) {
-                              setModalState(() {
-                                errorMessageCheckout = e.toString();
-                              });
+                              debugPrint('Error asociando tarjeta: $e');
                             } finally {
-                              profileProvider.isProcessingOneClick = false;
+                              profileProvider.isAssociatingCard = false;
                             }
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.orange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 0,
-                          ),
-                          child: profileProvider.isProcessingOneClick
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : Text(l10n.confirmAndSubscribe,
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          icon: const Icon(Icons.add_card_outlined, color: AppColors.orange, size: 16),
+                          label: const Text('Asociar nueva tarjeta',
+                              style: TextStyle(color: AppColors.orange, fontSize: 13, fontWeight: FontWeight.bold)),
                         ),
-                      ),
+                        if (errorMessageCheckout != null) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            errorMessageCheckout!,
+                            style: const TextStyle(color: Colors.red, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final mediaQuery = MediaQuery.of(pageContext);
+                            final screenWidth = mediaQuery.size.width.toInt();
+                            final screenHeight = mediaQuery.size.height.toInt();
+                            final timezoneOffset = DateTime.now().timeZoneOffset.inMinutes;
+
+                            // 1. Show Dialog to collect CVV / CVC (centered, highly stable, keyboard friendly)
+                            final TextEditingController tempCvvController = TextEditingController();
+                            final bool? confirmed = await showDialog<bool>(
+                                context: dialogContext,
+                                barrierDismissible: false,
+                                builder: (BuildContext alertContext) {
+                                  String? localError;
+                                  return StatefulBuilder(
+                                    builder: (context, setDialogState) {
+                                      return AlertDialog(
+                                        backgroundColor: const Color(0xFF1E1E1E),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        title: const Text(
+                                          'Confirmación de Seguridad',
+                                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              'Por motivos de seguridad, ingresá el código de verificación (CVV) de tu tarjeta ${selectedCard.brand} finalizada en ${selectedCard.lastFour} para procesar tu suscripción.',
+                                              style: const TextStyle(color: Colors.grey, fontSize: 13, height: 1.4),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            const SizedBox(height: 16),
+                                            SizedBox(
+                                              width: 120,
+                                              child: TextField(
+                                                controller: tempCvvController,
+                                                keyboardType: TextInputType.number,
+                                                obscureText: true,
+                                                maxLength: 4,
+                                                style: const TextStyle(color: Colors.white, fontSize: 20, letterSpacing: 8, fontWeight: FontWeight.bold),
+                                                textAlign: TextAlign.center,
+                                                decoration: InputDecoration(
+                                                  hintText: '•••',
+                                                  hintStyle: const TextStyle(color: Colors.grey, fontSize: 20, letterSpacing: 8),
+                                                  counterText: '',
+                                                  errorText: localError,
+                                                  focusedBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.circular(10),
+                                                    borderSide: const BorderSide(color: Colors.orange, width: 2),
+                                                  ),
+                                                  enabledBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.circular(10),
+                                                    borderSide: const BorderSide(color: Color(0xFF2E2E2E)),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        actionsAlignment: MainAxisAlignment.spaceEvenly,
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(alertContext, false),
+                                            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              final cvvVal = tempCvvController.text.trim();
+                                              final isNumeric = RegExp(r'^\d+$').hasMatch(cvvVal);
+                                              if (cvvVal.length < 3 || cvvVal.length > 4 || !isNumeric) {
+                                                setDialogState(() {
+                                                  localError = 'CVV inválido';
+                                                });
+                                                return;
+                                              }
+                                              Navigator.pop(alertContext, true);
+                                            },
+                                            child: const Text('Confirmar', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                              );
+
+                              if (confirmed != true) return;
+
+                              final cvv = tempCvvController.text.trim();
+
+                              try {
+                                setModalState(() {
+                                  checkoutStep = 2; // Show processing loader
+                                  errorMessageCheckout = null;
+                                });
+
+                                await profileProvider.subscribeNuveiAction(
+                                  token!,
+                                  priceId,
+                                  cvc: cvv,
+                                  screenWidth: screenWidth,
+                                  screenHeight: screenHeight,
+                                  timezoneOffset: timezoneOffset,
+                                );
+
+                                if (profileProvider.subscriptionError != null) {
+                                  setModalState(() {
+                                    checkoutStep = 0; // Go back to card selection so they can try again or see error
+                                    errorMessageCheckout = profileProvider.subscriptionError;
+                                  });
+                                } else {
+                                  setModalState(() {
+                                    checkoutStep = 3; // Success!
+                                  });
+                                  await authProvider.refreshUser();
+                                }
+                              } catch (e) {
+                                setModalState(() {
+                                  checkoutStep = 0;
+                                  errorMessageCheckout = e.toString();
+                                });
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.orange,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            child: Text(l10n.confirmAndSubscribe,
+                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 );
@@ -463,15 +735,16 @@ class _MembershipScreenState extends State<MembershipScreen> {
                             setModalState(() {
                               errorMessageCheckout = null;
                             });
-                            try {
-                                profileProvider.isAssociatingCard = true;
-                              // Deep link for app to resume
-                              const returnUrl = 'fitnflai://payment-methods';
+                             try {
+                                 profileProvider.pendingSubscribePriceId = priceId;
+                                 profileProvider.isAssociatingCard = true;
+                               // Deep link for app to resume
+                               final returnUrl = 'fitnflai://payment-methods/membership/$priceId';
                               final checkoutUrl = await profileProvider.associateCard(token!, returnUrl: returnUrl);
 
                               if (checkoutUrl != null) {
-                                if (!await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.inAppWebView)) {
-                                  debugPrint('Could not launch $checkoutUrl in inAppWebView. Trying external.');
+                                if (!await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.inAppBrowserView)) {
+                                  debugPrint('Could not launch $checkoutUrl in inAppBrowserView. Trying external.');
                                   await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
                                 }
                                 // After launching, we don't immediately set checkoutStep to 2.
@@ -648,9 +921,27 @@ class _MembershipScreenState extends State<MembershipScreen> {
                     const SizedBox(height: 30),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(dialogContext); // Close modal
+                      child:                       ElevatedButton(
+                        onPressed: () async {
+                          Navigator.pop(dialogContext); // Close success modal
+                          final planName = plan.name.toLowerCase();
+                          final isElite = planName.contains('elite') || planName.contains('élite');
+                          if (isElite) {
+                            final selected = await showModalBottomSheet<bool>(
+                              context: pageContext,
+                              isScrollControlled: true,
+                              isDismissible: false,
+                              enableDrag: false,
+                              builder: (ctx) => const SpecialistSelectionBottomSheet(),
+                            );
+                            if (selected == true && pageContext.mounted) {
+                              Navigator.pop(pageContext); // Go back to profile screen
+                            }
+                          } else {
+                            if (pageContext.mounted) {
+                              Navigator.pop(pageContext); // Go back to profile screen
+                            }
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.orange,
@@ -939,8 +1230,9 @@ class _PlanCard extends StatelessWidget {
   final _Plan plan;
   final String price, period;
   final VoidCallback onSubscribe;
+  final bool isActivePlan;
   const _PlanCard({required this.plan, required this.price,
-      required this.period, required this.onSubscribe});
+      required this.period, required this.onSubscribe, required this.isActivePlan});
 
   @override
   Widget build(BuildContext context) {
@@ -1040,22 +1332,27 @@ class _PlanCard extends StatelessWidget {
         SizedBox(
           width: double.infinity, height: 48,
           child: ElevatedButton(
-            onPressed: onSubscribe,
+            onPressed: isActivePlan ? null : onSubscribe,
             style: ElevatedButton.styleFrom(
-              backgroundColor: plan.id == 1
-                  ? AppColors.orange : AppColors.cardDark,
+              backgroundColor: isActivePlan
+                  ? AppColors.cardDark
+                  : plan.id == 1
+                      ? AppColors.orange
+                      : AppColors.cardDark,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
-              side: plan.id != 1
+              side: plan.id != 1 || isActivePlan
                   ? const BorderSide(color: AppColors.border)
                   : BorderSide.none,
               elevation: 0,
             ),
             child: Text(
-              plan.id == 0 ? 'Comenzar gratis'
-                  : plan.id == 1 ? 'Suscribirme al Pro'
-                  : 'Suscribirme al Elite',
+              isActivePlan
+                  ? 'Tu plan actual'
+                  : plan.id == 0 ? 'Comenzar gratis'
+                      : plan.id == 1 ? 'Suscribirme al Pro'
+                      : 'Suscribirme al Elite',
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
             ),
           ),

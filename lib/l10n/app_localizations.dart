@@ -1973,6 +1973,18 @@ abstract class AppLocalizations {
   /// **'Remember to hydrate well before your next high-intensity session.'**
   String get homeTipOfTheDayDesc;
 
+  /// Title shown when there is no workout scheduled for today
+  ///
+  /// In en, this message translates to:
+  /// **'No workout today, {name}'**
+  String homeNoWorkoutTitle(String name);
+
+  /// Description shown when there is no workout scheduled for today
+  ///
+  /// In en, this message translates to:
+  /// **'Today is a free day. Use it to rest or do light activity.'**
+  String get homeNoWorkoutDesc;
+
   /// Refund request link in settings
   ///
   /// In en, this message translates to:

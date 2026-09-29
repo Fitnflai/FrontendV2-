@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../models/wellness_factor.dart';
 import '../../models/progress_report.dart';
 import '../../providers/auth_provider.dart';
@@ -199,18 +200,39 @@ class _WeekSelector extends StatelessWidget {
     required this.onNext,
   });
 
+  String _getWeekRangeLabel(int offset, bool isEs) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final currentMonday = today.subtract(Duration(days: today.weekday - 1));
+    final targetMonday = currentMonday.add(Duration(days: offset * 7));
+    final targetSunday = targetMonday.add(const Duration(days: 6));
+
+    String format(DateTime d) {
+      final day = d.day.toString().padLeft(2, '0');
+      final month = d.month.toString().padLeft(2, '0');
+      final year = d.year;
+      return '$day/$month/$year';
+    }
+
+    return '${format(targetMonday)} - ${format(targetSunday)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
     final isEs  = Localizations.localeOf(context).languageCode == 'es';
     
-    final semInfo = report.semanaInfo ?? (isEs ? 'Semana' : 'Week');
-    final startD = report.fechaInicio ?? '';
-    final endD = report.fechaFin ?? '';
-    final label = '$semInfo · $startD / $endD';
-    final sub   = isEs 
-        ? 'Actualizado: ${report.actualizado ?? ''}' 
-        : 'Updated: ${report.actualizado ?? ''}';
+    final dateRange = _getWeekRangeLabel(weekOffset, isEs);
+    final semInfo = (report.semanaInfo != null && report.semanaInfo != "Semana --")
+        ? report.semanaInfo!
+        : (weekOffset == 0 
+            ? (isEs ? 'Semana actual' : 'Current week') 
+            : (isEs ? 'Semana' : 'Week'));
+    final label = '$semInfo · $dateRange';
+    
+    final sub = report.actualizado != null && report.actualizado != '-'
+        ? (isEs ? 'Actualizado: ${report.actualizado}' : 'Updated: ${report.actualizado}')
+        : (isEs ? 'Sin actualizar' : 'Not updated');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1231,23 +1253,96 @@ class _SendReportCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: theme.primary,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(isEs ? 'Generando y descargando informe PDF...' : 'Generating and downloading PDF report...'),
+            child: Consumer<ProgressReportProvider>(
+              builder: (context, provider, child) {
+                return ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: theme.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
                   ),
+                  onPressed: provider.isGeneratingReport
+                      ? null
+                      : () async {
+                          final token = context.read<AuthProvider>().token;
+                          if (token == null) return;
+
+                          final reportId = provider.recentReportId;
+                          if (reportId == null || reportId.trim().isEmpty) {
+                            if (context.mounted) {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    backgroundColor: theme.card,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      side: BorderSide(color: theme.border),
+                                    ),
+                                    title: Row(
+                                      children: [
+                                        Icon(Icons.info_outline, color: theme.primary, size: 24),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          isEs ? 'Reporte no disponible' : 'Report not available',
+                                          style: TextStyle(
+                                            color: theme.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    content: Text(
+                                      isEs
+                                          ? 'No se ha generado el reporte de esta semana.'
+                                          : 'This week\'s report has not been generated yet.',
+                                      style: TextStyle(
+                                        color: theme.greyLight,
+                                        fontSize: 14,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(context).pop(),
+                                        child: Text(
+                                          isEs ? 'Entendido' : 'OK',
+                                          style: TextStyle(
+                                            color: theme.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            }
+                            return;
+                          }
+
+                          final url = await provider.generarReportePDF(token: token);
+
+                          if (url == null && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(provider.errorMessage ?? (isEs ? 'Error al generar el informe' : 'Error generating report')),
+                                backgroundColor: theme.redMid,
+                              ),
+                            );
+                          }
+                        },
+                  child: provider.isGeneratingReport
+                      ? const SizedBox(
+                          width: 24, height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(btnTxt, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 );
               },
-              child: Text(btnTxt,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
             ),
           ),
         ),

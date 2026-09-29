@@ -15,26 +15,38 @@ class OnboardingRouter {
   static Future<String> getOnboardingTargetRoute(BuildContext context) async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
+    debugPrint('🔍 [DEEP LINK onboarding_router] getOnboardingTargetRoute started. auth.status: ${auth.status}');
 
     if (auth.status != AuthStatus.authenticated) {
+      debugPrint('🔍 [DEEP LINK onboarding_router] User is not authenticated. Returning welcome.');
       return AppRoutes.welcome;
     }
 
     final String? token = auth.token;
     final String? userId = auth.user?.id;
+    debugPrint('🔍 [DEEP LINK onboarding_router] Authenticated. userId: "$userId", token present: ${token != null}');
 
     if (userId == null || token == null) {
+      debugPrint('🔍 [DEEP LINK onboarding_router] userId or token is null. Returning welcome.');
       return AppRoutes.welcome;
     }
 
     // Force profile reload and user refresh in parallel to avoid startup race conditions
     try {
+      debugPrint('🔍 [DEEP LINK onboarding_router] Attempting reload of profile and user in parallel...');
       await Future.wait([
         Provider.of<ProfileProvider>(context, listen: false).loadAll(token),
         auth.refreshUser(),
       ]);
+      debugPrint('🔍 [DEEP LINK onboarding_router] Reload completed successfully.');
     } catch (e) {
-      debugPrint('Error reloading profile or user: $e');
+      debugPrint('🔍 [DEEP LINK onboarding_router] Error reloading profile or user: $e');
+      final user = auth.user;
+      if (user != null && user.onboardingCompleto) {
+        debugPrint('🔍 [DEEP LINK onboarding_router] Found cached user with onboarding completed. Falling back to home.');
+        return AppRoutes.home;
+      }
+      debugPrint('🔍 [DEEP LINK onboarding_router] No cached completed user. Falling back to welcome.');
       return AppRoutes.welcome;
     }
 

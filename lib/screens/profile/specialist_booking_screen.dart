@@ -59,8 +59,9 @@ class _SpecialistBookingScreenState extends State<SpecialistBookingScreen> {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
         final profileProvider = context.watch<ProfileProvider>();
+        final planName = (profileProvider.planActivo?['nombre'] as String?)?.toLowerCase() ?? '';
         final bool isElite = authProvider.user?.isElite == true ||
-            (profileProvider.planActivo?['nombre'] as String?)?.toLowerCase().contains('elite') == true;
+            planName.contains('elite') || planName.contains('élite');
 
         if (!isElite) {
           return Scaffold(
@@ -90,10 +91,22 @@ class _SpecialistBookingScreenState extends State<SpecialistBookingScreen> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const MembershipScreen()),
-                            );
+                          final authProvider = context.read<AuthProvider>();
+                          final profileProvider = context.read<ProfileProvider>();
+                          final token = authProvider.token;
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const MembershipScreen()),
+                          ).then((_) {
+                            if (!mounted) return;
+                            if (token != null) {
+                              profileProvider.loadAll(token, force: true).then((_) {
+                                if (!mounted) return;
+                                _loadAssignedSpecialist();
+                              });
+                            }
+                          });
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.orange,
@@ -179,8 +192,9 @@ Navigator.push(
     final authProvider = context.read<AuthProvider>();
 
     final userDiscipline = profileProvider.profileData?['nombreDisciplina'] as String?;
+    final planNamePreload = (profileProvider.planActivo?['nombre'] as String?)?.toLowerCase() ?? '';
     final bool isEliteUserPreload = (authProvider.user?.isElite == true) ||
-        (profileProvider.planActivo?['nombre'] as String?)?.toLowerCase().contains('elite') == true;
+        planNamePreload.contains('elite') || planNamePreload.contains('élite');
 
     // Ensure specialists are loaded before showing the sheet
     if (specialistProvider.specialists.isEmpty) {
@@ -691,32 +705,138 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
   }
 
   Future<void> _chargeWithSavedCardLocal() async {
-    setState(() {
-      _isLoading = true;
-    });
-
     final authProvider = context.read<AuthProvider>();
     final profileProvider = context.read<ProfileProvider>();
     final specialistProvider = context.read<SpecialistProvider>();
     final l10n = AppLocalizations.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
+    // Capture size and locale BEFORE async gap to avoid linter warnings
+    final size = MediaQuery.of(context).size;
+    final locale = Localizations.localeOf(context).languageCode;
+
     final token = authProvider.token;
     final idSeguimiento = _tryParseInt(profileProvider.profileData?['id_seguimiento_especialista']) ??
         _tryParseInt(profileProvider.profileData?['id_seguimiento']);
 
     if (token == null || idSeguimiento == null || _selectedCardId == null) {
-      setState(() {
-        _isLoading = false;
-      });
       scaffoldMessenger.showSnackBar(
         SnackBar(content: Text(l10n.specialistBookingErrorMissingData)),
       );
       return;
     }
 
+    // Show Dialog to collect CVV / CVC
+    final TextEditingController cvvController = TextEditingController();
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        String? localError;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1E1E1E),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text(
+                'Confirmación de Seguridad',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Por motivos de seguridad, ingresá el código de verificación (CVV) de tu tarjeta guardada.',
+                    style: TextStyle(color: Colors.grey, fontSize: 13, height: 1.4),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: 120,
+                    child: TextField(
+                      controller: cvvController,
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      maxLength: 4,
+                      style: const TextStyle(color: Colors.white, fontSize: 20, letterSpacing: 8, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        hintText: '•••',
+                        hintStyle: const TextStyle(color: Colors.grey, fontSize: 20, letterSpacing: 8),
+                        counterText: '',
+                        errorText: localError,
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Colors.orange, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Color(0xFF2E2E2E)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actionsAlignment: MainAxisAlignment.spaceEvenly,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                ),
+                TextButton(
+                  onPressed: () {
+                    final cvv = cvvController.text.trim();
+                    final isNumeric = RegExp(r'^\d+$').hasMatch(cvv);
+                    if (cvv.length < 3 || cvv.length > 4 || !isNumeric) {
+                      setDialogState(() {
+                        localError = 'CVV inválido';
+                      });
+                      return;
+                    }
+                    Navigator.pop(dialogContext, true);
+                  },
+                  child: const Text('Confirmar', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final cvv = cvvController.text.trim();
+
+    // Collect device/browser properties for Nuvei security
+    final extraData = {
+      'device_type': 'mobile',
+      'reference_id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'ip': '127.0.0.1', // Placeholder IP, backend overrides with connection IP
+      'language': locale,
+      'java_enabled': false,
+      'js_enabled': true,
+      'color_depth': 24,
+      'screen_height': size.height.toInt(),
+      'screen_width': size.width.toInt(),
+      'timezone_offset': DateTime.now().timeZoneOffset.inMinutes,
+      'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+      'accept_header': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    };
+
     try {
-      final success = await specialistProvider.payMeetingSpecialistOneClick(token, idSeguimiento);
+      final success = await specialistProvider.payMeetingSpecialistOneClick(
+        token,
+        idSeguimiento,
+        cvc: cvv,
+        extraData: extraData,
+      );
 
       if (success) {
         await _verifyAndBook();

@@ -149,13 +149,20 @@ class SpecialistProvider with ChangeNotifier {
 
   Future<bool> payMeetingSpecialistOneClick(
     String token,
-    int trackingId,
-  ) async {
+    int trackingId, {
+    String cvc = '123',
+    Map<String, dynamic>? extraData,
+  }) async {
     _setIsDirectCharging(true);
     _setDirectChargeErrorMessage(null);
     _setBookingStatus(BookingStatus.loading);
     try {
-      await _paymentsService.payMeetingSpecialistOneClick(token, trackingId);
+      await _paymentsService.payMeetingSpecialistOneClick(
+        token,
+        trackingId,
+        cvc: cvc,
+        extraData: extraData,
+      );
       _setBookingStatus(BookingStatus.success);
       return true;
     } catch (e) {
@@ -283,27 +290,43 @@ class SpecialistProvider with ChangeNotifier {
     _errorMessage = null; // Clear previous error messages
 
     try {
-      if (_specialists.isEmpty) {
-        // Use loadAndFilter to fetch specialists if the list is empty
-        // We pass null for userDiscipline as we are not filtering by discipline here
-        await loadAndFilter(token, null);
-        if (_errorMessage != null) {
-          final originalError = _errorMessage!
-              .replaceFirst('Error al cargar especialistas: Exception: ', '')
-              .replaceFirst('Error al cargar especialistas: ', '');
-          throw Exception(originalError);
-        }
-      }
+      final info = await _specialistService.getAssignedSpecialistInfo(token);
+      
+      // Map the backend's JSON properties to match our Specialist model structure:
+      final mappedJson = {
+        'id_especialista': int.tryParse(info['id_especialista']?.toString() ?? '') ?? specialistId,
+        'nombre': info['nombre_especialista'] ?? info['nombre'] ?? '',
+        'disciplinas': info['disciplinas'] ?? [],
+        'especialidad': info['especialidad'] ?? '',
+        'bio': info['biografia'] ?? info['bio'] ?? '',
+        'foto_url': info['foto_perfil_url'] ?? info['foto_perfil_uri'] ?? info['foto_url'] ?? '',
+        'historial_laboral': info['historial_laboral'] ?? [],
+        'email': info['email'] ?? '',
+        'ciudad': info['ciudad'] ?? '',
+        'pais': info['pais'] ?? '',
+        'anios_experiencia': info['anios_experiencia'] ?? 0,
+        'telefono_contacto': info['telefono_contacto'] ?? '',
+        'certificados': info['certificados'] ?? [],
+      };
 
-      final specialist = _specialists.firstWhere(
-        (s) => s.id == specialistId,
-        orElse: () => throw Exception('Specialist with ID $specialistId not found.'),
-      );
-      _assignedSpecialist = specialist;
+      _assignedSpecialist = Specialist.fromJson(mappedJson);
     } catch (e) {
       _errorMessage = 'Error al cargar especialista asignado: $e';
-      debugPrint('Error loading assigned specialist: $e');
-      _assignedSpecialist = null;
+      debugPrint('Error loading assigned specialist info: $e');
+      
+      // Fallback to older searching logic if the new endpoint fails
+      try {
+        if (_specialists.isEmpty) {
+          await loadAndFilter(token, null);
+        }
+        _assignedSpecialist = _specialists.firstWhere(
+          (s) => s.id == specialistId,
+          orElse: () => throw Exception('Specialist with ID $specialistId not found.'),
+        );
+      } catch (fallbackError) {
+        debugPrint('Fallback error loading assigned specialist: $fallbackError');
+        _assignedSpecialist = null;
+      }
     } finally {
       _isLoadingAssigned = false;
       notifyListeners();
@@ -335,6 +358,34 @@ class SpecialistProvider with ChangeNotifier {
       _setAvailabilityLoading(false);
       // After loading, filter for the initial selected date (e.g., today)
       filterAvailabilityForDate(DateTime(startDate.year, startDate.month, startDate.day)); // Filter for the initial date after loading
+    }
+  }
+
+  /// Cancela una cita del usuario.
+  /// Llama a POST /users/citas/cancelar y retorna true si fue exitosa.
+  Future<bool> cancelarCita(
+    String token, {
+    required int idCita,
+    required String motivoCancelacion,
+    String canceladoPor = 'usuario',
+  }) async {
+    _setLoading(true);
+    _setErrorMessage(null);
+    try {
+      await _specialistService.cancelarCita(
+        token,
+        idCita: idCita,
+        motivoCancelacion: motivoCancelacion,
+        canceladoPor: canceladoPor,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('Error canceling appointment: $e');
+      _setErrorMessage('Error al cancelar la cita: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+      notifyListeners();
     }
   }
 

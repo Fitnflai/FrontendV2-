@@ -98,15 +98,41 @@ class _WorkoutActiveScreenState extends State<WorkoutActiveScreen>
   }
 
   void _buildPasos() {
-    final ejercicios =
+    final rawEjercicios =
         widget.entrenamiento?['ejercicios_asociados'] as List<dynamic>? ?? [];
-    if (ejercicios.isEmpty) {
+    if (rawEjercicios.isEmpty) {
       _pasos = [{'nombre': 'Entrenamiento libre', 'tipo': 'LIBRE', 'duracion': 0, 'bloque': ''}];
       return;
     }
-    for (final e in ejercicios) {
+
+    // Ordenar de forma robusta por 'orden' o 'order'
+    final ejercicios = List<dynamic>.from(rawEjercicios);
+    ejercicios.sort((a, b) {
+      final mapA = a is Map ? Map<String, dynamic>.from(a) : <String, dynamic>{};
+      final mapB = b is Map ? Map<String, dynamic>.from(b) : <String, dynamic>{};
+
+      final ordA = mapA['orden'] ?? mapA['order'] ?? mapA['ejercicio']?['orden'] ?? mapA['ejercicio']?['order'] ?? 0;
+      final ordB = mapB['orden'] ?? mapB['order'] ?? mapB['ejercicio']?['orden'] ?? mapB['ejercicio']?['order'] ?? 0;
+
+      return (int.tryParse(ordA.toString()) ?? 0).compareTo(int.tryParse(ordB.toString()) ?? 0);
+    });
+
+    int firstPendingIdx = -1;
+
+    for (int i = 0; i < ejercicios.length; i++) {
+      final e = ejercicios[i];
       final asoc = e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{};
       final ej   = asoc['ejercicio'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+      final estado = asoc['estado'] as String? ?? '';
+      final isHecho = estado == 'completado' || estado == 'completo' || estado == 'done';
+
+      if (isHecho) {
+        _completedSteps.add(i);
+      } else if (firstPendingIdx == -1) {
+        firstPendingIdx = i;
+      }
+
       _pasos.add({
         'id_entrenamiento_ejercicio': asoc['id_entrenamiento_ejercicio']
             ?? asoc['id']
@@ -124,7 +150,14 @@ class _WorkoutActiveScreenState extends State<WorkoutActiveScreen>
         'descanso':     (asoc['descanso_segundos'] as num?)?.toInt() ?? 0,
         'necesita_mapa': ej['necesita_mapa'] as bool? ?? false,
         'instrucciones': ej['instrucciones'] as Map<String, dynamic>?,
+        'estado':       estado,
       });
+    }
+
+    if (firstPendingIdx != -1) {
+      _pasoIdx = firstPendingIdx;
+    } else {
+      _pasoIdx = 0;
     }
   }
 
@@ -210,6 +243,9 @@ class _WorkoutActiveScreenState extends State<WorkoutActiveScreen>
   void _nextStep() {
     if (_pasoIdx < _pasos.length - 1) {
       _timer?.cancel();
+      if (!_completedSteps.contains(_pasoIdx)) {
+        _saveCompletedExercise(_pasoIdx, 0);
+      }
       setState(() {
         _completedSteps.add(_pasoIdx);
         _pasoIdx++;

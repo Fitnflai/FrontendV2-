@@ -1366,6 +1366,19 @@
   "@homeTipOfTheDayDesc": {
     "description": "Tip of the day description"
   },
+  "homeNoWorkoutTitle": "No workout today, {name}",
+  "@homeNoWorkoutTitle": {
+    "description": "Title shown when there is no workout scheduled for today",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeNoWorkoutDesc": "Today is a free day. Use it to rest or do light activity.",
+  "@homeNoWorkoutDesc": {
+    "description": "Description shown when there is no workout scheduled for today"
+  },
   "settingsRefundRequest": "Request refund",
   "@settingsRefundRequest": {
     "description": "Refund request link in settings"

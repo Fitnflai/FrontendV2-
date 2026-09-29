@@ -6,6 +6,7 @@ import '../models/specialist.dart';
 import '../providers/specialist_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
+import '../l10n/app_localizations.dart';
 
 class SpecialistSelectionBottomSheet extends StatefulWidget {
   final Specialist? initialSpecialist;
@@ -40,8 +41,9 @@ class _SpecialistSelectionBottomSheetState
     final token = authProvider.token;
     final userDiscipline = profileProvider.profileData?['nombreDisciplina'] as String?;
 
+    final activePlanName = (profileProvider.planActivo?['nombre'] as String?)?.toLowerCase() ?? '';
     final bool isEliteUser = (authProvider.user?.isElite == true) ||
-        (profileProvider.planActivo?['nombre'] as String?)?.toLowerCase().contains('elite') == true;
+        activePlanName.contains('elite') || activePlanName.contains('élite');
 
     if (token == null || token.isEmpty) {
       // Handle error, maybe pop the sheet with an error message
@@ -292,11 +294,12 @@ class _SpecialistSelectionBottomSheetState
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           ),
-          child: Text(
-            'Solicitar Seguimiento',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          child: const Text(
+            'Elegir Especialista',
+            style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
           ),
         ),
@@ -304,7 +307,125 @@ class _SpecialistSelectionBottomSheetState
     );
   }
 
+  Widget _buildSectionHeader(String title) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title,
+        style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+      ),
+    );
+  }
+
+  Widget _buildCompactExperienceCard({required String label, required String value}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.workspace_premium_outlined, color: AppColors.orange, size: 16),
+          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(color: AppColors.grey, fontSize: 9, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(color: AppColors.white, fontSize: 11, fontWeight: FontWeight.w700),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTag(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.orange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.orange.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(color: AppColors.orange, fontSize: 11, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  Widget _buildCertificateTag(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.verified_outlined, color: AppColors.orange, size: 14),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              text,
+              style: const TextStyle(color: AppColors.white, fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLaborItem({required String puesto, required String empresa, required String periodo}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.orange.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.work_outline, color: AppColors.orange, size: 16),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (puesto.isNotEmpty)
+                  Text(puesto, style: const TextStyle(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                if (empresa.isNotEmpty)
+                  Text(empresa, style: const TextStyle(color: AppColors.grey, fontSize: 11, fontWeight: FontWeight.w600)),
+                if (periodo.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(periodo, style: const TextStyle(color: AppColors.orange, fontSize: 10, fontWeight: FontWeight.w700)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSpecialistDetails(Specialist specialist) {
+    final l10n = AppLocalizations.of(context);
+    final isEs = l10n.localeName == 'es';
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -336,69 +457,114 @@ class _SpecialistSelectionBottomSheetState
               ],
             ),
             const SizedBox(height: 20),
-            Center(
-              child: CircleAvatar(
-                radius: 50,
-                backgroundColor: AppColors.border,
-                backgroundImage: specialist.fotoUrl != null && specialist.fotoUrl!.isNotEmpty
-                    ? NetworkImage(specialist.fotoUrl!)
-                    : null,
-                child: specialist.fotoUrl == null || specialist.fotoUrl!.isEmpty
-                    ? Icon(Icons.person, color: AppColors.greyLight.withValues(alpha: 0.6), size: 50)
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 15),
-            Center(
-              child: Text(
-                specialist.nombre,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                specialist.especialidad ?? 'Especialista General',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.orange,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (specialist.disciplinas.isNotEmpty)
-              Center(
-                child: Text(
-                  specialist.disciplinas.join(' • '),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.greyLight,
-                        fontStyle: FontStyle.italic,
-                      ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: AppColors.border,
+                  backgroundImage: specialist.fotoUrl != null && specialist.fotoUrl!.isNotEmpty
+                      ? NetworkImage(specialist.fotoUrl!)
+                      : null,
+                  child: specialist.fotoUrl == null || specialist.fotoUrl!.isEmpty
+                      ? const Icon(Icons.person, color: AppColors.greyLight, size: 40)
+                      : null,
                 ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        specialist.nombre,
+                        style: const TextStyle(color: AppColors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        specialist.especialidad ?? (isEs ? 'Especialista General' : 'General Specialist'),
+                        style: const TextStyle(color: AppColors.orange, fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                      if (specialist.ciudad != null && specialist.ciudad!.isNotEmpty && specialist.ciudad != 'N/A') ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on_outlined, color: AppColors.grey, size: 12),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                '${specialist.ciudad}, ${specialist.pais ?? 'N/A'}',
+                                style: const TextStyle(color: AppColors.grey, fontSize: 11, fontWeight: FontWeight.w500),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                _buildCompactExperienceCard(
+                  label: isEs ? 'Experiencia' : 'Experience',
+                  value: '${specialist.aniosExperiencia ?? 0} ${isEs ? 'años' : 'years'}',
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildSectionHeader(isEs ? 'Acerca de' : 'About'),
+            const SizedBox(height: 8),
+            Text(
+              specialist.bio != null && specialist.bio!.trim().isNotEmpty
+                  ? specialist.bio!
+                  : (isEs
+                      ? 'Este especialista no ha proporcionado una biografía detallada.'
+                      : 'This specialist has not provided a detailed biography.'),
+              style: const TextStyle(color: AppColors.greyLight, fontSize: 13, height: 1.5),
+            ),
+            const SizedBox(height: 24),
+            if (specialist.disciplinas.isNotEmpty) ...[
+              _buildSectionHeader(isEs ? 'Disciplinas Asociadas' : 'Associated Disciplines'),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.start,
+                children: specialist.disciplinas.map((d) => _buildTag(d)).toList(),
               ),
-            const SizedBox(height: 20),
-            const Divider(color: AppColors.border),
-            const SizedBox(height: 20),
-            Text(
-              'Sobre mí',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              specialist.bio ?? 'Este especialista no ha proporcionado una biografía detallada.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.greyLight,
-                    fontSize: 14,
-                    height: 1.6,
-                  ),
-            ),
-            const SizedBox(height: 30),
+              const SizedBox(height: 24),
+            ],
+            _buildSectionHeader(isEs ? 'Certificaciones' : 'Certificates'),
+            const SizedBox(height: 12),
+            if (specialist.certificados != null && specialist.certificados!.isNotEmpty) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.start,
+                children: specialist.certificados!.map((c) => _buildCertificateTag(c.toString())).toList(),
+              ),
+              const SizedBox(height: 24),
+            ] else ...[
+              Text(
+                isEs
+                    ? 'No se registran certificaciones adicionales.'
+                    : 'No registered certifications.',
+                style: const TextStyle(color: AppColors.grey, fontSize: 12, fontStyle: FontStyle.italic),
+              ),
+              const SizedBox(height: 24),
+            ],
+            if (specialist.historialLaboral != null && specialist.historialLaboral!.isNotEmpty) ...[
+              _buildSectionHeader(isEs ? 'Trayectoria Profesional' : 'Professional Background'),
+              const SizedBox(height: 12),
+              ...specialist.historialLaboral!.map((item) {
+                final puesto = item['puesto']?.toString() ?? '';
+                final empresa = item['empresa']?.toString() ?? '';
+                final periodo = item['periodo']?.toString() ?? '';
+                return _buildLaborItem(puesto: puesto, empresa: empresa, periodo: periodo);
+              }),
+              const SizedBox(height: 24),
+            ],
             Row(
               children: [
                 Expanded(
@@ -428,7 +594,9 @@ class _SpecialistSelectionBottomSheetState
                   child: ElevatedButton(
                     onPressed: () {
                       context.read<SpecialistProvider>().setSelectedSpecialist(specialist);
-                      _selectSpecialist();
+                      setState(() {
+                        _viewingSpecialist = null;
+                      });
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.orange,
@@ -436,11 +604,12 @@ class _SpecialistSelectionBottomSheetState
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     ),
-                    child: Text(
-                      'Elegir Especialista',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    child: const Text(
+                      'Seleccionar',
+                      style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                     ),
                   ),

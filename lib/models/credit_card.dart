@@ -24,7 +24,7 @@ class CreditCard with _$CreditCard {
     final expYear = parts.length > 1 ? parts[1] : '2029';
 
     return CreditCard(
-      id: json['id'] as String? ?? '',
+      id: json['id_tarjeta_usuario'] as String? ?? json['id'] as String? ?? '',
       brand: json['brand'] as String? ?? '',
       lastFour: json['last_four'] as String? ?? '',
       expMonth: expMonth,

@@ -247,6 +247,16 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
     }
   }
 
+  Future<void> _openTikTokProfile() async {
+    const tikTokUrl = 'https://www.tiktok.com/@fit.n.flai?_r=1&_t=ZS-9A7asfhayHM';
+    final uri = Uri.parse(tikTokUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint('Could not launch TikTok URL');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = context.themeColors;
@@ -338,6 +348,18 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
               loading: _stravaLoading || _isSyncingStrava,
               enabled: _userId != null,
               onTap: _handleStrava,
+            ),
+            _NavItem(
+              icon: SvgPicture.asset(
+                'assets/images/tiktok.svg',
+                width: 28,
+                height: 28,
+              ),
+              label: 'TikTok',
+              subtitle: null,
+              badgeConnected: false,
+              showInfo: true,
+              onTap: _openTikTokProfile,
             ),
           ]),
           const SizedBox(height: 24),

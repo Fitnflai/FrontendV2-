@@ -7,6 +7,7 @@ import '../../widgets/shared_widgets.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
 import 'workout_active_screen.dart';
+import 'workout_feedback_screen.dart';
 import '../../l10n/app_localizations.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
@@ -18,7 +19,12 @@ class WorkoutDetailScreen extends StatefulWidget {
 }
 
 class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
-  bool _completado = false;
+  bool _localCompletado = false;
+  bool get _completado {
+    if (_localCompletado) return true;
+    final estado = _data?['estado'] as String? ?? '';
+    return estado == 'completado' || estado == 'completo' || estado == 'done' || (_data?['completado'] as bool? ?? false);
+  }
   bool _saving     = false;
   bool _loadingDetail = false;
   Map<String, dynamic>? _fullData;
@@ -40,12 +46,49 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     setState(() => _loadingDetail = true);
     try {
       final token = context.read<AuthProvider>().token ?? '';
-      final res   = await CachedHttp.get(
+
+      // Consultamos el plan semanal para traer la sesión programada real con sus estados de progreso
+      final robustFallback = DateTime.now().subtract(const Duration(days: 90));
+      final startDateQuery = robustFallback.toIso8601String().split('T')[0];
+
+      final res = await CachedHttp.get(
+        Uri.parse('https://apifitnflai.com/entrenamientos/semana?start_date=$startDateQuery'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (res.statusCode == 200 && mounted) {
+        final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+        final planRaw = decoded['plan'] as List<dynamic>? ?? [];
+
+        Map<String, dynamic>? matchedTraining;
+        for (final item in planRaw) {
+          if (item is Map) {
+            final mapItem = Map<String, dynamic>.from(item);
+            final itemId = mapItem['id_entrenamiento'] ?? mapItem['id'];
+            if (itemId?.toString() == id.toString()) {
+              matchedTraining = mapItem;
+              break;
+            }
+          }
+        }
+
+        if (matchedTraining != null) {
+          debugPrint('🎯 REFRESH SUCCESS: Found matching scheduled training with progress!');
+          setState(() {
+            _fullData = matchedTraining;
+          });
+          return;
+        }
+      }
+
+      // Fallback: Si no se encuentra en el plan semanal, llamamos al endpoint de detalle estático
+      debugPrint('⚠️ REFRESH FALLBACK: Training not found in weekly plan. Fetching static template.');
+      final detailRes = await CachedHttp.get(
         Uri.parse('https://apifitnflai.com/entrenamientos/$id'),
         headers: {'Authorization': 'Bearer $token'},
       );
-      if (res.statusCode == 200 && mounted) {
-        final body = jsonDecode(res.body) as Map<String, dynamic>;
+      if (detailRes.statusCode == 200 && mounted) {
+        final body = jsonDecode(detailRes.body) as Map<String, dynamic>;
         setState(() => _fullData = body);
       }
     } catch (e) {
@@ -69,8 +112,28 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       _data?['comentario'] as String? ??
       _data?['mensaje']    as String? ?? '';
 
-  List<dynamic> get _ejercicios =>
-      _data?['ejercicios_asociados'] as List<dynamic>? ?? [];
+  List<dynamic> get _ejercicios {
+    final rawList = _data?['ejercicios_asociados'] as List<dynamic>? ?? [];
+    final list = List<dynamic>.from(rawList);
+    list.sort((a, b) {
+      final mapA = a is Map ? Map<String, dynamic>.from(a) : <String, dynamic>{};
+      final mapB = b is Map ? Map<String, dynamic>.from(b) : <String, dynamic>{};
+
+      final ordA = mapA['orden'] ?? mapA['order'] ?? mapA['ejercicio']?['orden'] ?? mapA['ejercicio']?['order'] ?? 0;
+      final ordB = mapB['orden'] ?? mapB['order'] ?? mapB['ejercicio']?['orden'] ?? mapB['ejercicio']?['order'] ?? 0;
+
+      return (int.tryParse(ordA.toString()) ?? 0).compareTo(int.tryParse(ordB.toString()) ?? 0);
+    });
+    return list;
+  }
+
+  bool get _todosEjerciciosCompletados {
+    if (_ejercicios.isEmpty) return false;
+    return _ejercicios.every((e) {
+      final estado = e['estado'] as String? ?? '';
+      return estado == 'completado' || estado == 'completo' || estado == 'done';
+    });
+  }
 
   Future<void> _marcarCompletado() async {
     setState(() => _saving = true);
@@ -86,7 +149,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
           },
         );
       }
-      setState(() => _completado = true);
+      setState(() => _localCompletado = true);
     } catch (e) {
       debugPrint('COMPLETAR ERROR: $e');
     } finally {
@@ -313,11 +376,31 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                 child: SizedBox(
                   width: double.infinity, height: 52,
                   child: ElevatedButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) =>
-                          WorkoutActiveScreen(entrenamiento: _data)),
-                    ),
+                    onPressed: () async {
+                      if (_todosEjerciciosCompletados) {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => WorkoutFeedbackScreen(
+                              entrenamiento: _data,
+                              tiempoSecs: 0,
+                              distanciaKm: 0.0,
+                              isExterior: false,
+                            ),
+                          ),
+                        );
+                      } else {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) =>
+                              WorkoutActiveScreen(entrenamiento: _data)),
+                        );
+                      }
+                      CachedHttp.clearCache();
+                      // Breve retraso para asegurar que el backend asiente cualquier transacción pendiente de completado
+                      await Future.delayed(const Duration(milliseconds: 300));
+                      _loadDetail();
+                    },
                     icon: const Icon(Icons.play_arrow, size: 20),
                     label: Text(AppLocalizations.of(context).workoutActiveStartBtn,
                         style: const TextStyle(fontSize: 15,

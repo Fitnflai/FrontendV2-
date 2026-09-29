@@ -362,7 +362,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       onRetry: () => _loadWeek(_selectedDay),
                     )
                   else
-                    _TodaySession(data: _entrenamientoHoy),
+                    _TodaySession(
+                      data: _entrenamientoHoy,
+                      onAdjusted: () {
+                        _loadWeek(_selectedDay, silent: true);
+                      },
+                    ),
                   // ── Tip del día (moved) ─────────────────
                   Builder(builder: (context) {
                     final hasTip = _entrenamientoHoy?['tip_diario'] != null && (_entrenamientoHoy?['tip_diario'] as String).trim().isNotEmpty;
@@ -980,9 +985,17 @@ class _StatsRowState extends State<_StatsRow> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final healthProvider = context.watch<HealthProvider>();
+
+    final isEs = Localizations.localeOf(context).languageCode == 'es';
+    final stepsLabel = isEs ? 'Pasos\nhoy' : 'Steps\ntoday';
+    final caloriesLabel = isEs ? 'Calorías\nhoy' : 'Calories\ntoday';
+    final distanceLabel = isEs ? 'Distancia\nhoy' : 'Distance\ntoday';
+
     final stats = [
-      ('😴', '7.2h',  l10n.homeSleepLabel),
-      ('❤️', '64',    l10n.homeRestHRLabel),
+      ('👟', '${healthProvider.steps}', stepsLabel),
+      ('🔥', '${healthProvider.calories.toStringAsFixed(0)} kcal', caloriesLabel),
+      ('🏃', '${healthProvider.distance.toStringAsFixed(1)} km', distanceLabel),
       ('🌡️', _temp,  l10n.homeTemperatureLabel),
       (_condIcon, _condText, l10n.homeWeatherLabel),
     ];
@@ -994,7 +1007,7 @@ class _StatsRowState extends State<_StatsRow> {
           final isLast = e.key == stats.length - 1;
           final s = e.value;
           return Expanded(child: Padding(
-            padding: EdgeInsets.only(right: isLast ? 0 : 10),
+            padding: EdgeInsets.only(right: isLast ? 0 : 6),
             child: _StatCard(icon: s.$1, value: s.$2, label: s.$3),
           ));
         }).toList(),
@@ -1124,7 +1137,8 @@ class _DailyCheckBanner extends StatelessWidget {
 
 class _TodaySession extends StatelessWidget {
   final Map<String, dynamic>? data;
-  const _TodaySession({this.data});
+  final VoidCallback? onAdjusted;
+  const _TodaySession({this.data, this.onAdjusted});
 
   bool _isToday(String fechaStr) {
     if (fechaStr.isEmpty) return false;
@@ -1160,12 +1174,19 @@ class _TodaySession extends StatelessWidget {
     final titulo     = data?['titulo_entrenamiento'] as String? ?? '';
     final ejercicios = data?['ejercicios_asociados'] as List<dynamic>? ?? [];
 
-    if (data == null || titulo.isEmpty) return _RestDayCard();
+    if (data == null || titulo.isEmpty) return _NoWorkoutCard();
 
     final fecha  = data?['fecha_programada'] as String? ?? '';
     final tipo   = data?['tipo'] as String? ?? '';
     final estado = data?['estado'] as String? ?? '';
+    final isCompletado = estado.toLowerCase() == 'completado' ||
+        estado.toLowerCase() == 'completo' ||
+        estado.toLowerCase() == 'done';
     final cfg    = WorkoutTypes.fromTipo(tipo);
+
+    // Día de descanso → misma tarjeta que "sin entrenamiento"
+    if (cfg.tipo == 'Descanso') return _RestDayCard();
+
     final isMissed = _isPast(fecha) &&
         estado.toLowerCase() != 'completado' &&
         estado.toLowerCase() != 'completo' &&
@@ -1185,7 +1206,7 @@ class _TodaySession extends StatelessWidget {
         ),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Emoji + tipo + fecha
+        // Emoji + tipo + fecha + Etiqueta de estado arriba a la derecha
         Row(children: [
           Container(
             width: 40, height: 40,
@@ -1206,6 +1227,13 @@ class _TodaySession extends StatelessWidget {
               Text(fecha, style: TextStyle(
                   color: theme.grey, fontSize: 11)),
           ])),
+          const SizedBox(width: 8),
+          if (isMissed)
+            _Tag(l10n.homeSessionMissed, theme.redText,
+                bg: theme.redMid.withValues(alpha: 0.1))
+          else if (estado.isNotEmpty && cfg.tipo != 'Descanso')
+            _Tag(estado, _estadoColor(estado, theme),
+                bg: _estadoColor(estado, theme).withValues(alpha: 0.15)),
         ]),
         const SizedBox(height: 10),
 
@@ -1245,26 +1273,19 @@ class _TodaySession extends StatelessWidget {
           const SizedBox(height: 10),
         ],
 
-        // Badges: zona, estado y sin completar
-        Row(children: [
-          if (isMissed)
-            _Tag(l10n.homeSessionMissed, theme.redText,
-                bg: theme.redMid.withValues(alpha: 0.1))
-          else ...[
-            if (tipo.isNotEmpty)
-              _Tag(tipo, cfg.bgColor,
-                  bg: cfg.bgColor.withValues(alpha: 0.15)),
-            if (tipo.isNotEmpty && estado.isNotEmpty)
-              const SizedBox(width: 8),
-            if (estado.isNotEmpty)
-              _Tag(estado, _estadoColor(estado, theme),
-                  bg: _estadoColor(estado, theme).withValues(alpha: 0.15)),
-          ],
-        ]),
-        const SizedBox(height: 14),
+        // Badges: tipo (disciplina) abajo para equilibrio visual
+        if (tipo.isNotEmpty && !isMissed) ...[
+          Row(children: [
+            _Tag(tipo, cfg.bgColor,
+                bg: cfg.bgColor.withValues(alpha: 0.15)),
+          ]),
+          const SizedBox(height: 14),
+        ] else ...[
+          const SizedBox(height: 14),
+        ],
 
-        // Botón Ver detalle — solo cuando NO es hoy
-        if (!_isToday(fecha))
+        // Botón Ver detalle — cuando NO es hoy o cuando YA está completado
+        if (!_isToday(fecha) || isCompletado)
         SizedBox(
           width: double.infinity,
           height: 44,
@@ -1284,8 +1305,8 @@ class _TodaySession extends StatelessWidget {
           ),
         ),
 
-        // Botones solo si es hoy
-        if (_isToday(fecha)) ...[
+        // Botones solo si es hoy, NO está completado y NO es un día de descanso
+        if (_isToday(fecha) && !isCompletado && cfg.tipo != 'Descanso') ...[
           const SizedBox(height: 8),
           // Botón Iniciar → va al detalle
           SizedBox(
@@ -1314,13 +1335,18 @@ class _TodaySession extends StatelessWidget {
             width: double.infinity,
             height: 44,
             child: OutlinedButton(
-              onPressed: () {
-                showModalBottomSheet(
+              onPressed: () async {
+                final id = data?['id_entrenamiento'] ?? data?['id'];
+                if (id == null) return;
+                final result = await showModalBottomSheet<bool>(
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
-                  builder: (context) => const WorkoutAdjustmentBottomSheet(),
+                  builder: (context) => WorkoutAdjustmentBottomSheet(workoutId: id),
                 );
+                if (result == true) {
+                  onAdjusted?.call();
+                }
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.greyLight,
@@ -1334,14 +1360,73 @@ class _TodaySession extends StatelessWidget {
           ),
         ],
       ]),
+);
+  }
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// NO WORKOUT CARD — Sin entrenamiento programado hoy
+// ════════════════════════════════════════════════════════════════
+class _NoWorkoutCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
+    final l10n  = AppLocalizations.of(context);
+    final user   = context.read<AuthProvider>().user;
+    final nombre = user?.apodo
+                ?? (user?.nombre != null ? user!.nombre.split(' ').first : null)
+                ?? 'Campeón';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.border),
+      ),
+      child: Column(children: [
+        // Ícono
+        Container(
+          width: 72, height: 72,
+          decoration: BoxDecoration(
+            color: theme.bg,
+            shape: BoxShape.circle,
+            border: Border.all(
+                color: theme.grey.withValues(alpha: 0.3),
+                width: 2),
+          ),
+          child: const Center(
+            child: Text('📭', style: TextStyle(fontSize: 32)),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Título
+        Text(l10n.homeNoWorkoutTitle(nombre),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: theme.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        Text(
+          l10n.homeNoWorkoutDesc,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              color: theme.grey, fontSize: 13, height: 1.5),
+        ),
+        const SizedBox(height: 20),
+      ]),
     );
   }
 }
 
 
-// ═══════════════════════════════════════════════════════════════
-// REST DAY CARD
-// ═══════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
+// REST DAY CARD — Día de descanso programado
+// ════════════════════════════════════════════════════════════════
 class _RestDayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {

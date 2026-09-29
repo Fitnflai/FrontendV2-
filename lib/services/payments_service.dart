@@ -111,16 +111,45 @@ class PaymentsService {
     _handleError(response, '$_baseUrl/nuvei/delete-card/$cardId');
   }
 
-  Future<dynamic> subscribeNuvei(String token, String priceId) async {
-    final uri = Uri.parse('$_baseUrl/nuvei/subscribe');
+  Future<dynamic> subscribeNuvei(
+    String token,
+    String priceId, {
+    String cvc = '123',
+    String deviceType = 'mobile',
+    String? referenceId,
+    String ip = '127.0.0.1',
+    String language = 'es',
+    bool javaEnabled = true,
+    bool jsEnabled = true,
+    int colorDepth = 24,
+    int screenHeight = 1080,
+    int screenWidth = 1920,
+    int timezoneOffset = 0,
+    String userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+    String acceptHeader = 'application/json',
+  }) async {
+    final uri = Uri.parse('$_baseUrl/nuvei/change-subscription');
     final response = await CachedHttp.post(
       uri,
       headers: _buildHeaders(token),
       body: json.encode({
         'id_plan_precio': priceId,
+        'cvc': cvc,
+        'device_type': deviceType,
+        'reference_id': referenceId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        'ip': ip,
+        'language': language,
+        'java_enabled': javaEnabled,
+        'js_enabled': jsEnabled,
+        'color_depth': colorDepth,
+        'screen_height': screenHeight,
+        'screen_width': screenWidth,
+        'timezone_offset': timezoneOffset,
+        'user_agent': userAgent,
+        'accept_header': acceptHeader,
       }),
     );
-    _handleError(response, '$_baseUrl/nuvei/subscribe');
+    _handleError(response, '$_baseUrl/nuvei/change-subscription');
     return _parseResponse(response);
   }
 
@@ -142,14 +171,34 @@ class PaymentsService {
     return _parseResponse(response);
   }
 
-  Future<dynamic> payMeetingSpecialistOneClick(String token, int trackingId) async {
+  Future<dynamic> payMeetingSpecialistOneClick(
+    String token,
+    int trackingId, {
+    String cvc = '123',
+    Map<String, dynamic>? extraData,
+  }) async {
     final uri = Uri.parse('$_baseUrl/nuvei/pay-meeting-specialist');
+    final Map<String, dynamic> body = {
+      'id_seguimiento_especialista': trackingId,
+      'cvc': cvc,
+      'device_type': 'mobile',
+      'reference_id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'ip': '127.0.0.1',
+      'language': 'es',
+      'java_enabled': false,
+      'js_enabled': true,
+      'color_depth': 24,
+      'screen_height': 1920,
+      'screen_width': 1080,
+      'timezone_offset': -180,
+      'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+      'accept_header': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      ...?(extraData),
+    };
     final response = await CachedHttp.post(
       uri,
       headers: _buildHeaders(token),
-      body: json.encode({
-        'id_seguimiento_especialista': trackingId,
-      }),
+      body: json.encode(body),
     );
     _handleError(response, '$_baseUrl/nuvei/pay-meeting-specialist');
     return _parseResponse(response);

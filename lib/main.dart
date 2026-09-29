@@ -162,8 +162,21 @@ class FitnflaiAppState extends State<FitnflaiApp> {
         '/notifications':        (_) => const NotificationsPanelScreen(),
       },
       onGenerateRoute: (settings) {
-        if (settings.name != null && settings.name!.startsWith('/payment-methods')) {
+        debugPrint('🔍 [DEEP LINK main.dart] onGenerateRoute called with settings.name: "${settings.name}"');
+        if (settings.name != null && (settings.name!.contains('payment-methods') || settings.name!.contains('token='))) {
           final uri = Uri.parse(settings.name!);
+          debugPrint('🔍 [DEEP LINK main.dart] Matched payment/token. Parsed URI: $uri');
+          
+          final isFromMembership = settings.name!.contains('membership');
+          String? priceId;
+          if (isFromMembership) {
+            final segments = uri.pathSegments;
+            final index = segments.indexOf('membership');
+            if (index != -1 && index + 1 < segments.length) {
+              priceId = segments[index + 1];
+            }
+          }
+
           final initialToken = uri.queryParameters['token'];
           final initialLastFour = uri.queryParameters['last_four'];
           final initialBrand = uri.queryParameters['brand'];
@@ -177,6 +190,8 @@ class FitnflaiAppState extends State<FitnflaiApp> {
               initialBrand: initialBrand,
               initialExpMonth: initialExpMonth,
               initialExpYear: initialExpYear,
+              isFromMembership: isFromMembership,
+              priceId: priceId,
             ),
           );
         }

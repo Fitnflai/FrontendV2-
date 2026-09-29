@@ -31,6 +31,14 @@ mixin _$Specialist {
   String? get fotoUrl => throw _privateConstructorUsedError;
   @JsonKey(name: 'historial_laboral')
   List<dynamic>? get historialLaboral => throw _privateConstructorUsedError;
+  String? get email => throw _privateConstructorUsedError;
+  String? get ciudad => throw _privateConstructorUsedError;
+  String? get pais => throw _privateConstructorUsedError;
+  @JsonKey(name: 'anios_experiencia')
+  num? get aniosExperiencia => throw _privateConstructorUsedError;
+  @JsonKey(name: 'telefono_contacto')
+  String? get telefonoContacto => throw _privateConstructorUsedError;
+  List<dynamic>? get certificados => throw _privateConstructorUsedError;
 
   /// Serializes this Specialist to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -57,6 +65,12 @@ abstract class $SpecialistCopyWith<$Res> {
     String? bio,
     @JsonKey(name: 'foto_url') String? fotoUrl,
     @JsonKey(name: 'historial_laboral') List<dynamic>? historialLaboral,
+    String? email,
+    String? ciudad,
+    String? pais,
+    @JsonKey(name: 'anios_experiencia') num? aniosExperiencia,
+    @JsonKey(name: 'telefono_contacto') String? telefonoContacto,
+    List<dynamic>? certificados,
   });
 }
 
@@ -82,6 +96,12 @@ class _$SpecialistCopyWithImpl<$Res, $Val extends Specialist>
     Object? bio = freezed,
     Object? fotoUrl = freezed,
     Object? historialLaboral = freezed,
+    Object? email = freezed,
+    Object? ciudad = freezed,
+    Object? pais = freezed,
+    Object? aniosExperiencia = freezed,
+    Object? telefonoContacto = freezed,
+    Object? certificados = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -113,6 +133,30 @@ class _$SpecialistCopyWithImpl<$Res, $Val extends Specialist>
                 ? _value.historialLaboral
                 : historialLaboral // ignore: cast_nullable_to_non_nullable
                       as List<dynamic>?,
+            email: freezed == email
+                ? _value.email
+                : email // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            ciudad: freezed == ciudad
+                ? _value.ciudad
+                : ciudad // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            pais: freezed == pais
+                ? _value.pais
+                : pais // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            aniosExperiencia: freezed == aniosExperiencia
+                ? _value.aniosExperiencia
+                : aniosExperiencia // ignore: cast_nullable_to_non_nullable
+                      as num?,
+            telefonoContacto: freezed == telefonoContacto
+                ? _value.telefonoContacto
+                : telefonoContacto // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            certificados: freezed == certificados
+                ? _value.certificados
+                : certificados // ignore: cast_nullable_to_non_nullable
+                      as List<dynamic>?,
           )
           as $Val,
     );
@@ -136,6 +180,12 @@ abstract class _$$SpecialistImplCopyWith<$Res>
     String? bio,
     @JsonKey(name: 'foto_url') String? fotoUrl,
     @JsonKey(name: 'historial_laboral') List<dynamic>? historialLaboral,
+    String? email,
+    String? ciudad,
+    String? pais,
+    @JsonKey(name: 'anios_experiencia') num? aniosExperiencia,
+    @JsonKey(name: 'telefono_contacto') String? telefonoContacto,
+    List<dynamic>? certificados,
   });
 }
 
@@ -160,6 +210,12 @@ class __$$SpecialistImplCopyWithImpl<$Res>
     Object? bio = freezed,
     Object? fotoUrl = freezed,
     Object? historialLaboral = freezed,
+    Object? email = freezed,
+    Object? ciudad = freezed,
+    Object? pais = freezed,
+    Object? aniosExperiencia = freezed,
+    Object? telefonoContacto = freezed,
+    Object? certificados = freezed,
   }) {
     return _then(
       _$SpecialistImpl(
@@ -191,6 +247,30 @@ class __$$SpecialistImplCopyWithImpl<$Res>
             ? _value._historialLaboral
             : historialLaboral // ignore: cast_nullable_to_non_nullable
                   as List<dynamic>?,
+        email: freezed == email
+            ? _value.email
+            : email // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        ciudad: freezed == ciudad
+            ? _value.ciudad
+            : ciudad // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        pais: freezed == pais
+            ? _value.pais
+            : pais // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        aniosExperiencia: freezed == aniosExperiencia
+            ? _value.aniosExperiencia
+            : aniosExperiencia // ignore: cast_nullable_to_non_nullable
+                  as num?,
+        telefonoContacto: freezed == telefonoContacto
+            ? _value.telefonoContacto
+            : telefonoContacto // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        certificados: freezed == certificados
+            ? _value._certificados
+            : certificados // ignore: cast_nullable_to_non_nullable
+                  as List<dynamic>?,
       ),
     );
   }
@@ -207,8 +287,15 @@ class _$SpecialistImpl implements _Specialist {
     this.bio,
     @JsonKey(name: 'foto_url') this.fotoUrl,
     @JsonKey(name: 'historial_laboral') final List<dynamic>? historialLaboral,
+    this.email,
+    this.ciudad,
+    this.pais,
+    @JsonKey(name: 'anios_experiencia') this.aniosExperiencia,
+    @JsonKey(name: 'telefono_contacto') this.telefonoContacto,
+    final List<dynamic>? certificados,
   }) : _disciplinas = disciplinas,
-       _historialLaboral = historialLaboral;
+       _historialLaboral = historialLaboral,
+       _certificados = certificados;
 
   factory _$SpecialistImpl.fromJson(Map<String, dynamic> json) =>
       _$$SpecialistImplFromJson(json);
@@ -246,8 +333,30 @@ class _$SpecialistImpl implements _Specialist {
   }
 
   @override
+  final String? email;
+  @override
+  final String? ciudad;
+  @override
+  final String? pais;
+  @override
+  @JsonKey(name: 'anios_experiencia')
+  final num? aniosExperiencia;
+  @override
+  @JsonKey(name: 'telefono_contacto')
+  final String? telefonoContacto;
+  final List<dynamic>? _certificados;
+  @override
+  List<dynamic>? get certificados {
+    final value = _certificados;
+    if (value == null) return null;
+    if (_certificados is EqualUnmodifiableListView) return _certificados;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  @override
   String toString() {
-    return 'Specialist(id: $id, nombre: $nombre, disciplinas: $disciplinas, especialidad: $especialidad, bio: $bio, fotoUrl: $fotoUrl, historialLaboral: $historialLaboral)';
+    return 'Specialist(id: $id, nombre: $nombre, disciplinas: $disciplinas, especialidad: $especialidad, bio: $bio, fotoUrl: $fotoUrl, historialLaboral: $historialLaboral, email: $email, ciudad: $ciudad, pais: $pais, aniosExperiencia: $aniosExperiencia, telefonoContacto: $telefonoContacto, certificados: $certificados)';
   }
 
   @override
@@ -268,6 +377,17 @@ class _$SpecialistImpl implements _Specialist {
             const DeepCollectionEquality().equals(
               other._historialLaboral,
               _historialLaboral,
+            ) &&
+            (identical(other.email, email) || other.email == email) &&
+            (identical(other.ciudad, ciudad) || other.ciudad == ciudad) &&
+            (identical(other.pais, pais) || other.pais == pais) &&
+            (identical(other.aniosExperiencia, aniosExperiencia) ||
+                other.aniosExperiencia == aniosExperiencia) &&
+            (identical(other.telefonoContacto, telefonoContacto) ||
+                other.telefonoContacto == telefonoContacto) &&
+            const DeepCollectionEquality().equals(
+              other._certificados,
+              _certificados,
             ));
   }
 
@@ -282,6 +402,12 @@ class _$SpecialistImpl implements _Specialist {
     bio,
     fotoUrl,
     const DeepCollectionEquality().hash(_historialLaboral),
+    email,
+    ciudad,
+    pais,
+    aniosExperiencia,
+    telefonoContacto,
+    const DeepCollectionEquality().hash(_certificados),
   );
 
   /// Create a copy of Specialist
@@ -307,6 +433,12 @@ abstract class _Specialist implements Specialist {
     final String? bio,
     @JsonKey(name: 'foto_url') final String? fotoUrl,
     @JsonKey(name: 'historial_laboral') final List<dynamic>? historialLaboral,
+    final String? email,
+    final String? ciudad,
+    final String? pais,
+    @JsonKey(name: 'anios_experiencia') final num? aniosExperiencia,
+    @JsonKey(name: 'telefono_contacto') final String? telefonoContacto,
+    final List<dynamic>? certificados,
   }) = _$SpecialistImpl;
 
   factory _Specialist.fromJson(Map<String, dynamic> json) =
@@ -329,6 +461,20 @@ abstract class _Specialist implements Specialist {
   @override
   @JsonKey(name: 'historial_laboral')
   List<dynamic>? get historialLaboral;
+  @override
+  String? get email;
+  @override
+  String? get ciudad;
+  @override
+  String? get pais;
+  @override
+  @JsonKey(name: 'anios_experiencia')
+  num? get aniosExperiencia;
+  @override
+  @JsonKey(name: 'telefono_contacto')
+  String? get telefonoContacto;
+  @override
+  List<dynamic>? get certificados;
 
   /// Create a copy of Specialist
   /// with the given fields replaced by the non-null parameter values.

@@ -31,6 +31,7 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
   _Semaforo? _result;
   final TextEditingController _detallesDolorController = TextEditingController();
   bool _submitting = false; // New state variable
+  Map<String, dynamic>? _apiResponse; // Store API response
 
   bool get _allAnswered =>
       _sleep != null && _energy != null &&
@@ -71,6 +72,21 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
       debugPrint('DAILY CHECKIN BODY: ${res.body}');
 
       if (res.statusCode == 200 || res.statusCode == 201) {
+        if (res.body.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(res.body);
+            if (decoded is Map<String, dynamic>) {
+              _apiResponse = decoded;
+            } else if (decoded is String) {
+              final doubleDecoded = jsonDecode(decoded);
+              if (doubleDecoded is Map<String, dynamic>) {
+                _apiResponse = doubleDecoded;
+              }
+            }
+          } catch (e) {
+            debugPrint('DAILY CHECKIN PARSE ERROR: $e');
+          }
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar( // No const here
             content: Text(AppLocalizations.of(context).dailyCheckinSaveSuccess),
@@ -428,6 +444,10 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
     final energyOpts = L10nHelpers.getEnergyOptions(context);
     final timeOpts = L10nHelpers.getTimeOptions(context);
 
+    final bool debeAjustar = _apiResponse?['debe_ajustar'] ?? false;
+    final String? razon = _apiResponse?['razon'] as String?;
+    final String? tipoAjuste = _apiResponse?['tipo_ajuste'] as String?;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(children: [
@@ -464,11 +484,21 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
         const SizedBox(height: 16),
 
         // Semáforo card
-        _SemaforoCard(semaforo: _result!),
+        _SemaforoCard(
+          semaforo: _result!,
+          debeAjustar: debeAjustar,
+          tipoAjuste: tipoAjuste,
+          razonAjuste: razon,
+        ),
         const SizedBox(height: 12),
 
         // Sesión card
-        _SessionCard(semaforo: _result!),
+        _SessionCard(
+          semaforo: _result!,
+          debeAjustar: debeAjustar,
+          tipoAjuste: tipoAjuste,
+          razonAjuste: razon,
+        ),
         const SizedBox(height: 12),
 
         // Pain alert if needed
@@ -479,7 +509,10 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
         const SizedBox(height: 12),
 
         // IA insight
-        _AIInsight(semaforo: _result!),
+        _AIInsight(
+          semaforo: _result!,
+          apiReason: razon,
+        ),
         const SizedBox(height: 20),
 
         // CTA buttons
@@ -676,14 +709,29 @@ class _ScoreItem extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 class _SemaforoCard extends StatelessWidget {
   final _Semaforo semaforo;
-  const _SemaforoCard({required this.semaforo});
+  final bool? debeAjustar;
+  final String? tipoAjuste;
+  final String? razonAjuste;
+
+  const _SemaforoCard({
+    required this.semaforo,
+    this.debeAjustar,
+    this.tipoAjuste,
+    this.razonAjuste,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = context.themeColors;
     final l10n = AppLocalizations.of(context);
-    final isGreen  = semaforo == _Semaforo.green;
-    final isYellow = semaforo == _Semaforo.yellow;
+
+    var currentSemaforo = semaforo;
+    if (debeAjustar == true && currentSemaforo == _Semaforo.green) {
+      currentSemaforo = _Semaforo.yellow;
+    }
+
+    final isGreen  = currentSemaforo == _Semaforo.green;
+    final isYellow = currentSemaforo == _Semaforo.yellow;
     final color = isGreen
         ? theme.greenText
         : isYellow ? const Color(0xFFEF9F27) : theme.redText;
@@ -693,16 +741,22 @@ class _SemaforoCard extends StatelessWidget {
             ? theme.orange.withValues(alpha: 0.12)
             : theme.redText.withValues(alpha: 0.10);
     final emoji = isGreen ? '🟢' : isYellow ? '🟡' : '🔴';
-    final title = isGreen
-        ? l10n.dailyCheckinSemaforoGreenTitle
-        : isYellow
-            ? l10n.dailyCheckinSemaforoYellowTitle
-            : l10n.dailyCheckinSemaforoRedTitle;
-    final sub = isGreen
-        ? l10n.dailyCheckinSemaforoGreenDesc
-        : isYellow
-            ? l10n.dailyCheckinSemaforoYellowDesc
-            : l10n.dailyCheckinSemaforoRedDesc;
+    
+    final title = (debeAjustar == true && tipoAjuste != null)
+        ? "${l10n.dailyCheckinSemaforoYellowTitle} · $tipoAjuste"
+        : (isGreen
+            ? l10n.dailyCheckinSemaforoGreenTitle
+            : isYellow
+                ? l10n.dailyCheckinSemaforoYellowTitle
+                : l10n.dailyCheckinSemaforoRedTitle);
+                
+    final sub = (debeAjustar == true && razonAjuste != null)
+        ? razonAjuste!
+        : (isGreen
+            ? l10n.dailyCheckinSemaforoGreenDesc
+            : isYellow
+                ? l10n.dailyCheckinSemaforoYellowDesc
+                : l10n.dailyCheckinSemaforoRedDesc);
 
     return Container(
       width: double.infinity,
@@ -742,16 +796,34 @@ class _SemaforoCard extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 // SESSION CARD
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// SESSION CARD
+// ═══════════════════════════════════════════════════════════════
 class _SessionCard extends StatelessWidget {
   final _Semaforo semaforo;
-  const _SessionCard({required this.semaforo});
+  final bool? debeAjustar;
+  final String? tipoAjuste;
+  final String? razonAjuste;
+
+  const _SessionCard({
+    required this.semaforo,
+    this.debeAjustar,
+    this.tipoAjuste,
+    this.razonAjuste,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = context.themeColors;
     final l10n = AppLocalizations.of(context);
-    final isGreen  = semaforo == _Semaforo.green;
-    final isYellow = semaforo == _Semaforo.yellow;
+
+    var currentSemaforo = semaforo;
+    if (debeAjustar == true && currentSemaforo == _Semaforo.green) {
+      currentSemaforo = _Semaforo.yellow;
+    }
+
+    final isGreen  = currentSemaforo == _Semaforo.green;
+    final isYellow = currentSemaforo == _Semaforo.yellow;
     final borderColor = isGreen
         ? theme.greenText
         : isYellow ? const Color(0xFFEF9F27) : const Color(0xFF378ADD);
@@ -763,18 +835,29 @@ class _SessionCard extends StatelessWidget {
         : isYellow
             ? theme.orange.withValues(alpha: 0.12)
             : const Color(0xFF378ADD).withValues(alpha: 0.12);
-    final badgeLabel = isGreen ? l10n.dailyCheckinSemaforoGreenBadge
-        : isYellow ? l10n.dailyCheckinSemaforoYellowBadge : l10n.dailyCheckinSemaforoRedBadge;
-    final title = isGreen
-        ? l10n.dailyCheckinSessionTitleGreen
-        : isYellow
-            ? l10n.dailyCheckinSessionTitleYellow
-            : l10n.dailyCheckinSessionTitleRed;
-    final subtitle = isGreen
-        ? l10n.dailyCheckinSessionSubGreen
-        : isYellow
-            ? l10n.dailyCheckinSessionSubYellow
-            : l10n.dailyCheckinSessionSubRed;
+    final badgeLabel = (debeAjustar == true)
+        ? (currentSemaforo == _Semaforo.red ? l10n.dailyCheckinSemaforoRedBadge : l10n.dailyCheckinSemaforoYellowBadge)
+        : (isGreen
+            ? l10n.dailyCheckinSemaforoGreenBadge
+            : isYellow
+                ? l10n.dailyCheckinSemaforoYellowBadge
+                : l10n.dailyCheckinSemaforoRedBadge);
+
+    final title = (debeAjustar == true && tipoAjuste != null)
+        ? tipoAjuste!
+        : (isGreen
+            ? l10n.dailyCheckinSessionTitleGreen
+            : isYellow
+                ? l10n.dailyCheckinSessionTitleYellow
+                : l10n.dailyCheckinSessionTitleRed);
+
+    final subtitle = (debeAjustar == true && razonAjuste != null)
+        ? razonAjuste!
+        : (isGreen
+            ? l10n.dailyCheckinSessionSubGreen
+            : isYellow
+                ? l10n.dailyCheckinSessionSubYellow
+                : l10n.dailyCheckinSessionSubRed);
     final duracion = isGreen ? '50 min'
         : isYellow ? '35 min' : '20 min';
 
@@ -816,7 +899,25 @@ class _SessionCard extends StatelessWidget {
               isYellow ? l10n.dailyCheckinSessionReducePct : l10n.dailyCheckinSessionNoFc,
             ),
         ]),
-        if (isYellow) ...[
+        if (debeAjustar == true && tipoAjuste != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: theme.cardDark,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(l10n.dailyCheckinSessionChangeTitle,
+                  style: const TextStyle(color: Color(0xFFEF9F27),
+                      fontSize: 10, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              Text(
+                tipoAjuste!,
+                style: TextStyle(color: theme.grey, fontSize: 11, height: 1.4)),
+            ]),
+          ),
+        ] else if (isYellow) ...[
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(10),
@@ -906,17 +1007,18 @@ class _PainAlert extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 class _AIInsight extends StatelessWidget {
   final _Semaforo semaforo;
-  const _AIInsight({required this.semaforo});
+  final String? apiReason;
+  const _AIInsight({required this.semaforo, this.apiReason});
 
   @override
   Widget build(BuildContext context) {
     final theme = context.themeColors;
     final l10n = AppLocalizations.of(context);
-    final text = semaforo == _Semaforo.green
+    final text = apiReason ?? (semaforo == _Semaforo.green
         ? l10n.dailyCheckinInsightGreen
         : semaforo == _Semaforo.yellow
             ? l10n.dailyCheckinInsightYellow
-            : l10n.dailyCheckinInsightRed;
+            : l10n.dailyCheckinInsightRed);
 
     return Container(
       padding: const EdgeInsets.all(14),

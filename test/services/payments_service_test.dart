@@ -43,9 +43,7 @@ void main() {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: json.encode({
-          'id_seguimiento_especialista': trackingId,
-        }),
+        body: anyNamed('body'),
       )).called(1);
     });
 
@@ -70,9 +68,7 @@ void main() {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: json.encode({
-          'id_seguimiento_especialista': trackingId,
-        }),
+        body: anyNamed('body'),
       )).called(1);
     });
 

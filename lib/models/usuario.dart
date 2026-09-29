@@ -40,14 +40,14 @@ abstract class Usuario with _$Usuario {
 
   bool get isPro {
     final plan = nombrePlanActivo?.trim().toLowerCase() ?? '';
-    if (plan.isEmpty || plan == 'trial' || plan == 'essential' || plan.contains('elite')) return false;
+    if (plan.isEmpty || plan == 'trial' || plan == 'essential' || plan.contains('elite') || plan.contains('élite')) return false;
     return true;
   }
 
   bool get isElite {
     final plan = nombrePlanActivo?.trim().toLowerCase() ?? '';
     if (plan.isEmpty || plan == 'trial' || plan == 'essential') return false;
-    return plan.contains('elite');
+    return plan.contains('elite') || plan.contains('élite');
   }
 
   bool get canSeeNutrition => isPro || isElite;

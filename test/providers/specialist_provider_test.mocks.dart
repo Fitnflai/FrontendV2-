@@ -130,9 +130,44 @@ class MockPaymentsService extends _i1.Mock implements _i3.PaymentsService {
           as _i4.Future<void>);
 
   @override
-  _i4.Future<dynamic> subscribeNuvei(String? token, String? priceId) =>
+  _i4.Future<dynamic> subscribeNuvei(
+    String? token,
+    String? priceId, {
+    String? cvc = '123',
+    String? deviceType = 'mobile',
+    String? referenceId,
+    String? ip = '127.0.0.1',
+    String? language = 'es',
+    bool? javaEnabled = true,
+    bool? jsEnabled = true,
+    int? colorDepth = 24,
+    int? screenHeight = 1080,
+    int? screenWidth = 1920,
+    int? timezoneOffset = 0,
+    String? userAgent =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+    String? acceptHeader = 'application/json',
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#subscribeNuvei, [token, priceId]),
+            Invocation.method(
+              #subscribeNuvei,
+              [token, priceId],
+              {
+                #cvc: cvc,
+                #deviceType: deviceType,
+                #referenceId: referenceId,
+                #ip: ip,
+                #language: language,
+                #javaEnabled: javaEnabled,
+                #jsEnabled: jsEnabled,
+                #colorDepth: colorDepth,
+                #screenHeight: screenHeight,
+                #screenWidth: screenWidth,
+                #timezoneOffset: timezoneOffset,
+                #userAgent: userAgent,
+                #acceptHeader: acceptHeader,
+              },
+            ),
             returnValue: _i4.Future<dynamic>.value(),
           )
           as _i4.Future<dynamic>);
@@ -152,13 +187,16 @@ class MockPaymentsService extends _i1.Mock implements _i3.PaymentsService {
   @override
   _i4.Future<dynamic> payMeetingSpecialistOneClick(
     String? token,
-    int? trackingId,
-  ) =>
+    int? trackingId, {
+    String? cvc = '123',
+    Map<String, dynamic>? extraData,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#payMeetingSpecialistOneClick, [
-              token,
-              trackingId,
-            ]),
+            Invocation.method(
+              #payMeetingSpecialistOneClick,
+              [token, trackingId],
+              {#cvc: cvc, #extraData: extraData},
+            ),
             returnValue: _i4.Future<dynamic>.value(),
           )
           as _i4.Future<dynamic>);
@@ -306,4 +344,50 @@ class MockSpecialistService extends _i1.Mock implements _i7.SpecialistService {
             returnValue: _i4.Future<List<_i9.Turno>>.value(<_i9.Turno>[]),
           )
           as _i4.Future<List<_i9.Turno>>);
+
+  @override
+  _i4.Future<String> generarReportePDF(String? token, String? idReporte) =>
+      (super.noSuchMethod(
+            Invocation.method(#generarReportePDF, [token, idReporte]),
+            returnValue: _i4.Future<String>.value(
+              _i5.dummyValue<String>(
+                this,
+                Invocation.method(#generarReportePDF, [token, idReporte]),
+              ),
+            ),
+          )
+          as _i4.Future<String>);
+
+  @override
+  _i4.Future<Map<String, dynamic>> getAssignedSpecialistInfo(String? token) =>
+      (super.noSuchMethod(
+            Invocation.method(#getAssignedSpecialistInfo, [token]),
+            returnValue: _i4.Future<Map<String, dynamic>>.value(
+              <String, dynamic>{},
+            ),
+          )
+          as _i4.Future<Map<String, dynamic>>);
+
+  @override
+  _i4.Future<Map<String, dynamic>> cancelarCita(
+    String? token, {
+    required int? idCita,
+    required String? motivoCancelacion,
+    String? canceladoPor = 'usuario',
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #cancelarCita,
+              [token],
+              {
+                #idCita: idCita,
+                #motivoCancelacion: motivoCancelacion,
+                #canceladoPor: canceladoPor,
+              },
+            ),
+            returnValue: _i4.Future<Map<String, dynamic>>.value(
+              <String, dynamic>{},
+            ),
+          )
+          as _i4.Future<Map<String, dynamic>>);
 }

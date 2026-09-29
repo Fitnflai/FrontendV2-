@@ -18,7 +18,15 @@ class MisCitasScreen extends StatelessWidget {
 
   String _formatFechaHora(String isoString, bool isEs) {
     try {
-      final dt = DateTime.parse(isoString).toLocal();
+      // Parse ISO string handling timezone correctly:
+      // - If string has 'Z' or offset (+00:00, -06:00), parse as UTC and convert to local
+      // - If no timezone info, assume it's already in user's local time
+      DateTime dt;
+      if (isoString.endsWith('Z') || isoString.contains(RegExp(r'[+-]\d{2}:?\d{2}$'))) {
+        dt = DateTime.parse(isoString).toLocal();
+      } else {
+        dt = DateTime.parse(isoString); // assume local
+      }
       final monthsEs = [
         'ene', 'feb', 'mar', 'abr', 'may', 'jun',
         'jul', 'ago', 'sep', 'oct', 'nov', 'dic'

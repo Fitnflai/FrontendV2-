@@ -31,6 +31,27 @@ class _PlanScreenState extends State<PlanScreen> {
   DateTime? _createdAt; // fecha de registro del usuario
   bool _hasFetched = false;
 
+  final GlobalKey _todayKey = GlobalKey();
+
+  bool _isToday(String? fecha) {
+    if (fecha == null || fecha.isEmpty) return false;
+    try {
+      final d   = DateTime.parse(fecha.split('T')[0]);
+      final now = DateTime.now();
+      return d.year == now.year && d.month == now.month && d.day == now.day;
+    } catch (_) { return false; }
+  }
+
+  void _scrollToToday() {
+    if (_todayKey.currentContext != null && mounted) {
+      Scrollable.ensureVisible(
+        _todayKey.currentContext!,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
 
   // Cache por semana (key = 'YYYY-MM-DD' del lunes)
   final Map<String, List<Map<String, dynamic>>> _cache = {};
@@ -107,7 +128,12 @@ class _PlanScreenState extends State<PlanScreen> {
   Future<void> _loadWeek(DateTime monday) async {
     final key = _weekKey(monday);
     if (_cache.containsKey(key)) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToToday();
+        });
+      }
       return;
     }
     if (mounted) setState(() { _loading = true; _error = null; });
@@ -133,7 +159,12 @@ class _PlanScreenState extends State<PlanScreen> {
       _cache[_weekKey(monday)] = [];
       if (mounted) setState(() => _error = 'Error de conexión');
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToToday();
+        });
+      }
     }
   }
 
@@ -253,10 +284,22 @@ class _PlanScreenState extends State<PlanScreen> {
                           // Mostrar si tiene entrenamiento o si es descanso activo
                           return titulo.isNotEmpty || tipo == 'descanso_activo';
                         })
-                        .map((s) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _SessionCard(data: s, weekContext: _weekContext),
-                        )),
+                        .map((s) {
+                          final fecha = s['fecha_programada'] as String? ?? '';
+                          final isToday = _isToday(fecha) && _weekContext == _WeekContext.current;
+                          return Padding(
+                            key: isToday ? _todayKey : null,
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _SessionCard(
+                              data: s,
+                              weekContext: _weekContext,
+                              onAdjusted: () {
+                                _cache.clear();
+                                _loadWeek(_weekStart);
+                              },
+                            ),
+                          );
+                        }),
 
                     const SizedBox(height: 24),
                   ],
@@ -404,7 +447,12 @@ class _StatBox extends StatelessWidget {
 class _SessionCard extends StatelessWidget {
   final Map<String, dynamic> data;
   final _WeekContext weekContext;
-  const _SessionCard({required this.data, required this.weekContext});
+  final VoidCallback? onAdjusted;
+  const _SessionCard({
+    required this.data,
+    required this.weekContext,
+    this.onAdjusted,
+  });
 
   bool _isToday(String? fecha) {
     if (fecha == null || fecha.isEmpty) return false;
@@ -493,20 +541,16 @@ class _SessionCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              if (isToday)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                      color: theme.primary, borderRadius: BorderRadius.circular(20)),
-                  child: Text(l10n.planSessionCardTodayBadge,
-                      style: TextStyle(color: theme.white, fontSize: 11, fontWeight: FontWeight.w700)),
-                ),
               if (isCompleted)
                 Container(
-                  width: 28, height: 28,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                      color: theme.greenMid, borderRadius: BorderRadius.circular(8)),
-                  child: Icon(Icons.check, color: theme.white, size: 16),
+                    color: theme.greenMid.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: theme.greenMid),
+                  ),
+                  child: Text('Completado',
+                      style: TextStyle(color: theme.greenText, fontSize: 10, fontWeight: FontWeight.w600)),
                 ),
               if (isMissed)
                 Container(
@@ -547,8 +591,8 @@ class _SessionCard extends StatelessWidget {
                   style: TextStyle(color: theme.grey, fontSize: 11)),
           ],
 
-          // ── Botones hoy ───────────────────────
-          if (isToday) ...[
+          // ── Botones hoy y no completado ───────────────────────
+          if (isToday && !isCompleted) ...[
             const SizedBox(height: 14),
             SizedBox(
               width: double.infinity, height: 44,
@@ -568,20 +612,25 @@ class _SessionCard extends StatelessWidget {
             const SizedBox(height: 8),
           ],
 
-          // ── Botón Ajustar (solo si es hoy) ─────────────
+          // ── Botón Ajustar (solo si es hoy y no completado) ─────────────
           const SizedBox(height: 4),
-          if (isToday)
+          if (isToday && !isCompleted)
             SizedBox(
               width: double.infinity,
               height: 40,
               child: OutlinedButton(
-                onPressed: () {
-                  showModalBottomSheet(
+                onPressed: () async {
+                  final id = data['id_entrenamiento'] ?? data['id'];
+                  if (id == null) return;
+                  final result = await showModalBottomSheet<bool>(
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
-                    builder: (context) => const WorkoutAdjustmentBottomSheet(),
+                    builder: (context) => WorkoutAdjustmentBottomSheet(workoutId: id),
                   );
+                  if (result == true) {
+                    onAdjusted?.call();
+                  }
                 },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: theme.greyLight,
@@ -591,8 +640,8 @@ class _SessionCard extends StatelessWidget {
                 child: Text(l10n.planSessionCardAdjustBtn, style: TextStyle(fontSize: 13)),
               ),
             )
-          // ── Botón Ver detalle (si NO es hoy) ─────────────
-          else
+          // ── Botón Ver detalle (si NO es hoy, o si es hoy pero YA está completado) ─────────────
+          else if (!isToday || isCompleted)
             SizedBox(
               width: double.infinity,
               height: 40,

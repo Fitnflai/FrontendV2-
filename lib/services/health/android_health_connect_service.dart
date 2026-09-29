@@ -24,9 +24,6 @@ class AndroidHealthConnectService implements BaseHealthService {
     HealthDataType.STEPS,
     HealthDataType.ACTIVE_ENERGY_BURNED,
     HealthDataType.DISTANCE_DELTA,
-    HealthDataType.HEART_RATE,
-    HealthDataType.SLEEP_SESSION,
-    HealthDataType.WEIGHT,
   ];
 
   @override
@@ -63,10 +60,6 @@ class AndroidHealthConnectService implements BaseHealthService {
       int pasos = 0;
       double caloriasQuemadas = 0.0;
       double distanciaKm = 0.0;
-      double totalHeartRate = 0.0;
-      int heartRateCount = 0;
-      double totalSleepDurationHours = 0.0;
-      double pesoKg = 0.0;
 
       for (var dp in healthData) {
         switch (dp.type) {
@@ -79,37 +72,22 @@ class AndroidHealthConnectService implements BaseHealthService {
           case HealthDataType.DISTANCE_DELTA:
             distanciaKm += (dp.value as num).toDouble() / 1000; // Convert meters to km
             break;
-          case HealthDataType.HEART_RATE:
-            totalHeartRate += (dp.value as num).toDouble();
-            heartRateCount++;
-            break;
-          case HealthDataType.SLEEP_SESSION:
-            if (dp.value is Duration) {
-              final duration = (dp.value as Duration).inMinutes;
-              totalSleepDurationHours += duration / 60;
-            }
-            break;
-          case HealthDataType.WEIGHT:
-            pesoKg = (dp.value as num).toDouble(); // Overwrite with last value
-            break;
           default:
             break;
         }
       }
-
-      final double avgHeartRate = heartRateCount > 0 ? totalHeartRate / heartRateCount : 0.0;
 
       final normalizedData = HealthDataModel(
         fecha: DateFormat('yyyy-MM-dd').format(date),
         pasos: pasos,
         caloriasQuemadas: caloriasQuemadas,
         distanciaKm: distanciaKm,
-        ritmoCardiacoPromedio: avgHeartRate,
-        ritmoCardiacoReposo: avgHeartRate,
-        pesoKg: pesoKg,
-        horasSueno: totalSleepDurationHours,
+        ritmoCardiacoPromedio: 0.0,
+        ritmoCardiacoReposo: 0.0,
+        pesoKg: 0.0,
+        horasSueno: 0.0,
         fuente: providerId,
-        fcReposo: avgHeartRate,
+        fcReposo: 0.0,
         workouts: [],
       );
 

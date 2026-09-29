@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/progress_report.dart';
 import '../services/progress_service.dart';
+import '../services/specialist_service.dart';
 
 enum ProgressReportStatus { initial, loading, loaded, error }
 
@@ -18,6 +20,9 @@ class ProgressReportProvider with ChangeNotifier {
   int get weekOffset => _weekOffset;
   bool get hasNoData => _hasNoData;
   String? get recentReportId => _report?.idReporteSemanal;
+  bool get isGeneratingReport => _isGeneratingReport;
+
+  bool _isGeneratingReport = false;
 
   ProgressReportProvider(this._service);
 
@@ -28,7 +33,32 @@ class ProgressReportProvider with ChangeNotifier {
     _hasNoData = false;
     notifyListeners();
     try {
-      _report = await _service.fetchProgressReport(token: token, weekOffset: weekOffset);
+      // Calcular fecha_inicio y fecha_fin locales basados en el weekOffset para cubrir la semana completa (Domingo a Lunes siguiente)
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final currentMonday = today.subtract(Duration(days: today.weekday - 1));
+      final targetMonday = currentMonday.add(Duration(days: weekOffset * 7));
+      
+      // Expandimos el rango (desde el domingo anterior al lunes siguiente) para asegurar capturar el reporte semanal,
+      // el cual se registra habitualmente los lunes al concluir o iniciar el ciclo.
+      final targetSundayPrev = targetMonday.subtract(const Duration(days: 1));
+      final targetMondayNext = targetMonday.add(const Duration(days: 7));
+
+      String format(DateTime d) {
+        final day = d.day.toString().padLeft(2, '0');
+        final month = d.month.toString().padLeft(2, '0');
+        final year = d.year;
+        return '$year-$month-$day'; // YYYY-MM-DD
+      }
+
+      final fechaInicioStr = format(targetSundayPrev);
+      final fechaFinStr = format(targetMondayNext);
+
+      _report = await _service.fetchProgressReport(
+        token: token,
+        fechaInicio: fechaInicioStr,
+        fechaFin: fechaFinStr,
+      );
       _status = ProgressReportStatus.loaded;
       
       // Si la API responde con éxito pero no hay ningún dato histórico cargado, activamos la alerta de falta de datos
@@ -46,6 +76,37 @@ class ProgressReportProvider with ChangeNotifier {
       _status = ProgressReportStatus.loaded;
       _hasNoData = true;
     } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<String?> generarReportePDF({required String token}) async {
+    if (recentReportId == null || recentReportId!.trim().isEmpty) {
+      _errorMessage = 'No hay un ID de reporte disponible.';
+      notifyListeners();
+      return null;
+    }
+
+    _isGeneratingReport = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final service = SpecialistService(); 
+      final reportUrl = await service.generarReportePDF(token, recentReportId!);
+      final uri = Uri.parse(reportUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return reportUrl;
+      } else {
+        throw Exception('No se pudo abrir la URL del reporte.');
+      }
+    } catch (e) {
+      debugPrint('🚨 Error generando el reporte PDF: $e');
+      _errorMessage = e.toString();
+      return null;
+    } finally {
+      _isGeneratingReport = false;
       notifyListeners();
     }
   }

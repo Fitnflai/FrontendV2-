@@ -1061,6 +1061,15 @@ class AppLocalizationsEs extends AppLocalizations {
       'Recuerda hidratarte bien antes de tu próxima sesión de alta intensidad.';
 
   @override
+  String homeNoWorkoutTitle(String name) {
+    return 'Hoy no hay entrenamiento, $name';
+  }
+
+  @override
+  String get homeNoWorkoutDesc =>
+      'Hoy es un día libre. Aprovecha para descansar o hacer actividad ligera.';
+
+  @override
   String get settingsRefundRequest => 'Solicitar reembolso';
 
   @override

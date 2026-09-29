@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:fitnflaifrontendv2/providers/profile_provider.dart';
 import 'package:fitnflaifrontendv2/providers/auth_provider.dart';
 import 'package:fitnflaifrontendv2/models/credit_card.dart';
+import 'package:fitnflaifrontendv2/widgets/specialist_selection_bottom_sheet.dart';
 
 class PaymentMethodsScreen extends StatefulWidget {
   static const String routeName = '/payment-methods';
@@ -14,6 +15,8 @@ class PaymentMethodsScreen extends StatefulWidget {
   final String? initialBrand;
   final String? initialExpMonth;
   final String? initialExpYear;
+  final bool isFromMembership;
+  final String? priceId;
 
   const PaymentMethodsScreen({
     super.key,
@@ -22,6 +25,8 @@ class PaymentMethodsScreen extends StatefulWidget {
     this.initialBrand,
     this.initialExpMonth,
     this.initialExpYear,
+    this.isFromMembership = false,
+    this.priceId,
   });
 
   @override
@@ -34,7 +39,9 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadCards();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCards();
+    });
 
     if (widget.initialToken != null) {
       _isLoadingDeepLinkSave = true; // Activate loader immediately
@@ -63,6 +70,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
         'brand': widget.initialBrand,
         'exp_month': widget.initialExpMonth,
         'exp_year': widget.initialExpYear,
+        'status': 'success',
       };
       // Remove null values from cardData map to avoid issues with JSON serialization
       cardData.removeWhere((key, value) => value == null);
@@ -76,6 +84,40 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
         _showErrorSnackBar(profileProvider.cardsError!);
       } else {
         _showSuccessSnackBar('Card saved successfully!');
+
+        // Auto-subscribe if from membership flow
+        final priceId = widget.priceId ?? profileProvider.pendingSubscribePriceId;
+        final isFromMembership = widget.isFromMembership || profileProvider.pendingSubscribePriceId != null;
+
+        if (isFromMembership && priceId != null) {
+          setState(() {
+            _isLoadingDeepLinkSave = true; // Keep loading for subscription
+          });
+          await profileProvider.subscribeNuveiAction(authProvider.token!, priceId);
+          profileProvider.pendingSubscribePriceId = null; // Clear memory cache
+          if (profileProvider.subscriptionError != null) {
+            _showErrorSnackBar(profileProvider.subscriptionError!);
+          } else {
+            _showSuccessSnackBar('¡Suscripción realizada con éxito!');
+            if (mounted) {
+              await profileProvider.loadAll(authProvider.token!, force: true);
+              final activePlanName = (profileProvider.planActivo?['nombre'] as String?)?.toLowerCase() ?? '';
+              final isElite = activePlanName.contains('elite') || activePlanName.contains('élite');
+              if (isElite && mounted) {
+                await showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  isDismissible: false,
+                  enableDrag: false,
+                  builder: (ctx) => const SpecialistSelectionBottomSheet(),
+                );
+              }
+              if (mounted) {
+                Navigator.of(context).pop(); // Go back to MembershipScreen
+              }
+            }
+          }
+        }
       }
     } catch (e) {
       _showErrorSnackBar('Failed to save card: $e');
@@ -111,10 +153,10 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       const returnUrl = 'fitnflai://payment-methods'; // Deep link for app to resume
       final checkoutUrl = await profileProvider.associateCard(authProvider.token!, returnUrl: returnUrl);
       if (checkoutUrl != null) {
-        if (!await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.inAppWebView)) {
+        if (!await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.inAppBrowserView)) {
           // Fallback for older devices or if in-app browser fails
           // You might want to show an error or use an external browser
-          debugPrint('Could not launch $checkoutUrl in inAppWebView. Trying external.');
+          debugPrint('Could not launch $checkoutUrl in inAppBrowserView. Trying external.');
           await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
         }
       } else if (profileProvider.cardsError != null) {
@@ -172,6 +214,108 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final profileProvider = Provider.of<ProfileProvider>(context);
+    final isFromMembershipFlow = widget.isFromMembership || profileProvider.pendingSubscribePriceId != null;
+
+    if (isFromMembershipFlow) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF121212),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_isLoadingDeepLinkSave) ...[
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Procesando pago...',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Por favor, no cierres la aplicación mientras validamos tu suscripción.',
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                ] else if (profileProvider.subscriptionError != null) ...[
+                  const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Error en la transacción',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    profileProvider.subscriptionError!,
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        profileProvider.pendingSubscribePriceId = null; // Clear on error too
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Volver', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check, color: Colors.white, size: 40),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    '¡Suscripción exitosa!',
+                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Tu método de pago ha sido guardado y tu plan se activó correctamente.',
+                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Pop to go back to home/profile
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Comenzar a entrenar', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return BlockingLoadingOverlay(
       isLoading: _isLoadingDeepLinkSave,
       message: 'Saving card...',
@@ -181,7 +325,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
         ),
         body: Consumer<ProfileProvider>(
           builder: (context, profileProvider, child) {
-            if (profileProvider.isLoadingCards) {
+            if (profileProvider.isLoadingCards && profileProvider.savedCards.isEmpty) {
               return const Center(child: CircularProgressIndicator());
             }
 

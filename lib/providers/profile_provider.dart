@@ -27,6 +27,13 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
   bool _isAssociatingCard = false;
   bool _isProcessingOneClick = false;
   String? _cardsError;
+  String? _pendingSubscribePriceId;
+
+  String? get pendingSubscribePriceId => _pendingSubscribePriceId;
+  set pendingSubscribePriceId(String? value) {
+    _pendingSubscribePriceId = value;
+    notifyListeners();
+  }
 
   List<CreditCard> get savedCards => _savedCards;
   bool get isLoadingCards => _isLoadingCards;
@@ -115,7 +122,7 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
       return dateTimeA.compareTo(dateTimeB);
     });
 
-    // Return the first upcoming one
+    // Return the first upcoming pending appointment (any future date)
     for (var cita in pendingAppointments) {
       final dateTime = DateTime.parse(cita['fecha_hora']).toLocal();
       if (dateTime.isAfter(now)) {
@@ -123,6 +130,17 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
       }
     }
     return null; // No upcoming pending appointments found
+  }
+
+  /// Returns true if the upcoming appointment is TODAY (same calendar date)
+  bool get isUpcomingAppointmentToday {
+    final appointment = upcomingAppointment;
+    if (appointment == null) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dateTime = DateTime.parse(appointment['fecha_hora']).toLocal();
+    final appointmentDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+    return appointmentDate.isAtSameMomentAs(today);
   }
 
   Future<void> loadAll(String token, {bool force = false}) async {
@@ -409,12 +427,26 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<void> subscribeNuveiAction(String token, String priceId) async {
+  Future<void> subscribeNuveiAction(
+    String token,
+    String priceId, {
+    String cvc = '123',
+    int screenHeight = 1080,
+    int screenWidth = 1920,
+    int timezoneOffset = 0,
+  }) async {
     _isProcessingOneClick = true;
     _subscriptionError = null;
     notifyListeners();
     try {
-      await _paymentsService.subscribeNuvei(token, priceId);
+      await _paymentsService.subscribeNuvei(
+        token,
+        priceId,
+        cvc: cvc,
+        screenHeight: screenHeight,
+        screenWidth: screenWidth,
+        timezoneOffset: timezoneOffset,
+      );
       await loadAll(token, force: true); // Reload all data to reflect new subscription
     } catch (e) {
       _subscriptionError = e.toString();

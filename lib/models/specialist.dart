@@ -14,6 +14,12 @@ abstract class Specialist with _$Specialist {
     String? bio,
     @JsonKey(name: 'foto_url') String? fotoUrl,
     @JsonKey(name: 'historial_laboral') List<dynamic>? historialLaboral,
+    String? email,
+    String? ciudad,
+    String? pais,
+    @JsonKey(name: 'anios_experiencia') num? aniosExperiencia,
+    @JsonKey(name: 'telefono_contacto') String? telefonoContacto,
+    List<dynamic>? certificados,
   }) = _Specialist;
 
   factory Specialist.fromJson(Map<String, dynamic> json) =>

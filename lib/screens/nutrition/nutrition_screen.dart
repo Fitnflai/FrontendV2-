@@ -258,7 +258,12 @@ class _NutritionScreenState extends State<NutritionScreen> {
                           ),
                           const SizedBox(height: 24),
                         ] else ...[
-                          _AIBanner(),
+                          _AIBanner(
+                            onSubscribeSuccess: () {
+                              _hasFetched = false;
+                              _loadPlan();
+                            },
+                          ),
                           const SizedBox(height: 24),
                         ]
                       ],
@@ -466,6 +471,9 @@ class _NutritionScreenState extends State<NutritionScreen> {
 
 // ─── AI Banner ─────────────────────────────────────────────────
 class _AIBanner extends StatelessWidget {
+  final VoidCallback? onSubscribeSuccess;
+  const _AIBanner({this.onSubscribeSuccess});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
@@ -500,7 +508,11 @@ class _AIBanner extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const MembershipScreen()),
-                );
+                ).then((_) {
+                  if (onSubscribeSuccess != null) {
+                    onSubscribeSuccess!();
+                  }
+                });
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.primary,

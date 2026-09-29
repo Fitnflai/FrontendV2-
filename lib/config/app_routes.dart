@@ -25,4 +25,6 @@ class AppRoutes {
   static const nutrition        = '/nutrition';
   static const nutritionSession = '/nutrition/session';
   static const nutritionSweat   = '/nutrition/sweat';
+  static const termsConditions  = '/legal/terms';
+  static const privacyPolicy    = '/legal/privacy';
 }

@@ -445,7 +445,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 8),
             GestureDetector(
               onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const MembershipScreen())),
+                  MaterialPageRoute(builder: (_) => const MembershipScreen())).then((_) => _loadProfile()),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

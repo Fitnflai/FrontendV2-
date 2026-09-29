@@ -14,9 +14,6 @@ class HuaweiHealthService implements BaseHealthService {
     Scope.HEALTHKIT_STEP_READ,
     Scope.HEALTHKIT_CALORIES_READ,
     Scope.HEALTHKIT_DISTANCE_READ,
-    Scope.HEALTHKIT_HEARTRATE_READ,
-    Scope.HEALTHKIT_SLEEP_READ,
-    Scope.HEALTHKIT_HEIGHTWEIGHT_READ,
   ];
 
   @override
@@ -152,70 +149,8 @@ class HuaweiHealthService implements BaseHealthService {
         debugPrint('Error reading distance summation: $e');
       }
 
-      // 4. Fetch Heart Rate
-      try {
-        final result = await dataController.readLatestData(
-          [DataType.DT_INSTANTANEOUS_HEART_RATE],
-          'com.huawei.health',
-        );
-        if (result.isNotEmpty) {
-          final point = result[DataType.DT_INSTANTANEOUS_HEART_RATE];
-          final val = point?.fieldValues?['bpm'];
-          if (val is num) {
-            avgHeartRate = val.toDouble();
-            restingHeartRate = val.toDouble();
-            fcReposo = val.toDouble();
-          }
-        }
-      } on PlatformException catch (e) {
-        debugPrint('PlatformException reading heart rate: ${e.message}');
-      } catch (e) {
-        debugPrint('Error reading heart rate: $e');
-      }
-
-      // 5. Fetch Weight
-      try {
-        final result = await dataController.readLatestData(
-          [DataType.DT_INSTANTANEOUS_BODY_WEIGHT],
-          'com.huawei.health',
-        );
-        if (result.isNotEmpty) {
-          final point = result[DataType.DT_INSTANTANEOUS_BODY_WEIGHT];
-          final val = point?.fieldValues?['body_weight'];
-          if (val is num) {
-            weightKg = val.toDouble();
-          }
-        }
-      } on PlatformException catch (e) {
-        debugPrint('PlatformException reading weight: ${e.message}');
-      } catch (e) {
-        debugPrint('Error reading weight: $e');
-      }
-
-      // 6. Fetch Sleep
-      try {
-        final SampleSet? sleepSum = await dataController.readDailySummation(
-          DataType.DT_CONTINUOUS_SLEEP,
-          startTime,
-          endTime,
-        );
-        if (sleepSum != null) {
-          double totalSleepMin = 0.0;
-          for (var point in sleepSum.samplePoints) {
-            if (point.startTime != null && point.endTime != null) {
-              totalSleepMin += point.endTime!.difference(point.startTime!).inMinutes.toDouble();
-            }
-          }
-          totalSleepHours = totalSleepMin / 60.0;
-        }
-      } on PlatformException catch (e) {
-        debugPrint('PlatformException reading sleep summation: ${e.message}');
-      } catch (e) {
-        debugPrint('Error reading sleep summation: $e');
-      }
-
       // Check if we got any real values, otherwise fall back to some default values
-      if (totalSteps == 0 && totalCaloriesBurned == 0.0 && totalDistanceKm == 0.0 && avgHeartRate == 0.0 && weightKg == 0.0 && totalSleepHours == 0.0) {
+      if (totalSteps == 0 && totalCaloriesBurned == 0.0 && totalDistanceKm == 0.0) {
         debugPrint('No actual HMS data found, using graceful mock fallback values.');
         return _getMockHealthData(date);
       }

@@ -4,7 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:fitnflaifrontendv2/providers/specialist_provider.dart';
 import 'package:fitnflaifrontendv2/services/payments_service.dart';
 import 'package:fitnflaifrontendv2/services/specialist_service.dart';
-import 'package:flutter/material.dart'; // Required for debugPrint
+ // Required for debugPrint
 
 import 'specialist_provider_test.mocks.dart';
 

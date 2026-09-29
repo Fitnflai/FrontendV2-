@@ -141,4 +141,8 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
     nutricion: SeccionColors(bg: Color(0xFFEDE7F6), border: Color(0xFFCE93D8), primary: Color(0xFF7E57C2)),
     notas: SeccionColors(bg: Color(0xFFF3E5F5), border: Color(0xFFE1BEE7), primary: Color(0xFF8E24AA)),
   );
+
+  Color? get textSecondary => null;
+
+  Color? get text => null;
 }

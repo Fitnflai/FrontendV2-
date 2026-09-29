@@ -108,7 +108,7 @@ class _WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
             'Authorization': 'Bearer $token',
           },
           body: jsonEncode({
-            'ejecucion_rutina_completa': _completed ?? false,
+            'ejecucion_routine_completa': _completed ?? false,
             'esfuerzo_percibido':        _rpe,
             'como_te_sentiste':          _feelings[_feelingIdx].$2,
             'dolor_o_molestia':          _hadPain ?? false,

@@ -9,9 +9,12 @@ import 'cached_http.dart';
 class ProgressService {
   static const _baseUrl = 'https://apifitnflai.com';
 
-  Future<ProgressReport> fetchProgressReport({required String token, int weekOffset = 0}) async {
-    final params = weekOffset != 0 ? '?week_offset=$weekOffset' : '';
-    final uri = Uri.parse('$_baseUrl/reportes/resumen-progreso$params');
+  Future<ProgressReport> fetchProgressReport({
+    required String token,
+    required String fechaInicio,
+    required String fechaFin,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/reportes/resumen-progreso?fecha_inicio=$fechaInicio&fecha_fin=$fechaFin');
     
     debugPrint('🌐 Fetching progress report from: $uri');
     final response = await CachedHttp.get(uri, headers: {

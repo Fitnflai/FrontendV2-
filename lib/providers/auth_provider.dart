@@ -143,6 +143,9 @@ class AuthProvider with ChangeNotifier {
       _token        = data['access_token'] as String?;
       _status       = AuthStatus.authenticated;
       _errorMessage = null;
+      if (_token != null) {
+        await _authService.saveToken(_token!);
+      }
       notifyListeners();
       await _refreshUser();
       return true;
@@ -169,6 +172,10 @@ class AuthProvider with ChangeNotifier {
       final isNewUser = data['is_new_user'] as bool? ?? false;
       debugPrint('GOOGLE isNewUser: $isNewUser');
 
+      if (_token != null) {
+        await _authService.saveToken(_token!);
+      }
+
       notifyListeners();
       await _refreshUser();
       return true;
@@ -185,8 +192,10 @@ class AuthProvider with ChangeNotifier {
   // ── Auto Login ────────────────────────────────────────────────
   // Solo lee el token guardado — sin HTTP en startup para no bloquear
   Future<void> tryAutoLogin() async {
+    debugPrint('🔍 [DEEP LINK auth_provider] tryAutoLogin started.');
     try {
       _token = await _authService.getToken();
+      debugPrint('🔍 [DEEP LINK auth_provider] Loaded token from disk: "${_token != null ? "FOUND" : "NULL"}"');
       if (_token == null) {
         _status = AuthStatus.unauthenticated;
         notifyListeners();
@@ -196,30 +205,42 @@ class AuthProvider with ChangeNotifier {
       // Intentar cargar el perfil de usuario guardado localmente (para soporte offline inmediato)
       final prefs = await SharedPreferences.getInstance();
       final savedUserJson = prefs.getString('cached_user_profile');
+      debugPrint('🔍 [DEEP LINK auth_provider] Loaded cached user profile JSON from SharedPreferences: "${savedUserJson != null ? "FOUND" : "NULL"}"');
       if (savedUserJson != null) {
         try {
           _user = Usuario.fromJson(jsonDecode(savedUserJson) as Map<String, dynamic>);
           _status = AuthStatus.authenticated;
           notifyListeners();
+          debugPrint('🔍 [DEEP LINK auth_provider] Parsed cached user: ${_user?.email}');
         } catch (e) {
-          debugPrint('Error parsing cached user: $e');
+          debugPrint('🔍 [DEEP LINK auth_provider] Error parsing cached user: $e');
         }
       }
       
       // Intentar sincronizar/actualizar los datos con el servidor en segundo plano
       try {
+        debugPrint('🔍 [DEEP LINK auth_provider] Triggering background getCurrentUser() fetch...');
         final user = await _authRepository.getCurrentUser();
         if (user != null) {
           _user = user;
           await prefs.setString('cached_user_profile', jsonEncode(user.toJson()));
           _status = AuthStatus.authenticated;
           notifyListeners();
+          debugPrint('🔍 [DEEP LINK auth_provider] Background user fetch success. User: ${_user?.email}');
         }
       } catch (e) {
-        debugPrint('Auto-login background fetch failed (offline or expired): $e');
+        debugPrint('🔍 [DEEP LINK auth_provider] Auto-login background fetch failed (offline or expired): $e');
         // Si no pudimos cargar el perfil localmente, o si es un error de token expirado (ej: 401), desautenticamos.
         // Si estamos simplemente offline pero tenemos perfil cargado localmente, lo mantenemos (permanece logueado).
-        if (_user == null || e.toString().contains('401') || e.toString().contains('expirada')) {
+        final errStr = e.toString().toLowerCase();
+        final isAuthError = errStr.contains('401') || 
+                            errStr.contains('unauthorized') || 
+                            errStr.contains('token') || 
+                            errStr.contains('expirada') || 
+                            errStr.contains('expired');
+        debugPrint('🔍 [DEEP LINK auth_provider] Is authentication/token invalidation error? $isAuthError');
+        if (isAuthError) {
+          debugPrint('🔍 [DEEP LINK auth_provider] Clearing session and logging out due to auth error.');
           _status = AuthStatus.unauthenticated;
           _user = null;
           _token = null;
@@ -227,7 +248,8 @@ class AuthProvider with ChangeNotifier {
           notifyListeners();
         }
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('🔍 [DEEP LINK auth_provider] Fatal exception in tryAutoLogin: $e');
       _status = AuthStatus.unauthenticated;
       notifyListeners();
     }

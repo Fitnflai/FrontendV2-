@@ -321,6 +321,19 @@
   "homeAdherencePct": "{percentage}%",
   "homeTipOfTheDayTitle": "Tip del día",
   "homeTipOfTheDayDesc": "Recuerda hidratarte bien antes de tu próxima sesión de alta intensidad.",
+  "homeNoWorkoutTitle": "Hoy no hay entrenamiento, {name}",
+  "@homeNoWorkoutTitle": {
+    "description": "Title shown when there is no workout scheduled for today",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeNoWorkoutDesc": "Hoy es un día libre. Aprovecha para descansar o hacer actividad ligera.",
+  "@homeNoWorkoutDesc": {
+    "description": "Description shown when there is no workout scheduled for today"
+  },
 
   "specialistBookingTitle": "Reservar Especialista",
   "@specialistBookingTitle": {

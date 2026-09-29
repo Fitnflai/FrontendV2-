@@ -17,6 +17,12 @@ _$SpecialistImpl _$$SpecialistImplFromJson(Map<String, dynamic> json) =>
       bio: json['bio'] as String?,
       fotoUrl: json['foto_url'] as String?,
       historialLaboral: json['historial_laboral'] as List<dynamic>?,
+      email: json['email'] as String?,
+      ciudad: json['ciudad'] as String?,
+      pais: json['pais'] as String?,
+      aniosExperiencia: json['anios_experiencia'] as num?,
+      telefonoContacto: json['telefono_contacto'] as String?,
+      certificados: json['certificados'] as List<dynamic>?,
     );
 
 Map<String, dynamic> _$$SpecialistImplToJson(_$SpecialistImpl instance) =>
@@ -28,4 +34,10 @@ Map<String, dynamic> _$$SpecialistImplToJson(_$SpecialistImpl instance) =>
       'bio': instance.bio,
       'foto_url': instance.fotoUrl,
       'historial_laboral': instance.historialLaboral,
+      'email': instance.email,
+      'ciudad': instance.ciudad,
+      'pais': instance.pais,
+      'anios_experiencia': instance.aniosExperiencia,
+      'telefono_contacto': instance.telefonoContacto,
+      'certificados': instance.certificados,
     };
