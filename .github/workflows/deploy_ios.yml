@@ -132,10 +132,11 @@ jobs:
           EOF
 
       - name: Prepare Flutter iOS directory
-        # Aseguramos que podhelper.rb esté presente en ios/Flutter copiándolo directamente desde el SDK de Flutter del servidor
+        # Aseguramos que podhelper.rb esté presente en ios/Flutter copiándolo desde las plantillas de CocoaPods del SDK de Flutter
+        # El archivo de plantilla lee la ruta FLUTTER_ROOT del archivo .xcconfig dinámicamente en lugar de resolver rutas relativas al SDK binario
         run: |
           mkdir -p ios/Flutter
-          cp "$FLUTTER_ROOT/packages/flutter_tools/bin/podhelper.rb" ios/Flutter/podhelper.rb
+          cp "$FLUTTER_ROOT/packages/flutter_tools/templates/cocoapods/podhelper.rb" ios/Flutter/podhelper.rb
 
       - name: Build IPA
         # Generamos el compilado final (.ipa) aplicando las variables de versión dinámica si se dispara manualmente
