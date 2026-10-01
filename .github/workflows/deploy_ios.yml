@@ -126,6 +126,12 @@ jobs:
           </plist>
           EOF
 
+      - name: Prepare Flutter iOS directory
+        # Aseguramos que podhelper.rb esté presente en ios/Flutter copiándolo directamente desde el SDK de Flutter del servidor
+        run: |
+          mkdir -p ios/Flutter
+          cp "$FLUTTER_ROOT/packages/flutter_tools/bin/podhelper.rb" ios/Flutter/podhelper.rb
+
       - name: Build IPA
         # Generamos el compilado final (.ipa) aplicando las variables de versión dinámica si se dispara manualmente
         # Forzamos Manual Signing a nivel de xcodebuild para anular la firma automática local en el servidor CI/CD
