@@ -115,9 +115,11 @@ jobs:
       - name: Build IPA
         # Generamos el compilado final (.ipa) aplicando las variables de versión dinámica si se dispara manualmente
         # Forzamos Manual Signing a nivel de xcodebuild para anular la firma automática local en el servidor CI/CD
+        # Especificamos el target '-t lib/main.dart' para evitar que Flutter interprete los argumentos de firma como el archivo de entrada
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             flutter build ipa --release \
+              -t lib/main.dart \
               --build-name="${{ github.event.inputs.version_name }}" \
               --build-number="${{ github.event.inputs.build_number }}" \
               --export-options-plist=ios/ExportOptions.plist \
@@ -128,6 +130,7 @@ jobs:
               CODE_SIGN_IDENTITY="Apple Distribution"
           else
             flutter build ipa --release \
+              -t lib/main.dart \
               --export-options-plist=ios/ExportOptions.plist \
               -- \
               CODE_SIGN_STYLE="Manual" \
