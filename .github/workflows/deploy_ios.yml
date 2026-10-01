@@ -49,6 +49,9 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          # Eliminar archivos autogenerados de Windows para obligar a recrearlos con rutas de macOS
+          rm -f ios/Flutter/Generated.xcconfig
+          rm -f ios/Flutter/flutter_export_environment.sh
           flutter pub get
           flutter precache --ios
 
