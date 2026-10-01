@@ -1,8 +1,9 @@
 # Uncomment this line to define a global platform for your project
 platform :ios, '14.0'
 
-# CocoaPods analytics sends usage stats which we don't need
-# install! 'cocoapods', :disable_input_output_paths => true
+# Carga de las funciones auxiliares de Flutter (obligatorio para usar flutter_install_all_ios_pods)
+flutter_ios_podfile_setup = File.join(File.dirname(File.expand_path(__FILE__)), 'Flutter', 'podhelper.rb')
+require flutter_ios_podfile_setup
 
 target 'Runner' do
   use_frameworks!
