@@ -114,15 +114,26 @@ jobs:
 
       - name: Build IPA
         # Generamos el compilado final (.ipa) aplicando las variables de versión dinámica si se dispara manualmente
+        # Forzamos Manual Signing a nivel de xcodebuild para anular la firma automática local en el servidor CI/CD
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             flutter build ipa --release \
               --build-name="${{ github.event.inputs.version_name }}" \
               --build-number="${{ github.event.inputs.build_number }}" \
-              --export-options-plist=ios/ExportOptions.plist
+              --export-options-plist=ios/ExportOptions.plist \
+              -- \
+              CODE_SIGN_STYLE="Manual" \
+              DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
+              PROVISIONING_PROFILE_SPECIFIER="Fitnflai AppStore Profile" \
+              CODE_SIGN_IDENTITY="Apple Distribution"
           else
             flutter build ipa --release \
-              --export-options-plist=ios/ExportOptions.plist
+              --export-options-plist=ios/ExportOptions.plist \
+              -- \
+              CODE_SIGN_STYLE="Manual" \
+              DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
+              PROVISIONING_PROFILE_SPECIFIER="Fitnflai AppStore Profile" \
+              CODE_SIGN_IDENTITY="Apple Distribution"
           fi
 
       - name: Upload to Apple App Store Connect / TestFlight
