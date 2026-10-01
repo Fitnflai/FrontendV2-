@@ -48,16 +48,16 @@ dependencies:
   shared_preferences: ^2.5.3
 
   cupertino_icons: ^1.0.8
-  freezed_annotation: ^3.1.0
+  freezed_annotation: ^2.4.1
   json_annotation: ^4.9.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  build_runner: ^2.15.1
-  freezed: ^4.0.0-dev.3
-  json_serializable: ^6.9.5
+  build_runner: ^2.4.9
+  freezed: ^2.4.7
+  json_serializable: ^6.8.0
   mockito: ^5.4.4
   geolocator_platform_interface: ^4.2.6
   plugin_platform_interface: ^2.1.8
@@ -69,7 +69,3 @@ flutter:
     - assets/images/
     - assets/images/tests/
     - assets/mock/
-
-dependency_overrides:
-  device_info_plus: 13.3.0
-  win32: ^6.0.1

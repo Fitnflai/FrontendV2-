@@ -55,6 +55,14 @@ jobs:
           rm -f ios/Flutter/podhelper.rb
           flutter pub get
           flutter precache --ios
+          
+          # Parchamos device_info_plus 12.4.0 en el pub cache para compatibilidad con Xcode 16 sin forzar overrides de win32
+          FILE_TO_PATCH="$HOME/.pub-cache/hosted/pub.dev/device_info_plus-12.4.0/ios/device_info_plus/Sources/device_info_plus/FPPDeviceInfoPlusPlugin.m"
+          if [ -f "$FILE_TO_PATCH" ]; then
+            echo "Aplicando parche de Xcode 16 a device_info_plus..."
+            sed -i '' 's/#import "FPPDeviceInfoPlusPlugin.h"/#import "FPPDeviceInfoPlusPlugin.h"\n@interface NSProcessInfo (Vision)\n@property (readonly) BOOL isiOSAppOnVision;\n@end/g' "$FILE_TO_PATCH"
+          fi
+
           # Regenerar todos los archivos puente y de configuración de Flutter nativos para macOS (.xcconfig y podhelper.rb)
           flutter build ios --config-only
 
