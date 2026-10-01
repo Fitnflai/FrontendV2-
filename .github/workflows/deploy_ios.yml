@@ -53,17 +53,17 @@ jobs:
         env:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_DIST_CERT_BASE64 }}
           P12_PASSWORD: ${{ secrets.APPLE_DIST_CERT_PASSWORD }}
-          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.APPLE_PROVISION_PROFILE_BASE64 }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
           KEYCHAIN_PASSWORD: "temporary-keychain-pass"
+          CERTIFICATE_PATH: ${{ runner.temp }}/building_cert.p12
+          PP_PATH: ${{ runner.temp }}/profile.mobileprovision
         run: |
           # Crear variables de rutas temporales
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          CERTIFICATE_PATH=$RUNNER_TEMP/building_cert.p12
-          PP_PATH=$RUNNER_TEMP/profile.mobileprovision
 
-          # Decodificar el certificado y el provisioning profile desde los Secrets de GitHub (usando Python para evitar diferencias de banderas de base64 en macOS)
-          python3 -c "import base64, sys; open(sys.argv[1], 'wb').write(base64.b64decode(sys.argv[2]))" "$CERTIFICATE_PATH" "$BUILD_CERTIFICATE_BASE64"
-          python3 -c "import base64, sys; open(sys.argv[1], 'wb').write(base64.b64decode(sys.argv[2]))" "$PP_PATH" "$BUILD_PROVISION_PROFILE_BASE64"
+          # Decodificar usando Python directamente desde las variables de entorno de forma robusta (evita límites de longitud de línea de comandos en bash)
+          python3 -c "import base64, os; open(os.environ['CERTIFICATE_PATH'], 'wb').write(base64.b64decode(os.environ['BUILD_CERTIFICATE_BASE64']))"
+          python3 -c "import base64, os; open(os.environ['PP_PATH'], 'wb').write(base64.b64decode(os.environ['BUILD_PROVISION_PROFILE_BASE64']))"
 
           # Crear y desbloquear un llavero (keychain) temporal exclusivo para esta sesión de compilación
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
