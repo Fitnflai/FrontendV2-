@@ -82,9 +82,12 @@ jobs:
 
           # Extraer el UUID real del provisioning profile de forma ultra-robusta usando un script de Python 3 integrado
           UUID=$(python3 -c "import plistlib, sys; content = open(sys.argv[1], 'rb').read(); start = content.find(b'<plist'); end = content.find(b'</plist>') + 8; plist = plistlib.loads(content[start:end]) if start != -1 and end != -1 else {}; print(plist.get('UUID', ''))" "$PP_PATH")
+          echo "DEBUG: Extracted UUID is [$UUID]"
 
           # Copiar el perfil renombrándolo a <UUID>.mobileprovision
           cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+          echo "DEBUG: Installed profiles in folder:"
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
 
       - name: Generate ExportOptions.plist
         # Este archivo le indica a Xcode cómo exportar el binario (ej. App Store, AdHoc) y qué perfiles usar
