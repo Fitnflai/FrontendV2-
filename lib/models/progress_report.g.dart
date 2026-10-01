@@ -186,8 +186,8 @@ Map<String, dynamic> _$$WeightPuntajeImplToJson(_$WeightPuntajeImpl instance) =>
 _$CurrentPreviousValueImpl _$$CurrentPreviousValueImplFromJson(
   Map<String, dynamic> json,
 ) => _$CurrentPreviousValueImpl(
-  actual: json['actual'] as num?,
-  anterior: json['anterior'] as num?,
+  actual: _parseNumericOrString(json['actual']),
+  anterior: _parseNumericOrString(json['anterior']),
 );
 
 Map<String, dynamic> _$$CurrentPreviousValueImplToJson(
@@ -269,9 +269,9 @@ _$WeightHistoryImpl _$$WeightHistoryImplFromJson(Map<String, dynamic> json) =>
     _$WeightHistoryImpl(
       semana: json['semana'] as num?,
       fecha: json['fecha'] as String?,
-      peso: json['peso'] as num?,
-      musculo: json['musculo'] as num?,
-      grasa: json['grasa'] as num?,
+      peso: _parseNumericOrString(json['peso']),
+      musculo: _parseNumericOrString(json['musculo']),
+      grasa: _parseNumericOrString(json['grasa']),
     );
 
 Map<String, dynamic> _$$WeightHistoryImplToJson(_$WeightHistoryImpl instance) =>

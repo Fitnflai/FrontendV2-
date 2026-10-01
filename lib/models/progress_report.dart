@@ -3,6 +3,16 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'progress_report.freezed.dart';
 part 'progress_report.g.dart';
 
+num? _parseNumericOrString(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value;
+  if (value is String) {
+    final cleanStr = value.replaceAll(RegExp(r'[^0-9.]'), '');
+    return num.tryParse(cleanStr);
+  }
+  return null;
+}
+
 @freezed
 abstract class ProgressReport with _$ProgressReport {
   const factory ProgressReport({
@@ -90,8 +100,8 @@ abstract class WeightPuntaje with _$WeightPuntaje {
 @freezed
 abstract class CurrentPreviousValue with _$CurrentPreviousValue {
   const factory CurrentPreviousValue({
-    num? actual,
-    num? anterior,
+    @JsonKey(fromJson: _parseNumericOrString) num? actual,
+    @JsonKey(fromJson: _parseNumericOrString) num? anterior,
   }) = _CurrentPreviousValue;
   factory CurrentPreviousValue.fromJson(Map<String, dynamic> json) => _$CurrentPreviousValueFromJson(json);
 }
@@ -140,9 +150,9 @@ abstract class WeightHistory with _$WeightHistory {
   const factory WeightHistory({
     num? semana,
     String? fecha,
-    num? peso,
-    num? musculo,
-    num? grasa,
+    @JsonKey(fromJson: _parseNumericOrString) num? peso,
+    @JsonKey(fromJson: _parseNumericOrString) num? musculo,
+    @JsonKey(fromJson: _parseNumericOrString) num? grasa,
   }) = _WeightHistory;
   factory WeightHistory.fromJson(Map<String, dynamic> json) => _$WeightHistoryFromJson(json);
 }

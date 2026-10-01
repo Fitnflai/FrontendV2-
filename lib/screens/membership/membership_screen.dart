@@ -915,7 +915,11 @@ class _MembershipScreenState extends State<MembershipScreen> {
                           Navigator.pop(dialogContext); // Close success modal
                           final planName = plan.name.toLowerCase();
                           final isElite = planName.contains('elite') || planName.contains('élite');
-                          if (isElite) {
+                          final specialistId = profileProvider.profileData?['id_especialista'];
+                          final hasSpecialist = specialistId != null &&
+                              (specialistId is num || (specialistId is String && specialistId.trim().isNotEmpty && specialistId.trim() != 'null'));
+
+                          if (isElite && !hasSpecialist) {
                             final selected = await showModalBottomSheet<bool>(
                               context: pageContext,
                               isScrollControlled: true,

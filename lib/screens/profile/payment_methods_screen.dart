@@ -103,7 +103,11 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
               await profileProvider.loadAll(authProvider.token!, force: true);
               final activePlanName = (profileProvider.planActivo?['nombre'] as String?)?.toLowerCase() ?? '';
               final isElite = activePlanName.contains('elite') || activePlanName.contains('élite');
-              if (isElite && mounted) {
+              final specialistId = profileProvider.profileData?['id_especialista'];
+              final hasSpecialist = specialistId != null &&
+                  (specialistId is num || (specialistId is String && specialistId.trim().isNotEmpty && specialistId.trim() != 'null'));
+
+              if (isElite && !hasSpecialist && mounted) {
                 await showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,

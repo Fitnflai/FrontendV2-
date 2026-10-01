@@ -2068,7 +2068,9 @@ CurrentPreviousValue _$CurrentPreviousValueFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$CurrentPreviousValue {
+  @JsonKey(fromJson: _parseNumericOrString)
   num? get actual => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseNumericOrString)
   num? get anterior => throw _privateConstructorUsedError;
 
   /// Serializes this CurrentPreviousValue to a JSON map.
@@ -2088,7 +2090,10 @@ abstract class $CurrentPreviousValueCopyWith<$Res> {
     $Res Function(CurrentPreviousValue) then,
   ) = _$CurrentPreviousValueCopyWithImpl<$Res, CurrentPreviousValue>;
   @useResult
-  $Res call({num? actual, num? anterior});
+  $Res call({
+    @JsonKey(fromJson: _parseNumericOrString) num? actual,
+    @JsonKey(fromJson: _parseNumericOrString) num? anterior,
+  });
 }
 
 /// @nodoc
@@ -2134,7 +2139,10 @@ abstract class _$$CurrentPreviousValueImplCopyWith<$Res>
   ) = __$$CurrentPreviousValueImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({num? actual, num? anterior});
+  $Res call({
+    @JsonKey(fromJson: _parseNumericOrString) num? actual,
+    @JsonKey(fromJson: _parseNumericOrString) num? anterior,
+  });
 }
 
 /// @nodoc
@@ -2169,14 +2177,19 @@ class __$$CurrentPreviousValueImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$CurrentPreviousValueImpl implements _CurrentPreviousValue {
-  const _$CurrentPreviousValueImpl({this.actual, this.anterior});
+  const _$CurrentPreviousValueImpl({
+    @JsonKey(fromJson: _parseNumericOrString) this.actual,
+    @JsonKey(fromJson: _parseNumericOrString) this.anterior,
+  });
 
   factory _$CurrentPreviousValueImpl.fromJson(Map<String, dynamic> json) =>
       _$$CurrentPreviousValueImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _parseNumericOrString)
   final num? actual;
   @override
+  @JsonKey(fromJson: _parseNumericOrString)
   final num? anterior;
 
   @override
@@ -2218,16 +2231,18 @@ class _$CurrentPreviousValueImpl implements _CurrentPreviousValue {
 
 abstract class _CurrentPreviousValue implements CurrentPreviousValue {
   const factory _CurrentPreviousValue({
-    final num? actual,
-    final num? anterior,
+    @JsonKey(fromJson: _parseNumericOrString) final num? actual,
+    @JsonKey(fromJson: _parseNumericOrString) final num? anterior,
   }) = _$CurrentPreviousValueImpl;
 
   factory _CurrentPreviousValue.fromJson(Map<String, dynamic> json) =
       _$CurrentPreviousValueImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _parseNumericOrString)
   num? get actual;
   @override
+  @JsonKey(fromJson: _parseNumericOrString)
   num? get anterior;
 
   /// Create a copy of CurrentPreviousValue
@@ -3113,8 +3128,11 @@ WeightHistory _$WeightHistoryFromJson(Map<String, dynamic> json) {
 mixin _$WeightHistory {
   num? get semana => throw _privateConstructorUsedError;
   String? get fecha => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseNumericOrString)
   num? get peso => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseNumericOrString)
   num? get musculo => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseNumericOrString)
   num? get grasa => throw _privateConstructorUsedError;
 
   /// Serializes this WeightHistory to a JSON map.
@@ -3134,7 +3152,13 @@ abstract class $WeightHistoryCopyWith<$Res> {
     $Res Function(WeightHistory) then,
   ) = _$WeightHistoryCopyWithImpl<$Res, WeightHistory>;
   @useResult
-  $Res call({num? semana, String? fecha, num? peso, num? musculo, num? grasa});
+  $Res call({
+    num? semana,
+    String? fecha,
+    @JsonKey(fromJson: _parseNumericOrString) num? peso,
+    @JsonKey(fromJson: _parseNumericOrString) num? musculo,
+    @JsonKey(fromJson: _parseNumericOrString) num? grasa,
+  });
 }
 
 /// @nodoc
@@ -3195,7 +3219,13 @@ abstract class _$$WeightHistoryImplCopyWith<$Res>
   ) = __$$WeightHistoryImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({num? semana, String? fecha, num? peso, num? musculo, num? grasa});
+  $Res call({
+    num? semana,
+    String? fecha,
+    @JsonKey(fromJson: _parseNumericOrString) num? peso,
+    @JsonKey(fromJson: _parseNumericOrString) num? musculo,
+    @JsonKey(fromJson: _parseNumericOrString) num? grasa,
+  });
 }
 
 /// @nodoc
@@ -3251,9 +3281,9 @@ class _$WeightHistoryImpl implements _WeightHistory {
   const _$WeightHistoryImpl({
     this.semana,
     this.fecha,
-    this.peso,
-    this.musculo,
-    this.grasa,
+    @JsonKey(fromJson: _parseNumericOrString) this.peso,
+    @JsonKey(fromJson: _parseNumericOrString) this.musculo,
+    @JsonKey(fromJson: _parseNumericOrString) this.grasa,
   });
 
   factory _$WeightHistoryImpl.fromJson(Map<String, dynamic> json) =>
@@ -3264,10 +3294,13 @@ class _$WeightHistoryImpl implements _WeightHistory {
   @override
   final String? fecha;
   @override
+  @JsonKey(fromJson: _parseNumericOrString)
   final num? peso;
   @override
+  @JsonKey(fromJson: _parseNumericOrString)
   final num? musculo;
   @override
+  @JsonKey(fromJson: _parseNumericOrString)
   final num? grasa;
 
   @override
@@ -3310,9 +3343,9 @@ abstract class _WeightHistory implements WeightHistory {
   const factory _WeightHistory({
     final num? semana,
     final String? fecha,
-    final num? peso,
-    final num? musculo,
-    final num? grasa,
+    @JsonKey(fromJson: _parseNumericOrString) final num? peso,
+    @JsonKey(fromJson: _parseNumericOrString) final num? musculo,
+    @JsonKey(fromJson: _parseNumericOrString) final num? grasa,
   }) = _$WeightHistoryImpl;
 
   factory _WeightHistory.fromJson(Map<String, dynamic> json) =
@@ -3323,10 +3356,13 @@ abstract class _WeightHistory implements WeightHistory {
   @override
   String? get fecha;
   @override
+  @JsonKey(fromJson: _parseNumericOrString)
   num? get peso;
   @override
+  @JsonKey(fromJson: _parseNumericOrString)
   num? get musculo;
   @override
+  @JsonKey(fromJson: _parseNumericOrString)
   num? get grasa;
 
   /// Create a copy of WeightHistory
