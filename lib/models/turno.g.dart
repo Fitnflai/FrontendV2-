@@ -6,7 +6,7 @@ part of 'turno.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$TurnoImpl _$$TurnoImplFromJson(Map<String, dynamic> json) => _$TurnoImpl(
+_Turno _$TurnoFromJson(Map<String, dynamic> json) => _Turno(
   id: (json['id'] as num).toInt(),
   idEspecialista: (json['id_especialista'] as num).toInt(),
   fecha: json['fecha'] as String,
@@ -15,12 +15,11 @@ _$TurnoImpl _$$TurnoImplFromJson(Map<String, dynamic> json) => _$TurnoImpl(
   estado: json['estado'] as String,
 );
 
-Map<String, dynamic> _$$TurnoImplToJson(_$TurnoImpl instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'id_especialista': instance.idEspecialista,
-      'fecha': instance.fecha,
-      'hora_inicio': instance.horaInicio,
-      'hora_fin': instance.horaFin,
-      'estado': instance.estado,
-    };
+Map<String, dynamic> _$TurnoToJson(_Turno instance) => <String, dynamic>{
+  'id': instance.id,
+  'id_especialista': instance.idEspecialista,
+  'fecha': instance.fecha,
+  'hora_inicio': instance.horaInicio,
+  'hora_fin': instance.horaFin,
+  'estado': instance.estado,
+};

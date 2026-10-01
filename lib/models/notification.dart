@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 part 'notification.freezed.dart';
 part 'notification.g.dart';
 
-@JsonSerializable()
 @freezed
 abstract class Notification with _$Notification {
   const factory Notification({
