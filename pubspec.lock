@@ -101,10 +101,10 @@ packages:
     dependency: transitive
     description:
       name: built_collection
-      sha256: "376e3dd27b51ea877c28d525560790aee2e6fbb5f20e2f85d5081027d94e2100"
+      sha256: "44922ecebd8e3d0cef743dadd3b54df4e87e2a4c52a29465a1872aa9e192caa8"
       url: "https://pub.dev"
     source: hosted
-    version: "5.1.1"
+    version: "5.1.2"
   built_value:
     dependency: transitive
     description:
@@ -449,10 +449,10 @@ packages:
     dependency: "direct dev"
     description:
       name: geolocator_platform_interface
-      sha256: "94db8255dc183d268765df682580440617ca35877fc82cacb5420ad03b86198d"
+      sha256: b640b6b687b14c66f51fe1130b1c2e8babbd408e0158052b92006b6675ca77fc
       url: "https://pub.dev"
     source: hosted
-    version: "4.3.0"
+    version: "4.4.0"
   geolocator_web:
     dependency: transitive
     description:
@@ -497,18 +497,18 @@ packages:
     dependency: "direct main"
     description:
       name: google_maps_flutter
-      sha256: "90f9d01eb282f996769defff95f15ebd8650a79c7e105c42a51a23f1376df612"
+      sha256: "392492775b6928b7419bd1d04c7562dab73a543e71078088a40ae7324acd3641"
       url: "https://pub.dev"
     source: hosted
-    version: "2.18.0"
+    version: "2.18.1"
   google_maps_flutter_android:
     dependency: transitive
     description:
       name: google_maps_flutter_android
-      sha256: "50bf2abde65d1abbb4505c709b20a6d5e36436b1c4830d1f36bfc20fbef091bd"
+      sha256: "9247f703b646e85c72213007853908ad473eb85dac73747f5dc9d370b8250b5c"
       url: "https://pub.dev"
     source: hosted
-    version: "2.19.13"
+    version: "2.21.0"
   google_maps_flutter_ios:
     dependency: transitive
     description:
@@ -529,10 +529,10 @@ packages:
     dependency: transitive
     description:
       name: google_maps_flutter_web
-      sha256: "903db0e985e831d3883cf0971dd5b4dbee83468b748c3753dc94da0e9a269b93"
+      sha256: e9a78255ea50db294f9a6949d8b144313ed5555497dcab21b198022aaaa56641
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.3+1"
+    version: "0.6.4+1"
   google_sign_in:
     dependency: "direct main"
     description:
@@ -657,10 +657,10 @@ packages:
     dependency: transitive
     description:
       name: image_picker_ios
-      sha256: ee3885b6fcd71958fbc79770dd194c63371439d536d69c47b279171a486482ae
+      sha256: "815921d05ef87d64dc64e9f7f855967614a9a67086d0c60fa27d47a1cd9a8896"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.13+7"
+    version: "0.8.13+9"
   image_picker_linux:
     dependency: transitive
     description:
