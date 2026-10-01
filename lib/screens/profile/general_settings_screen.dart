@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:provider/provider.dart';
 
 import '../../config/app_routes.dart';
 import '../../config/app_theme_extension.dart';
 import '../../widgets/shared_widgets.dart';
-import '../../providers/profile_provider.dart';
-import '../../providers/auth_provider.dart';
 
 import '../../l10n/app_localizations.dart';
+import 'support_screen.dart';
 
 class GeneralSettingsScreen extends StatefulWidget {
   const GeneralSettingsScreen({super.key});
@@ -67,7 +65,12 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
             _NavRow(
               icon: Icons.monetization_on_outlined,
               label: l10n.settingsRefundRequest,
-              onTap: () => _showRefundDialog(context),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SupportScreen(initialSubject: 'Reembolso'),
+                ),
+              ),
             ),
             _NavRow(icon: Icons.description_outlined, label: l10n.settingsTermsConditions, onTap: () => Navigator.pushNamed(context, AppRoutes.termsConditions), isLast: true),
           ]),
@@ -96,127 +99,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     Navigator.pop(context);
   }
 
-  void _showRefundDialog(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = context.themeColors;
-    final TextEditingController referenceController = TextEditingController();
-    final TextEditingController reasonController = TextEditingController();
-    bool isLoading = false;
-    String? errorMessage;
 
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return AlertDialog(
-              backgroundColor: theme.card,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Text(l10n.settingsRefundRequest, style: TextStyle(color: theme.text, fontSize: 18, fontWeight: FontWeight.w700)),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: referenceController,
-                      decoration: InputDecoration(
-                        labelText: l10n.refundReferenceLabel,
-                        labelStyle: TextStyle(color: theme.textMuted),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: theme.border),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: theme.primary),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      style: TextStyle(color: theme.text),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: reasonController,
-                      decoration: InputDecoration(
-                        labelText: l10n.refundReasonLabel,
-                        labelStyle: TextStyle(color: theme.textMuted),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: theme.border),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: theme.primary),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      style: TextStyle(color: theme.text),
-                      maxLines: 3,
-                    ),
-                    if (errorMessage != null) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        errorMessage!,
-                        style: const TextStyle(color: Colors.red, fontSize: 14),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: Text(l10n.cancelButton, style: TextStyle(color: theme.textMuted)),
-                ),
-                ElevatedButton(
-                  onPressed: isLoading ? null : () async {
-                    setModalState(() {
-                      isLoading = true;
-                      errorMessage = null;
-                    });
-                    try {
-                      final token = context.read<AuthProvider>().token;
-                      final profileProvider = context.read<ProfileProvider>();
-
-                      if (token == null) {
-                        throw Exception('Authentication token not found.');
-                      }
-
-                      if (referenceController.text.isEmpty || reasonController.text.isEmpty) {
-                        throw Exception(l10n.refundEmptyFieldsError);
-                      }
-
-                      await profileProvider.refundNuvei(token, referenceController.text, reasonController.text);
-
-                      if (!dialogContext.mounted) return;
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(content: Text(l10n.refundSuccess), backgroundColor: theme.successBorder),
-                      );
-                      Navigator.pop(dialogContext);
-                    } catch (e) {
-                      setModalState(() {
-                        errorMessage = e.toString();
-                      });
-                    } finally {
-                      setModalState(() {
-                        isLoading = false;
-                      });
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: isLoading
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : Text(l10n.submitButton),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 
   }
 

@@ -7,7 +7,8 @@ import '../../config/app_theme_extension.dart';
 import '../../widgets/shared_widgets.dart';
 
 class SupportScreen extends StatefulWidget {
-  const SupportScreen({super.key});
+  final String? initialSubject;
+  const SupportScreen({super.key, this.initialSubject});
   @override
   State<SupportScreen> createState() => _SupportScreenState();
 }
@@ -20,6 +21,11 @@ class _SupportScreenState extends State<SupportScreen> with WidgetsBindingObserv
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (widget.initialSubject != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showSupportForm(context);
+      });
+    }
   }
 
   @override
@@ -167,7 +173,7 @@ class _SupportScreenState extends State<SupportScreen> with WidgetsBindingObserv
     final membresia = user?.nombrePlanActivo ?? 'Ninguna / TRIAL';
     final userId = user?.id ?? 'No especificado';
 
-    String? selectedSubject = 'Problemas con mi entrenamiento';
+    String? selectedSubject = widget.initialSubject ?? 'Problemas con mi entrenamiento';
     final messageController = TextEditingController();
 
     final List<String> subjects = [
