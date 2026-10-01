@@ -48,7 +48,9 @@ jobs:
           cache: true
 
       - name: Install Dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
+          flutter precache --ios
 
       - name: Run Build Runner (Generación de Código)
         # Requerido por Freezed y JsonSerializable en Fitnflai
