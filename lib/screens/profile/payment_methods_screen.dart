@@ -91,8 +91,8 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
         if (mounted) {
           await profileProvider.loadSavedCards(authProvider.token!);
           if (mounted) {
-            debugPrint('💳 [SAVECARD DEEP LINK] Popping all routes until MembershipScreen...');
-            Navigator.popUntil(context, (route) => route.isFirst || route.settings.name == '/membership');
+            debugPrint('💳 [SAVECARD DEEP LINK] Popping all routes until we leave PaymentMethodsScreen...');
+            Navigator.popUntil(context, (route) => route.isFirst || route.settings.name != '/payment-methods');
           }
         }
       }

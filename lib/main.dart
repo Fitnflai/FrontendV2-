@@ -192,6 +192,7 @@ class FitnflaiAppState extends State<FitnflaiApp> {
           final initialExpYear = uri.queryParameters['exp_year'];
 
           return MaterialPageRoute(
+            settings: const RouteSettings(name: '/payment-methods'),
             builder: (_) => PaymentMethodsScreen(
               initialToken: initialToken,
               initialLastFour: initialLastFour,
