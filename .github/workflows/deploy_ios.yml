@@ -21,17 +21,17 @@ on:
 jobs:
   deploy_ios:
     name: Build & Deploy iOS
-    runs-on: macos-14 # Mac con Apple Silicon (M1/M2) y Xcode 15+, obligatorio para compilar con iOS 17 SDK
+    runs-on: macos-15 # Subimos a macOS 15 (Sequoia) para tener soporte del motor de Xcode 27 y SDK de iOS 27
     
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up Xcode Version
-        # Forzamos Xcode 16.2 (la versión más alta instalada en el servidor de GitHub) para tener soporte oficial completo de Swift 6.0
+        # Forzamos Xcode 27.0 (Swift 6.4) requerido obligatoriamente por las políticas de Apple en 2026 para publicar apps
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.2'
+          xcode-version: '27.0'
 
       - name: Set up Java
         # Necesario únicamente si alguna dependencia de Flutter requiere herramientas de Java para tareas auxiliares
@@ -56,10 +56,19 @@ jobs:
           flutter pub get
           flutter precache --ios
           
-          # Parchamos device_info_plus 12.4.0 en el pub cache para compatibilidad con Xcode 16 sin forzar overrides de win32
+          # Remover canal alpha del icono de la App Store de 1024x1024 para cumplir con las pautas de diseño obligatorias de Apple
+          FILE_ICON="ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png"
+          if [ -f "$FILE_ICON" ]; then
+            echo "Removiendo canal alpha del icono de la App Store de 1024x1024..."
+            sips -s format jpeg "$FILE_ICON" --out temp.jpg
+            sips -s format png temp.jpg --out "$FILE_ICON"
+            rm temp.jpg
+          fi
+
+          # Parchamos device_info_plus 12.4.0 en el pub cache para compatibilidad con Xcode sin forzar overrides de win32
           FILE_TO_PATCH="$HOME/.pub-cache/hosted/pub.dev/device_info_plus-12.4.0/ios/device_info_plus/Sources/device_info_plus/FPPDeviceInfoPlusPlugin.m"
           if [ -f "$FILE_TO_PATCH" ]; then
-            echo "Aplicando parche de Xcode 16 a device_info_plus..."
+            echo "Aplicando parche de Xcode a device_info_plus..."
             (echo "@interface NSProcessInfo (Vision)"; echo "@property (readonly) BOOL isiOSAppOnVision;"; echo "@end"; cat "$FILE_TO_PATCH") > "$FILE_TO_PATCH.tmp" && mv "$FILE_TO_PATCH.tmp" "$FILE_TO_PATCH"
           fi
 
