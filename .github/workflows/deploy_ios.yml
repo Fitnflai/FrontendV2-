@@ -80,8 +80,8 @@ jobs:
           # Crear la carpeta de perfiles en macOS de destino
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
 
-          # Extraer el UUID real del provisioning profile (requerido por Xcode para poder indexarlo y asociarlo)
-          UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i "$PP_PATH"))
+          # Extraer el UUID real del provisioning profile (procesando el archivo como texto binario con grep para evitar fallos de decodificación CMS)
+          UUID=$(grep -a -A 1 "<key>UUID</key>" "$PP_PATH" | grep -oE '[a-fA-F0-9-]{36}')
 
           # Copiar el perfil renombrándolo a <UUID>.mobileprovision
           cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
