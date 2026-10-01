@@ -6,7 +6,7 @@ part 'turno.freezed.dart';
 part 'turno.g.dart';
 
 @freezed
-class Turno with _$Turno {
+abstract class Turno with _$Turno {
   const factory Turno({
     required int id,
     @JsonKey(name: 'id_especialista') required int idEspecialista,

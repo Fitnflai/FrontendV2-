@@ -4,7 +4,7 @@ part 'credit_card.freezed.dart';
 part 'credit_card.g.dart';
 
 @freezed
-class CreditCard with _$CreditCard {
+abstract class CreditCard with _$CreditCard {
   const factory CreditCard({
     required String id,
     required String brand,

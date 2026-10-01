@@ -12,6 +12,7 @@ part of 'notification.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
+
 /// @nodoc
 mixin _$Notification implements DiagnosticableTreeMixin {
 
@@ -22,6 +23,8 @@ mixin _$Notification implements DiagnosticableTreeMixin {
 @pragma('vm:prefer-inline')
 $NotificationCopyWith<Notification> get copyWith => _$NotificationCopyWithImpl<Notification>(this as Notification, _$identity);
 
+  /// Serializes this Notification to a JSON map.
+  Map<String, dynamic> toJson();
 
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -35,7 +38,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is Notification&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.body, body) || other.body == body)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.type, type) || other.type == type)&&(identical(other.read, read) || other.read == read));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,id,title,body,createdAt,type,read);
 
@@ -215,11 +218,11 @@ return $default(_that.id,_that.title,_that.body,_that.createdAt,_that.type,_that
 }
 
 /// @nodoc
-
+@JsonSerializable()
 
 class _Notification extends Notification with DiagnosticableTreeMixin {
   const _Notification({required this.id, required this.title, required this.body, @JsonKey(name: 'created_at') required this.createdAt, required this.type, this.read = false}): super._();
-  
+  factory _Notification.fromJson(Map<String, dynamic> json) => _$NotificationFromJson(json);
 
 @override final  String id;
 @override final  String title;
@@ -234,7 +237,10 @@ class _Notification extends Notification with DiagnosticableTreeMixin {
 @pragma('vm:prefer-inline')
 _$NotificationCopyWith<_Notification> get copyWith => __$NotificationCopyWithImpl<_Notification>(this, _$identity);
 
-
+@override
+Map<String, dynamic> toJson() {
+  return _$NotificationToJson(this, );
+}
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
@@ -247,7 +253,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _Notification&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.body, body) || other.body == body)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.type, type) || other.type == type)&&(identical(other.read, read) || other.read == read));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,id,title,body,createdAt,type,read);
 

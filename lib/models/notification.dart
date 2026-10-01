@@ -19,14 +19,16 @@ abstract class Notification with _$Notification {
   // Add this private constructor for custom getters
   const Notification._();
 
-  factory Notification.fromJson(Map<String, dynamic> json) {
+  factory Notification.fromJson(Map<String, dynamic> json) => _$NotificationFromJson(json);
+
+  factory Notification.fromMap(Map<String, dynamic> json) {
     final String rawTitle = json['titulo']?.toString() ?? '';
     final String rawType = json['tipo']?.toString() ?? '';
     final String parsedTitle = rawTitle.isNotEmpty 
         ? rawTitle 
         : (rawType.isNotEmpty ? rawType : 'Notificación');
 
-    return _$NotificationFromJson({
+    return Notification.fromJson({
       'id': (json['id_notificacion'] ?? json['id'] ?? '').toString(),
       'title': parsedTitle,
       'body': json['mensaje'] ?? json['cuerpo'] ?? json['body'] ?? '',

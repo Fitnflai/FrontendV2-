@@ -22,7 +22,7 @@ class NotificationService {
     if (response.statusCode == 200) {
       debugPrint('🛑 NOTIFICATIONS RAW RESPONSE: ${response.body}');
       final List<dynamic> jsonList = json.decode(response.body);
-      return jsonList.map((json) => Notification.fromJson(json)).toList();
+      return jsonList.map((json) => Notification.fromMap(json)).toList();
     } else {
       throw Exception('Failed to load notifications: ${response.statusCode}');
     }
