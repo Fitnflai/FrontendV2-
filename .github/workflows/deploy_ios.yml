@@ -77,9 +77,14 @@ jobs:
           # Autorizar al comando codesign para acceder a la clave sin mostrar popups interactivos
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-          # Crear la carpeta de perfiles en macOS de destino y copiar el perfil de aprovisionamiento
+          # Crear la carpeta de perfiles en macOS de destino
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/
+
+          # Extraer el UUID real del provisioning profile (requerido por Xcode para poder indexarlo y asociarlo)
+          UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i "$PP_PATH"))
+
+          # Copiar el perfil renombrándolo a <UUID>.mobileprovision
+          cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
 
       - name: Generate ExportOptions.plist
         # Este archivo le indica a Xcode cómo exportar el binario (ej. App Store, AdHoc) y qué perfiles usar
