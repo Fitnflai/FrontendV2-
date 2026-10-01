@@ -177,11 +177,13 @@ class FitnflaiAppState extends State<FitnflaiApp> {
           String? priceId;
           if (isFromMembership) {
             final segments = uri.pathSegments;
+            debugPrint('🔍 [DEEP LINK main.dart] segments: $segments');
             final index = segments.indexOf('membership');
             if (index != -1 && index + 1 < segments.length) {
               priceId = segments[index + 1];
             }
           }
+          debugPrint('🔍 [DEEP LINK main.dart] resolved priceId: "$priceId", isFromMembership: $isFromMembership');
 
           final initialToken = uri.queryParameters['token'];
           final initialLastFour = uri.queryParameters['last_four'];

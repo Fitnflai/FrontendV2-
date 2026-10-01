@@ -94,20 +94,26 @@ class _MembershipScreenState extends State<MembershipScreen> {
     if (profileProvider.pendingCheckoutPriceId != null) {
       final priceId = profileProvider.pendingCheckoutPriceId!;
       _Plan? targetPlan;
+      debugPrint('💳 [CHECKOUT MEMBRESIA] pendingCheckoutPriceId is NOT NULL: "$priceId"');
       for (final p in _currentPlans) {
         if (p.originalData['precios'] != null) {
           final precios = p.originalData['precios'] as List;
+          debugPrint('💳 [CHECKOUT MEMBRESIA] Checking plan "${p.name}" prices: ${precios.map((pr) => pr['id_precio'])}');
           if (precios.any((pr) => pr['id_precio'] == priceId)) {
             targetPlan = p;
             break;
           }
         }
       }
+      debugPrint('💳 [CHECKOUT MEMBRESIA] resolved targetPlan: ${targetPlan?.name}');
       if (targetPlan != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          debugPrint('💳 [CHECKOUT MEMBRESIA] addPostFrameCallback triggered. Reopening checkout bottom sheet for ${targetPlan?.name}...');
           profileProvider.pendingCheckoutPriceId = null; // Clear flag to avoid duplicate modals
           _subscribe(targetPlan!, priceId);
         });
+      } else {
+        debugPrint('💳 [CHECKOUT MEMBRESIA] WARNING: No exact matching plan found for priceId: "$priceId". Check if price IDs match.');
       }
     }
 
