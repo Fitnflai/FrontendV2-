@@ -38,8 +38,6 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          # Lee la versión del SDK del entorno o usa la última estable compatible con tu pubspec
-          flutter-version: '3.24.0' # Podés ajustar esto según tu entorno de desarrollo
           cache: true
 
       - name: Install Dependencies
