@@ -84,8 +84,9 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       } else {
         _showSuccessSnackBar('¡Tarjeta guardada correctamente!');
         debugPrint('💳 [SAVECARD DEEP LINK] Card saved successfully. pendingSubscribePriceId: ${profileProvider.pendingSubscribePriceId}, widget.priceId: ${widget.priceId}');
+        final resolvedPriceId = widget.priceId ?? profileProvider.pendingSubscribePriceId;
         profileProvider.pendingSubscribePriceId = null; // Clear memory cache
-        profileProvider.pendingCheckoutPriceId = widget.priceId; // Set flag to reopen subscribe sheet
+        profileProvider.pendingCheckoutPriceId = resolvedPriceId; // Set flag to reopen subscribe sheet
         debugPrint('💳 [SAVECARD DEEP LINK] Set pendingCheckoutPriceId in profileProvider to: ${profileProvider.pendingCheckoutPriceId}');
         if (mounted) {
           await profileProvider.loadSavedCards(authProvider.token!);
