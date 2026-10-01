@@ -61,9 +61,9 @@ jobs:
           CERTIFICATE_PATH=$RUNNER_TEMP/building_cert.p12
           PP_PATH=$RUNNER_TEMP/profile.mobileprovision
 
-          # Decodificar el certificado y el provisioning profile desde los Secrets de GitHub
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
-          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o "$PP_PATH"
+          # Decodificar el certificado y el provisioning profile desde los Secrets de GitHub (usando Python para evitar diferencias de banderas de base64 en macOS)
+          python3 -c "import base64, sys; open(sys.argv[1], 'wb').write(base64.b64decode(sys.argv[2]))" "$CERTIFICATE_PATH" "$BUILD_CERTIFICATE_BASE64"
+          python3 -c "import base64, sys; open(sys.argv[1], 'wb').write(base64.b64decode(sys.argv[2]))" "$PP_PATH" "$BUILD_PROVISION_PROFILE_BASE64"
 
           # Crear y desbloquear un llavero (keychain) temporal exclusivo para esta sesión de compilación
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
