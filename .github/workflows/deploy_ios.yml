@@ -52,8 +52,11 @@ jobs:
           # Eliminar archivos autogenerados de Windows para obligar a recrearlos con rutas de macOS
           rm -f ios/Flutter/Generated.xcconfig
           rm -f ios/Flutter/flutter_export_environment.sh
+          rm -f ios/Flutter/podhelper.rb
           flutter pub get
           flutter precache --ios
+          # Regenerar todos los archivos puente y de configuración de Flutter nativos para macOS (.xcconfig y podhelper.rb)
+          flutter build ios --config-only
 
       - name: Run Build Runner (Generación de Código)
         # Requerido por Freezed y JsonSerializable en Fitnflai
@@ -130,13 +133,6 @@ jobs:
           </dict>
           </plist>
           EOF
-
-      - name: Prepare Flutter iOS directory
-        # Aseguramos que podhelper.rb esté presente en ios/Flutter copiándolo desde las plantillas de CocoaPods del SDK de Flutter
-        # El archivo de plantilla lee la ruta FLUTTER_ROOT del archivo .xcconfig dinámicamente en lugar de resolver rutas relativas al SDK binario
-        run: |
-          mkdir -p ios/Flutter
-          cp "$FLUTTER_ROOT/packages/flutter_tools/templates/cocoapods/podhelper.rb" ios/Flutter/podhelper.rb
 
       - name: Build IPA
         # Generamos el compilado final (.ipa) aplicando las variables de versión dinámica si se dispara manualmente
