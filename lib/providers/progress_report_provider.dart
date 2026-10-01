@@ -124,11 +124,14 @@ class ProgressReportProvider with ChangeNotifier {
     indiceBienestar: 0,
     variacionIndiceBienestar: 0,
     detalleFactorMovement: const GeneralFactorDetail(puntaje: 0, variacion: 0),
-    detalleFactorHidratacion: const GeneralFactorDetail(puntaje: 0, variacion: 0),
+    detalleFactorHidratacion: const FactorHidratacionDetail(
+      puntaje: HidratacionPuntajeDetail(consumoTotalMl: 0, scoreHidratacion: 0, requerimientoTotalMl: 0),
+      variacion: 0,
+    ),
     detalleFactorEdadCorporal: const GeneralFactorDetail(puntaje: 0, variacion: 0),
     detalleFactorCargaMuscular: const GeneralFactorDetail(puntaje: 0, variacion: 0),
     detalleFactorPesoComposicion: const FactorWeightDetail(
-      puntaje: 0,
+      puntaje: WeightPuntajeDetail(tag: '', puntaje: 0),
       variacion: 0,
       imc: 0,
       pesoRegistrado: 0,

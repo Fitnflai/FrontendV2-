@@ -27,7 +27,7 @@ _$ProgressReportImpl _$$ProgressReportImplFromJson(
         ),
   detalleFactorHidratacion: json['detalle_factor_hidratacion'] == null
       ? null
-      : GeneralFactorDetail.fromJson(
+      : FactorHidratacionDetail.fromJson(
           json['detalle_factor_hidratacion'] as Map<String, dynamic>,
         ),
   detalleFactorEdadCorporal: json['detalle_factor_edad_corporal'] == null
@@ -126,10 +126,46 @@ Map<String, dynamic> _$$GeneralFactorDetailImplToJson(
   'variacion': instance.variacion,
 };
 
+_$FactorHidratacionDetailImpl _$$FactorHidratacionDetailImplFromJson(
+  Map<String, dynamic> json,
+) => _$FactorHidratacionDetailImpl(
+  puntaje: json['puntaje'] == null
+      ? null
+      : HidratacionPuntajeDetail.fromJson(
+          json['puntaje'] as Map<String, dynamic>,
+        ),
+  variacion: json['variacion'] as num?,
+);
+
+Map<String, dynamic> _$$FactorHidratacionDetailImplToJson(
+  _$FactorHidratacionDetailImpl instance,
+) => <String, dynamic>{
+  'puntaje': instance.puntaje,
+  'variacion': instance.variacion,
+};
+
+_$HidratacionPuntajeDetailImpl _$$HidratacionPuntajeDetailImplFromJson(
+  Map<String, dynamic> json,
+) => _$HidratacionPuntajeDetailImpl(
+  consumoTotalMl: json['consumo_total_ml'] as num?,
+  scoreHidratacion: json['score_hidratacion'] as num?,
+  requerimientoTotalMl: json['requerimiento_total_ml'] as num?,
+);
+
+Map<String, dynamic> _$$HidratacionPuntajeDetailImplToJson(
+  _$HidratacionPuntajeDetailImpl instance,
+) => <String, dynamic>{
+  'consumo_total_ml': instance.consumoTotalMl,
+  'score_hidratacion': instance.scoreHidratacion,
+  'requerimiento_total_ml': instance.requerimientoTotalMl,
+};
+
 _$FactorWeightDetailImpl _$$FactorWeightDetailImplFromJson(
   Map<String, dynamic> json,
 ) => _$FactorWeightDetailImpl(
-  puntaje: json['puntaje'] as num?,
+  puntaje: json['puntaje'] == null
+      ? null
+      : WeightPuntajeDetail.fromJson(json['puntaje'] as Map<String, dynamic>),
   variacion: json['variacion'] as num?,
   imc: json['imc'] as num?,
   pesoRegistrado: json['peso_registrado'] as num?,
@@ -143,6 +179,17 @@ Map<String, dynamic> _$$FactorWeightDetailImplToJson(
   'imc': instance.imc,
   'peso_registrado': instance.pesoRegistrado,
 };
+
+_$WeightPuntajeDetailImpl _$$WeightPuntajeDetailImplFromJson(
+  Map<String, dynamic> json,
+) => _$WeightPuntajeDetailImpl(
+  tag: json['tag'] as String?,
+  puntaje: json['puntaje'] as num?,
+);
+
+Map<String, dynamic> _$$WeightPuntajeDetailImplToJson(
+  _$WeightPuntajeDetailImpl instance,
+) => <String, dynamic>{'tag': instance.tag, 'puntaje': instance.puntaje};
 
 _$CurrentPreviousValueImpl _$$CurrentPreviousValueImplFromJson(
   Map<String, dynamic> json,

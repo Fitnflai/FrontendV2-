@@ -26,7 +26,7 @@ abstract class ProgressReport with _$ProgressReport {
     @JsonKey(name: 'indice_bienestar') num? indiceBienestar,
     @JsonKey(name: 'variacion_indice_bienestar') num? variacionIndiceBienestar,
     @JsonKey(name: 'detalle_factor_movimiento') GeneralFactorDetail? detalleFactorMovement,
-    @JsonKey(name: 'detalle_factor_hidratacion') GeneralFactorDetail? detalleFactorHidratacion,
+    @JsonKey(name: 'detalle_factor_hidratacion') FactorHidratacionDetail? detalleFactorHidratacion,
     @JsonKey(name: 'detalle_factor_edad_corporal') GeneralFactorDetail? detalleFactorEdadCorporal,
     @JsonKey(name: 'detalle_factor_carga_muscular') GeneralFactorDetail? detalleFactorCargaMuscular,
     @JsonKey(name: 'detalle_factor_peso_composicion') FactorWeightDetail? detalleFactorPesoComposicion,
@@ -61,14 +61,42 @@ abstract class GeneralFactorDetail with _$GeneralFactorDetail {
 }
 
 @freezed
+abstract class FactorHidratacionDetail with _$FactorHidratacionDetail {
+  const factory FactorHidratacionDetail({
+    HidratacionPuntajeDetail? puntaje,
+    num? variacion,
+  }) = _FactorHidratacionDetail;
+  factory FactorHidratacionDetail.fromJson(Map<String, dynamic> json) => _$FactorHidratacionDetailFromJson(json);
+}
+
+@freezed
+abstract class HidratacionPuntajeDetail with _$HidratacionPuntajeDetail {
+  const factory HidratacionPuntajeDetail({
+    @JsonKey(name: 'consumo_total_ml') num? consumoTotalMl,
+    @JsonKey(name: 'score_hidratacion') num? scoreHidratacion,
+    @JsonKey(name: 'requerimiento_total_ml') num? requerimientoTotalMl,
+  }) = _HidratacionPuntajeDetail;
+  factory HidratacionPuntajeDetail.fromJson(Map<String, dynamic> json) => _$HidratacionPuntajeDetailFromJson(json);
+}
+
+@freezed
 abstract class FactorWeightDetail with _$FactorWeightDetail {
   const factory FactorWeightDetail({
-    num? puntaje,
+    WeightPuntajeDetail? puntaje,
     num? variacion,
     num? imc,
     @JsonKey(name: 'peso_registrado') num? pesoRegistrado,
   }) = _FactorWeightDetail;
   factory FactorWeightDetail.fromJson(Map<String, dynamic> json) => _$FactorWeightDetailFromJson(json);
+}
+
+@freezed
+abstract class WeightPuntajeDetail with _$WeightPuntajeDetail {
+  const factory WeightPuntajeDetail({
+    String? tag,
+    num? puntaje,
+  }) = _WeightPuntajeDetail;
+  factory WeightPuntajeDetail.fromJson(Map<String, dynamic> json) => _$WeightPuntajeDetailFromJson(json);
 }
 
 @freezed
