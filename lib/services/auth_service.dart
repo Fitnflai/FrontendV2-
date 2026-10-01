@@ -245,4 +245,30 @@ class AuthService {
     await prefs.remove(_tokenKey);
     CachedHttp.clearCache();
   }
+
+  Future<void> deleteAccount(String token) async {
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/users/delete-me'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    debugPrint('DELETE ACCOUNT STATUS: ${response.statusCode}');
+    debugPrint('DELETE ACCOUNT BODY: ${response.body}');
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      try {
+        final data = jsonDecode(response.body);
+        final msg = data['detail'] is String
+            ? data['detail'] as String
+            : data['message'] as String? ?? 'Error al eliminar cuenta';
+        throw Exception(msg);
+      } catch (e) {
+        if (e is Exception) rethrow;
+        throw Exception('Error al eliminar cuenta (${response.statusCode})');
+      }
+    }
+  }
 }

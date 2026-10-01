@@ -57,7 +57,7 @@ class WellnessIndexProvider with ChangeNotifier {
         weight: 0.20,
         scores: report.historialPeso.isNotEmpty
             ? report.historialPeso.map((e) => (e.peso ?? 0.0).toDouble()).toList()
-            : [(report.detalleFactorPesoComposicion?.puntaje?.puntaje ?? 0.0).toDouble()],
+            : [(report.detalleFactorPesoComposicion?.puntaje ?? 0.0).toDouble()],
         labels: report.historialPeso.isNotEmpty
             ? report.historialPeso.map((e) => e.fecha != null && e.fecha!.length >= 10 ? e.fecha!.substring(5, 10) : 'Current').toList()
             : ['Current'],
@@ -69,8 +69,8 @@ class WellnessIndexProvider with ChangeNotifier {
         nameEn: 'Hydration',
         weight: 0.15,
         scores: report.evolucionIndiceBienestar.isNotEmpty
-            ? report.evolucionIndiceBienestar.map((e) => (report.detalleFactorHidratacion?.puntaje?.scoreHidratacion ?? 0.0).toDouble()).toList()
-            : [(report.detalleFactorHidratacion?.puntaje?.scoreHidratacion ?? 0.0).toDouble()],
+            ? report.evolucionIndiceBienestar.map((e) => (report.detalleFactorHidratacion?.puntaje ?? 0.0).toDouble()).toList()
+            : [(report.detalleFactorHidratacion?.puntaje ?? 0.0).toDouble()],
         labels: commonLabels,
         colorResolver: (theme) => theme.principal.primary,
       ),

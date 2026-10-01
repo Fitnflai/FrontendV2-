@@ -968,7 +968,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Text(l10n.profileConfirmDeleteCancel,
                 style: TextStyle(color: theme.grey))),
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () async {
+              Navigator.pop(ctx); // Close confirmation dialog
+              
+              // Show loading dialog
+              showDialog(
+                context: ctx,
+                barrierDismissible: false,
+                builder: (loadingCtx) => PopScope(
+                  canPop: false,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: const BoxDecoration(
+                        color: Colors.transparent,
+                      ),
+                      child: const CircularProgressIndicator(color: Colors.orange),
+                    ),
+                  ),
+                ),
+              );
+
+              try {
+                await auth.deleteAccount();
+                if (ctx.mounted) {
+                  Navigator.pop(ctx); // Close loading dialog
+                  Navigator.pushNamedAndRemoveUntil(
+                      ctx, AppRoutes.welcome, (_) => false);
+                }
+              } catch (e) {
+                if (ctx.mounted) {
+                  Navigator.pop(ctx); // Close loading dialog
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
             child: Text(l10n.profileConfirmDeleteConfirm,
                 style: TextStyle(color: theme.redText,
                     fontWeight: FontWeight.w700))),

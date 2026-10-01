@@ -255,6 +255,23 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> deleteAccount() async {
+    if (_token == null) {
+      throw Exception('No autenticado');
+    }
+    _setLoading(true);
+    _errorMessage = null;
+    try {
+      await _authService.deleteAccount(_token!);
+      await logout();
+    } catch (e) {
+      _errorMessage = _friendlyError(e.toString());
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   // ── Logout ────────────────────────────────────────────────────
   Future<void> logout() async {
     try {

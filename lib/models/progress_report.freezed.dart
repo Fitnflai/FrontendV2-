@@ -41,7 +41,7 @@ mixin _$ProgressReport {
   GeneralFactorDetail? get detalleFactorMovement =>
       throw _privateConstructorUsedError;
   @JsonKey(name: 'detalle_factor_hidratacion')
-  FactorHydrationDetail? get detalleFactorHidratacion =>
+  GeneralFactorDetail? get detalleFactorHidratacion =>
       throw _privateConstructorUsedError;
   @JsonKey(name: 'detalle_factor_edad_corporal')
   GeneralFactorDetail? get detalleFactorEdadCorporal =>
@@ -96,7 +96,7 @@ abstract class $ProgressReportCopyWith<$Res> {
     @JsonKey(name: 'detalle_factor_movimiento')
     GeneralFactorDetail? detalleFactorMovement,
     @JsonKey(name: 'detalle_factor_hidratacion')
-    FactorHydrationDetail? detalleFactorHidratacion,
+    GeneralFactorDetail? detalleFactorHidratacion,
     @JsonKey(name: 'detalle_factor_edad_corporal')
     GeneralFactorDetail? detalleFactorEdadCorporal,
     @JsonKey(name: 'detalle_factor_carga_muscular')
@@ -116,7 +116,7 @@ abstract class $ProgressReportCopyWith<$Res> {
 
   $AlertCopyWith<$Res>? get alertas;
   $GeneralFactorDetailCopyWith<$Res>? get detalleFactorMovement;
-  $FactorHydrationDetailCopyWith<$Res>? get detalleFactorHidratacion;
+  $GeneralFactorDetailCopyWith<$Res>? get detalleFactorHidratacion;
   $GeneralFactorDetailCopyWith<$Res>? get detalleFactorEdadCorporal;
   $GeneralFactorDetailCopyWith<$Res>? get detalleFactorCargaMuscular;
   $FactorWeightDetailCopyWith<$Res>? get detalleFactorPesoComposicion;
@@ -209,7 +209,7 @@ class _$ProgressReportCopyWithImpl<$Res, $Val extends ProgressReport>
             detalleFactorHidratacion: freezed == detalleFactorHidratacion
                 ? _value.detalleFactorHidratacion
                 : detalleFactorHidratacion // ignore: cast_nullable_to_non_nullable
-                      as FactorHydrationDetail?,
+                      as GeneralFactorDetail?,
             detalleFactorEdadCorporal: freezed == detalleFactorEdadCorporal
                 ? _value.detalleFactorEdadCorporal
                 : detalleFactorEdadCorporal // ignore: cast_nullable_to_non_nullable
@@ -290,12 +290,12 @@ class _$ProgressReportCopyWithImpl<$Res, $Val extends ProgressReport>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $FactorHydrationDetailCopyWith<$Res>? get detalleFactorHidratacion {
+  $GeneralFactorDetailCopyWith<$Res>? get detalleFactorHidratacion {
     if (_value.detalleFactorHidratacion == null) {
       return null;
     }
 
-    return $FactorHydrationDetailCopyWith<$Res>(
+    return $GeneralFactorDetailCopyWith<$Res>(
       _value.detalleFactorHidratacion!,
       (value) {
         return _then(_value.copyWith(detalleFactorHidratacion: value) as $Val);
@@ -453,7 +453,7 @@ abstract class _$$ProgressReportImplCopyWith<$Res>
     @JsonKey(name: 'detalle_factor_movimiento')
     GeneralFactorDetail? detalleFactorMovement,
     @JsonKey(name: 'detalle_factor_hidratacion')
-    FactorHydrationDetail? detalleFactorHidratacion,
+    GeneralFactorDetail? detalleFactorHidratacion,
     @JsonKey(name: 'detalle_factor_edad_corporal')
     GeneralFactorDetail? detalleFactorEdadCorporal,
     @JsonKey(name: 'detalle_factor_carga_muscular')
@@ -476,7 +476,7 @@ abstract class _$$ProgressReportImplCopyWith<$Res>
   @override
   $GeneralFactorDetailCopyWith<$Res>? get detalleFactorMovement;
   @override
-  $FactorHydrationDetailCopyWith<$Res>? get detalleFactorHidratacion;
+  $GeneralFactorDetailCopyWith<$Res>? get detalleFactorHidratacion;
   @override
   $GeneralFactorDetailCopyWith<$Res>? get detalleFactorEdadCorporal;
   @override
@@ -576,7 +576,7 @@ class __$$ProgressReportImplCopyWithImpl<$Res>
         detalleFactorHidratacion: freezed == detalleFactorHidratacion
             ? _value.detalleFactorHidratacion
             : detalleFactorHidratacion // ignore: cast_nullable_to_non_nullable
-                  as FactorHydrationDetail?,
+                  as GeneralFactorDetail?,
         detalleFactorEdadCorporal: freezed == detalleFactorEdadCorporal
             ? _value.detalleFactorEdadCorporal
             : detalleFactorEdadCorporal // ignore: cast_nullable_to_non_nullable
@@ -688,7 +688,7 @@ class _$ProgressReportImpl implements _ProgressReport {
   final GeneralFactorDetail? detalleFactorMovement;
   @override
   @JsonKey(name: 'detalle_factor_hidratacion')
-  final FactorHydrationDetail? detalleFactorHidratacion;
+  final GeneralFactorDetail? detalleFactorHidratacion;
   @override
   @JsonKey(name: 'detalle_factor_edad_corporal')
   final GeneralFactorDetail? detalleFactorEdadCorporal;
@@ -862,7 +862,7 @@ abstract class _ProgressReport implements ProgressReport {
     @JsonKey(name: 'detalle_factor_movimiento')
     final GeneralFactorDetail? detalleFactorMovement,
     @JsonKey(name: 'detalle_factor_hidratacion')
-    final FactorHydrationDetail? detalleFactorHidratacion,
+    final GeneralFactorDetail? detalleFactorHidratacion,
     @JsonKey(name: 'detalle_factor_edad_corporal')
     final GeneralFactorDetail? detalleFactorEdadCorporal,
     @JsonKey(name: 'detalle_factor_carga_muscular')
@@ -913,7 +913,7 @@ abstract class _ProgressReport implements ProgressReport {
   GeneralFactorDetail? get detalleFactorMovement;
   @override
   @JsonKey(name: 'detalle_factor_hidratacion')
-  FactorHydrationDetail? get detalleFactorHidratacion;
+  GeneralFactorDetail? get detalleFactorHidratacion;
   @override
   @JsonKey(name: 'detalle_factor_edad_corporal')
   GeneralFactorDetail? get detalleFactorEdadCorporal;
@@ -1284,435 +1284,17 @@ abstract class _GeneralFactorDetail implements GeneralFactorDetail {
       throw _privateConstructorUsedError;
 }
 
-FactorHydrationDetail _$FactorHydrationDetailFromJson(
-  Map<String, dynamic> json,
-) {
-  return _FactorHydrationDetail.fromJson(json);
-}
-
-/// @nodoc
-mixin _$FactorHydrationDetail {
-  HydrationPuntaje? get puntaje => throw _privateConstructorUsedError;
-  num? get variacion => throw _privateConstructorUsedError;
-
-  /// Serializes this FactorHydrationDetail to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of FactorHydrationDetail
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $FactorHydrationDetailCopyWith<FactorHydrationDetail> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $FactorHydrationDetailCopyWith<$Res> {
-  factory $FactorHydrationDetailCopyWith(
-    FactorHydrationDetail value,
-    $Res Function(FactorHydrationDetail) then,
-  ) = _$FactorHydrationDetailCopyWithImpl<$Res, FactorHydrationDetail>;
-  @useResult
-  $Res call({HydrationPuntaje? puntaje, num? variacion});
-
-  $HydrationPuntajeCopyWith<$Res>? get puntaje;
-}
-
-/// @nodoc
-class _$FactorHydrationDetailCopyWithImpl<
-  $Res,
-  $Val extends FactorHydrationDetail
->
-    implements $FactorHydrationDetailCopyWith<$Res> {
-  _$FactorHydrationDetailCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of FactorHydrationDetail
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({Object? puntaje = freezed, Object? variacion = freezed}) {
-    return _then(
-      _value.copyWith(
-            puntaje: freezed == puntaje
-                ? _value.puntaje
-                : puntaje // ignore: cast_nullable_to_non_nullable
-                      as HydrationPuntaje?,
-            variacion: freezed == variacion
-                ? _value.variacion
-                : variacion // ignore: cast_nullable_to_non_nullable
-                      as num?,
-          )
-          as $Val,
-    );
-  }
-
-  /// Create a copy of FactorHydrationDetail
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $HydrationPuntajeCopyWith<$Res>? get puntaje {
-    if (_value.puntaje == null) {
-      return null;
-    }
-
-    return $HydrationPuntajeCopyWith<$Res>(_value.puntaje!, (value) {
-      return _then(_value.copyWith(puntaje: value) as $Val);
-    });
-  }
-}
-
-/// @nodoc
-abstract class _$$FactorHydrationDetailImplCopyWith<$Res>
-    implements $FactorHydrationDetailCopyWith<$Res> {
-  factory _$$FactorHydrationDetailImplCopyWith(
-    _$FactorHydrationDetailImpl value,
-    $Res Function(_$FactorHydrationDetailImpl) then,
-  ) = __$$FactorHydrationDetailImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({HydrationPuntaje? puntaje, num? variacion});
-
-  @override
-  $HydrationPuntajeCopyWith<$Res>? get puntaje;
-}
-
-/// @nodoc
-class __$$FactorHydrationDetailImplCopyWithImpl<$Res>
-    extends
-        _$FactorHydrationDetailCopyWithImpl<$Res, _$FactorHydrationDetailImpl>
-    implements _$$FactorHydrationDetailImplCopyWith<$Res> {
-  __$$FactorHydrationDetailImplCopyWithImpl(
-    _$FactorHydrationDetailImpl _value,
-    $Res Function(_$FactorHydrationDetailImpl) _then,
-  ) : super(_value, _then);
-
-  /// Create a copy of FactorHydrationDetail
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({Object? puntaje = freezed, Object? variacion = freezed}) {
-    return _then(
-      _$FactorHydrationDetailImpl(
-        puntaje: freezed == puntaje
-            ? _value.puntaje
-            : puntaje // ignore: cast_nullable_to_non_nullable
-                  as HydrationPuntaje?,
-        variacion: freezed == variacion
-            ? _value.variacion
-            : variacion // ignore: cast_nullable_to_non_nullable
-                  as num?,
-      ),
-    );
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$FactorHydrationDetailImpl implements _FactorHydrationDetail {
-  const _$FactorHydrationDetailImpl({this.puntaje, this.variacion});
-
-  factory _$FactorHydrationDetailImpl.fromJson(Map<String, dynamic> json) =>
-      _$$FactorHydrationDetailImplFromJson(json);
-
-  @override
-  final HydrationPuntaje? puntaje;
-  @override
-  final num? variacion;
-
-  @override
-  String toString() {
-    return 'FactorHydrationDetail(puntaje: $puntaje, variacion: $variacion)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$FactorHydrationDetailImpl &&
-            (identical(other.puntaje, puntaje) || other.puntaje == puntaje) &&
-            (identical(other.variacion, variacion) ||
-                other.variacion == variacion));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(runtimeType, puntaje, variacion);
-
-  /// Create a copy of FactorHydrationDetail
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$FactorHydrationDetailImplCopyWith<_$FactorHydrationDetailImpl>
-  get copyWith =>
-      __$$FactorHydrationDetailImplCopyWithImpl<_$FactorHydrationDetailImpl>(
-        this,
-        _$identity,
-      );
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$FactorHydrationDetailImplToJson(this);
-  }
-}
-
-abstract class _FactorHydrationDetail implements FactorHydrationDetail {
-  const factory _FactorHydrationDetail({
-    final HydrationPuntaje? puntaje,
-    final num? variacion,
-  }) = _$FactorHydrationDetailImpl;
-
-  factory _FactorHydrationDetail.fromJson(Map<String, dynamic> json) =
-      _$FactorHydrationDetailImpl.fromJson;
-
-  @override
-  HydrationPuntaje? get puntaje;
-  @override
-  num? get variacion;
-
-  /// Create a copy of FactorHydrationDetail
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$FactorHydrationDetailImplCopyWith<_$FactorHydrationDetailImpl>
-  get copyWith => throw _privateConstructorUsedError;
-}
-
-HydrationPuntaje _$HydrationPuntajeFromJson(Map<String, dynamic> json) {
-  return _HydrationPuntaje.fromJson(json);
-}
-
-/// @nodoc
-mixin _$HydrationPuntaje {
-  @JsonKey(name: 'consumo_total_ml')
-  num? get consumoTotalMl => throw _privateConstructorUsedError;
-  @JsonKey(name: 'score_hidratacion')
-  num? get scoreHidratacion => throw _privateConstructorUsedError;
-  @JsonKey(name: 'requerimiento_total_ml')
-  num? get requerimientoTotalMl => throw _privateConstructorUsedError;
-
-  /// Serializes this HydrationPuntaje to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of HydrationPuntaje
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $HydrationPuntajeCopyWith<HydrationPuntaje> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $HydrationPuntajeCopyWith<$Res> {
-  factory $HydrationPuntajeCopyWith(
-    HydrationPuntaje value,
-    $Res Function(HydrationPuntaje) then,
-  ) = _$HydrationPuntajeCopyWithImpl<$Res, HydrationPuntaje>;
-  @useResult
-  $Res call({
-    @JsonKey(name: 'consumo_total_ml') num? consumoTotalMl,
-    @JsonKey(name: 'score_hidratacion') num? scoreHidratacion,
-    @JsonKey(name: 'requerimiento_total_ml') num? requerimientoTotalMl,
-  });
-}
-
-/// @nodoc
-class _$HydrationPuntajeCopyWithImpl<$Res, $Val extends HydrationPuntaje>
-    implements $HydrationPuntajeCopyWith<$Res> {
-  _$HydrationPuntajeCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of HydrationPuntaje
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? consumoTotalMl = freezed,
-    Object? scoreHidratacion = freezed,
-    Object? requerimientoTotalMl = freezed,
-  }) {
-    return _then(
-      _value.copyWith(
-            consumoTotalMl: freezed == consumoTotalMl
-                ? _value.consumoTotalMl
-                : consumoTotalMl // ignore: cast_nullable_to_non_nullable
-                      as num?,
-            scoreHidratacion: freezed == scoreHidratacion
-                ? _value.scoreHidratacion
-                : scoreHidratacion // ignore: cast_nullable_to_non_nullable
-                      as num?,
-            requerimientoTotalMl: freezed == requerimientoTotalMl
-                ? _value.requerimientoTotalMl
-                : requerimientoTotalMl // ignore: cast_nullable_to_non_nullable
-                      as num?,
-          )
-          as $Val,
-    );
-  }
-}
-
-/// @nodoc
-abstract class _$$HydrationPuntajeImplCopyWith<$Res>
-    implements $HydrationPuntajeCopyWith<$Res> {
-  factory _$$HydrationPuntajeImplCopyWith(
-    _$HydrationPuntajeImpl value,
-    $Res Function(_$HydrationPuntajeImpl) then,
-  ) = __$$HydrationPuntajeImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({
-    @JsonKey(name: 'consumo_total_ml') num? consumoTotalMl,
-    @JsonKey(name: 'score_hidratacion') num? scoreHidratacion,
-    @JsonKey(name: 'requerimiento_total_ml') num? requerimientoTotalMl,
-  });
-}
-
-/// @nodoc
-class __$$HydrationPuntajeImplCopyWithImpl<$Res>
-    extends _$HydrationPuntajeCopyWithImpl<$Res, _$HydrationPuntajeImpl>
-    implements _$$HydrationPuntajeImplCopyWith<$Res> {
-  __$$HydrationPuntajeImplCopyWithImpl(
-    _$HydrationPuntajeImpl _value,
-    $Res Function(_$HydrationPuntajeImpl) _then,
-  ) : super(_value, _then);
-
-  /// Create a copy of HydrationPuntaje
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? consumoTotalMl = freezed,
-    Object? scoreHidratacion = freezed,
-    Object? requerimientoTotalMl = freezed,
-  }) {
-    return _then(
-      _$HydrationPuntajeImpl(
-        consumoTotalMl: freezed == consumoTotalMl
-            ? _value.consumoTotalMl
-            : consumoTotalMl // ignore: cast_nullable_to_non_nullable
-                  as num?,
-        scoreHidratacion: freezed == scoreHidratacion
-            ? _value.scoreHidratacion
-            : scoreHidratacion // ignore: cast_nullable_to_non_nullable
-                  as num?,
-        requerimientoTotalMl: freezed == requerimientoTotalMl
-            ? _value.requerimientoTotalMl
-            : requerimientoTotalMl // ignore: cast_nullable_to_non_nullable
-                  as num?,
-      ),
-    );
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$HydrationPuntajeImpl implements _HydrationPuntaje {
-  const _$HydrationPuntajeImpl({
-    @JsonKey(name: 'consumo_total_ml') this.consumoTotalMl,
-    @JsonKey(name: 'score_hidratacion') this.scoreHidratacion,
-    @JsonKey(name: 'requerimiento_total_ml') this.requerimientoTotalMl,
-  });
-
-  factory _$HydrationPuntajeImpl.fromJson(Map<String, dynamic> json) =>
-      _$$HydrationPuntajeImplFromJson(json);
-
-  @override
-  @JsonKey(name: 'consumo_total_ml')
-  final num? consumoTotalMl;
-  @override
-  @JsonKey(name: 'score_hidratacion')
-  final num? scoreHidratacion;
-  @override
-  @JsonKey(name: 'requerimiento_total_ml')
-  final num? requerimientoTotalMl;
-
-  @override
-  String toString() {
-    return 'HydrationPuntaje(consumoTotalMl: $consumoTotalMl, scoreHidratacion: $scoreHidratacion, requerimientoTotalMl: $requerimientoTotalMl)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$HydrationPuntajeImpl &&
-            (identical(other.consumoTotalMl, consumoTotalMl) ||
-                other.consumoTotalMl == consumoTotalMl) &&
-            (identical(other.scoreHidratacion, scoreHidratacion) ||
-                other.scoreHidratacion == scoreHidratacion) &&
-            (identical(other.requerimientoTotalMl, requerimientoTotalMl) ||
-                other.requerimientoTotalMl == requerimientoTotalMl));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    consumoTotalMl,
-    scoreHidratacion,
-    requerimientoTotalMl,
-  );
-
-  /// Create a copy of HydrationPuntaje
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$HydrationPuntajeImplCopyWith<_$HydrationPuntajeImpl> get copyWith =>
-      __$$HydrationPuntajeImplCopyWithImpl<_$HydrationPuntajeImpl>(
-        this,
-        _$identity,
-      );
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$HydrationPuntajeImplToJson(this);
-  }
-}
-
-abstract class _HydrationPuntaje implements HydrationPuntaje {
-  const factory _HydrationPuntaje({
-    @JsonKey(name: 'consumo_total_ml') final num? consumoTotalMl,
-    @JsonKey(name: 'score_hidratacion') final num? scoreHidratacion,
-    @JsonKey(name: 'requerimiento_total_ml') final num? requerimientoTotalMl,
-  }) = _$HydrationPuntajeImpl;
-
-  factory _HydrationPuntaje.fromJson(Map<String, dynamic> json) =
-      _$HydrationPuntajeImpl.fromJson;
-
-  @override
-  @JsonKey(name: 'consumo_total_ml')
-  num? get consumoTotalMl;
-  @override
-  @JsonKey(name: 'score_hidratacion')
-  num? get scoreHidratacion;
-  @override
-  @JsonKey(name: 'requerimiento_total_ml')
-  num? get requerimientoTotalMl;
-
-  /// Create a copy of HydrationPuntaje
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$HydrationPuntajeImplCopyWith<_$HydrationPuntajeImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
 FactorWeightDetail _$FactorWeightDetailFromJson(Map<String, dynamic> json) {
   return _FactorWeightDetail.fromJson(json);
 }
 
 /// @nodoc
 mixin _$FactorWeightDetail {
-  WeightPuntaje? get puntaje => throw _privateConstructorUsedError;
+  num? get puntaje => throw _privateConstructorUsedError;
   num? get variacion => throw _privateConstructorUsedError;
+  num? get imc => throw _privateConstructorUsedError;
+  @JsonKey(name: 'peso_registrado')
+  num? get pesoRegistrado => throw _privateConstructorUsedError;
 
   /// Serializes this FactorWeightDetail to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -1731,9 +1313,12 @@ abstract class $FactorWeightDetailCopyWith<$Res> {
     $Res Function(FactorWeightDetail) then,
   ) = _$FactorWeightDetailCopyWithImpl<$Res, FactorWeightDetail>;
   @useResult
-  $Res call({WeightPuntaje? puntaje, num? variacion});
-
-  $WeightPuntajeCopyWith<$Res>? get puntaje;
+  $Res call({
+    num? puntaje,
+    num? variacion,
+    num? imc,
+    @JsonKey(name: 'peso_registrado') num? pesoRegistrado,
+  });
 }
 
 /// @nodoc
@@ -1750,34 +1335,33 @@ class _$FactorWeightDetailCopyWithImpl<$Res, $Val extends FactorWeightDetail>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? puntaje = freezed, Object? variacion = freezed}) {
+  $Res call({
+    Object? puntaje = freezed,
+    Object? variacion = freezed,
+    Object? imc = freezed,
+    Object? pesoRegistrado = freezed,
+  }) {
     return _then(
       _value.copyWith(
             puntaje: freezed == puntaje
                 ? _value.puntaje
                 : puntaje // ignore: cast_nullable_to_non_nullable
-                      as WeightPuntaje?,
+                      as num?,
             variacion: freezed == variacion
                 ? _value.variacion
                 : variacion // ignore: cast_nullable_to_non_nullable
                       as num?,
+            imc: freezed == imc
+                ? _value.imc
+                : imc // ignore: cast_nullable_to_non_nullable
+                      as num?,
+            pesoRegistrado: freezed == pesoRegistrado
+                ? _value.pesoRegistrado
+                : pesoRegistrado // ignore: cast_nullable_to_non_nullable
+                      as num?,
           )
           as $Val,
     );
-  }
-
-  /// Create a copy of FactorWeightDetail
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $WeightPuntajeCopyWith<$Res>? get puntaje {
-    if (_value.puntaje == null) {
-      return null;
-    }
-
-    return $WeightPuntajeCopyWith<$Res>(_value.puntaje!, (value) {
-      return _then(_value.copyWith(puntaje: value) as $Val);
-    });
   }
 }
 
@@ -1790,10 +1374,12 @@ abstract class _$$FactorWeightDetailImplCopyWith<$Res>
   ) = __$$FactorWeightDetailImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({WeightPuntaje? puntaje, num? variacion});
-
-  @override
-  $WeightPuntajeCopyWith<$Res>? get puntaje;
+  $Res call({
+    num? puntaje,
+    num? variacion,
+    num? imc,
+    @JsonKey(name: 'peso_registrado') num? pesoRegistrado,
+  });
 }
 
 /// @nodoc
@@ -1809,16 +1395,29 @@ class __$$FactorWeightDetailImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? puntaje = freezed, Object? variacion = freezed}) {
+  $Res call({
+    Object? puntaje = freezed,
+    Object? variacion = freezed,
+    Object? imc = freezed,
+    Object? pesoRegistrado = freezed,
+  }) {
     return _then(
       _$FactorWeightDetailImpl(
         puntaje: freezed == puntaje
             ? _value.puntaje
             : puntaje // ignore: cast_nullable_to_non_nullable
-                  as WeightPuntaje?,
+                  as num?,
         variacion: freezed == variacion
             ? _value.variacion
             : variacion // ignore: cast_nullable_to_non_nullable
+                  as num?,
+        imc: freezed == imc
+            ? _value.imc
+            : imc // ignore: cast_nullable_to_non_nullable
+                  as num?,
+        pesoRegistrado: freezed == pesoRegistrado
+            ? _value.pesoRegistrado
+            : pesoRegistrado // ignore: cast_nullable_to_non_nullable
                   as num?,
       ),
     );
@@ -1828,19 +1427,29 @@ class __$$FactorWeightDetailImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$FactorWeightDetailImpl implements _FactorWeightDetail {
-  const _$FactorWeightDetailImpl({this.puntaje, this.variacion});
+  const _$FactorWeightDetailImpl({
+    this.puntaje,
+    this.variacion,
+    this.imc,
+    @JsonKey(name: 'peso_registrado') this.pesoRegistrado,
+  });
 
   factory _$FactorWeightDetailImpl.fromJson(Map<String, dynamic> json) =>
       _$$FactorWeightDetailImplFromJson(json);
 
   @override
-  final WeightPuntaje? puntaje;
+  final num? puntaje;
   @override
   final num? variacion;
+  @override
+  final num? imc;
+  @override
+  @JsonKey(name: 'peso_registrado')
+  final num? pesoRegistrado;
 
   @override
   String toString() {
-    return 'FactorWeightDetail(puntaje: $puntaje, variacion: $variacion)';
+    return 'FactorWeightDetail(puntaje: $puntaje, variacion: $variacion, imc: $imc, pesoRegistrado: $pesoRegistrado)';
   }
 
   @override
@@ -1850,12 +1459,16 @@ class _$FactorWeightDetailImpl implements _FactorWeightDetail {
             other is _$FactorWeightDetailImpl &&
             (identical(other.puntaje, puntaje) || other.puntaje == puntaje) &&
             (identical(other.variacion, variacion) ||
-                other.variacion == variacion));
+                other.variacion == variacion) &&
+            (identical(other.imc, imc) || other.imc == imc) &&
+            (identical(other.pesoRegistrado, pesoRegistrado) ||
+                other.pesoRegistrado == pesoRegistrado));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, puntaje, variacion);
+  int get hashCode =>
+      Object.hash(runtimeType, puntaje, variacion, imc, pesoRegistrado);
 
   /// Create a copy of FactorWeightDetail
   /// with the given fields replaced by the non-null parameter values.
@@ -1876,189 +1489,30 @@ class _$FactorWeightDetailImpl implements _FactorWeightDetail {
 
 abstract class _FactorWeightDetail implements FactorWeightDetail {
   const factory _FactorWeightDetail({
-    final WeightPuntaje? puntaje,
+    final num? puntaje,
     final num? variacion,
+    final num? imc,
+    @JsonKey(name: 'peso_registrado') final num? pesoRegistrado,
   }) = _$FactorWeightDetailImpl;
 
   factory _FactorWeightDetail.fromJson(Map<String, dynamic> json) =
       _$FactorWeightDetailImpl.fromJson;
 
   @override
-  WeightPuntaje? get puntaje;
+  num? get puntaje;
   @override
   num? get variacion;
+  @override
+  num? get imc;
+  @override
+  @JsonKey(name: 'peso_registrado')
+  num? get pesoRegistrado;
 
   /// Create a copy of FactorWeightDetail
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$FactorWeightDetailImplCopyWith<_$FactorWeightDetailImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-WeightPuntaje _$WeightPuntajeFromJson(Map<String, dynamic> json) {
-  return _WeightPuntaje.fromJson(json);
-}
-
-/// @nodoc
-mixin _$WeightPuntaje {
-  String? get tag => throw _privateConstructorUsedError;
-  num? get puntaje => throw _privateConstructorUsedError;
-
-  /// Serializes this WeightPuntaje to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of WeightPuntaje
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $WeightPuntajeCopyWith<WeightPuntaje> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $WeightPuntajeCopyWith<$Res> {
-  factory $WeightPuntajeCopyWith(
-    WeightPuntaje value,
-    $Res Function(WeightPuntaje) then,
-  ) = _$WeightPuntajeCopyWithImpl<$Res, WeightPuntaje>;
-  @useResult
-  $Res call({String? tag, num? puntaje});
-}
-
-/// @nodoc
-class _$WeightPuntajeCopyWithImpl<$Res, $Val extends WeightPuntaje>
-    implements $WeightPuntajeCopyWith<$Res> {
-  _$WeightPuntajeCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of WeightPuntaje
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({Object? tag = freezed, Object? puntaje = freezed}) {
-    return _then(
-      _value.copyWith(
-            tag: freezed == tag
-                ? _value.tag
-                : tag // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            puntaje: freezed == puntaje
-                ? _value.puntaje
-                : puntaje // ignore: cast_nullable_to_non_nullable
-                      as num?,
-          )
-          as $Val,
-    );
-  }
-}
-
-/// @nodoc
-abstract class _$$WeightPuntajeImplCopyWith<$Res>
-    implements $WeightPuntajeCopyWith<$Res> {
-  factory _$$WeightPuntajeImplCopyWith(
-    _$WeightPuntajeImpl value,
-    $Res Function(_$WeightPuntajeImpl) then,
-  ) = __$$WeightPuntajeImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({String? tag, num? puntaje});
-}
-
-/// @nodoc
-class __$$WeightPuntajeImplCopyWithImpl<$Res>
-    extends _$WeightPuntajeCopyWithImpl<$Res, _$WeightPuntajeImpl>
-    implements _$$WeightPuntajeImplCopyWith<$Res> {
-  __$$WeightPuntajeImplCopyWithImpl(
-    _$WeightPuntajeImpl _value,
-    $Res Function(_$WeightPuntajeImpl) _then,
-  ) : super(_value, _then);
-
-  /// Create a copy of WeightPuntaje
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({Object? tag = freezed, Object? puntaje = freezed}) {
-    return _then(
-      _$WeightPuntajeImpl(
-        tag: freezed == tag
-            ? _value.tag
-            : tag // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        puntaje: freezed == puntaje
-            ? _value.puntaje
-            : puntaje // ignore: cast_nullable_to_non_nullable
-                  as num?,
-      ),
-    );
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$WeightPuntajeImpl implements _WeightPuntaje {
-  const _$WeightPuntajeImpl({this.tag, this.puntaje});
-
-  factory _$WeightPuntajeImpl.fromJson(Map<String, dynamic> json) =>
-      _$$WeightPuntajeImplFromJson(json);
-
-  @override
-  final String? tag;
-  @override
-  final num? puntaje;
-
-  @override
-  String toString() {
-    return 'WeightPuntaje(tag: $tag, puntaje: $puntaje)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$WeightPuntajeImpl &&
-            (identical(other.tag, tag) || other.tag == tag) &&
-            (identical(other.puntaje, puntaje) || other.puntaje == puntaje));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(runtimeType, tag, puntaje);
-
-  /// Create a copy of WeightPuntaje
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$WeightPuntajeImplCopyWith<_$WeightPuntajeImpl> get copyWith =>
-      __$$WeightPuntajeImplCopyWithImpl<_$WeightPuntajeImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$WeightPuntajeImplToJson(this);
-  }
-}
-
-abstract class _WeightPuntaje implements WeightPuntaje {
-  const factory _WeightPuntaje({final String? tag, final num? puntaje}) =
-      _$WeightPuntajeImpl;
-
-  factory _WeightPuntaje.fromJson(Map<String, dynamic> json) =
-      _$WeightPuntajeImpl.fromJson;
-
-  @override
-  String? get tag;
-  @override
-  num? get puntaje;
-
-  /// Create a copy of WeightPuntaje
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$WeightPuntajeImplCopyWith<_$WeightPuntajeImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

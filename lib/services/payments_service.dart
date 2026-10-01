@@ -128,7 +128,7 @@ class PaymentsService {
     String userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
     String acceptHeader = 'application/json',
   }) async {
-    final uri = Uri.parse('$_baseUrl/nuvei/change-subscription');
+    final uri = Uri.parse('$_baseUrl/payments/nuvei/subscribe');
     final response = await CachedHttp.post(
       uri,
       headers: _buildHeaders(token),
@@ -149,7 +149,7 @@ class PaymentsService {
         'accept_header': acceptHeader,
       }),
     );
-    _handleError(response, '$_baseUrl/nuvei/change-subscription');
+    _handleError(response, '$_baseUrl/payments/nuvei/subscribe');
     return _parseResponse(response);
   }
 
