@@ -84,6 +84,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       } else {
         _showSuccessSnackBar('¡Tarjeta guardada correctamente!');
         profileProvider.pendingSubscribePriceId = null; // Clear memory cache
+        profileProvider.pendingCheckoutPriceId = widget.priceId; // Set flag to reopen subscribe sheet
         if (mounted) {
           await profileProvider.loadSavedCards(authProvider.token!);
           if (mounted) {

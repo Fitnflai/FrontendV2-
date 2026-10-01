@@ -91,6 +91,26 @@ class _MembershipScreenState extends State<MembershipScreen> {
 
     _currentPlans = _buildPlans(planes);
 
+    if (profileProvider.pendingCheckoutPriceId != null) {
+      final priceId = profileProvider.pendingCheckoutPriceId!;
+      _Plan? targetPlan;
+      for (final p in _currentPlans) {
+        if (p.originalData['precios'] != null) {
+          final precios = p.originalData['precios'] as List;
+          if (precios.any((pr) => pr['id_precio'] == priceId)) {
+            targetPlan = p;
+            break;
+          }
+        }
+      }
+      if (targetPlan != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          profileProvider.pendingCheckoutPriceId = null; // Clear flag to avoid duplicate modals
+          _subscribe(targetPlan!, priceId);
+        });
+      }
+    }
+
     return BlockingLoadingOverlay(
       isLoading: profileProvider.isProcessingOneClick,
       message: AppLocalizations.of(context).processingYourPayment,

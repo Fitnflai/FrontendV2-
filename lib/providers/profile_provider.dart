@@ -90,6 +90,14 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
   List<dynamic>?        get planes      => _planes;
   bool                  get isLoadingSubscription => _isLoadingSubscription;
   String?               get subscriptionError => _subscriptionError;
+
+  String? _pendingCheckoutPriceId;
+  String? get pendingCheckoutPriceId => _pendingCheckoutPriceId;
+  set pendingCheckoutPriceId(String? value) {
+    _pendingCheckoutPriceId = value;
+    notifyListeners();
+  }
+
   List<dynamic>?        _citas;
   List<dynamic>?        get citas => _citas;
 
