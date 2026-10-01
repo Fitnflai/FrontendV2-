@@ -169,10 +169,20 @@ jobs:
               CODE_SIGN_IDENTITY="Apple Distribution"
           fi
 
+      - name: Locate and Rename IPA
+        # Buscamos de forma dinámica el archivo .ipa real generado por Flutter (sea cual sea su nombre)
+        # y lo copiamos con un nombre fijo 'app.ipa' para que la acción de subida lo encuentre de forma infalible
+        run: |
+          echo "Archivos generados en build/ios/ipa:"
+          ls -la build/ios/ipa/
+          REAL_IPA=$(find build/ios/ipa -name "*.ipa" | head -n 1)
+          echo "El archivo IPA real está en: $REAL_IPA"
+          cp "$REAL_IPA" build/ios/ipa/app.ipa
+
       - name: Upload to Apple App Store Connect / TestFlight
         uses: apple-actions/upload-testflight-build@v1
         with:
-          app-path: 'build/ios/ipa/Runner.ipa'
+          app-path: 'build/ios/ipa/app.ipa'
           api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
