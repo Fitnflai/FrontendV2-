@@ -172,7 +172,7 @@ jobs:
       - name: Upload to Apple App Store Connect / TestFlight
         uses: apple-actions/upload-testflight-build@v1
         with:
-          app-path: 'build/ios/ipa/*.ipa'
+          app-path: 'build/ios/ipa/Runner.ipa'
           api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
