@@ -875,6 +875,12 @@ abstract class AppLocalizations {
   /// **'Optional'**
   String get onboardingProfileOptional;
 
+  /// Title of the fitness onboarding screen
+  ///
+  /// In en, this message translates to:
+  /// **'How are you now?'**
+  String get onboardingFitnessScreenTitle;
+
   /// Title of current activity level section
   ///
   /// In en, this message translates to:
@@ -884,7 +890,7 @@ abstract class AppLocalizations {
   /// Title of session time selection section
   ///
   /// In en, this message translates to:
-  /// **'Time per session'**
+  /// **'Time available to train'**
   String get onboardingFitnessSessionTitle;
 
   /// Title of equipment availability section

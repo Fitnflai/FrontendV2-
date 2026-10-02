@@ -77,6 +77,41 @@ class _Step5BodyScreenState extends State<Step5BodyScreen> {
     }
   }
 
+  void _showUploadChooser() {
+    final l10n = AppLocalizations.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined, color: AppColors.orange),
+              title: Text(l10n.onboardingBodyUploadImageBtn, style: const TextStyle(color: AppColors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf_outlined, color: AppColors.orange),
+              title: Text(l10n.onboardingBodyUploadPdfBtn, style: const TextStyle(color: AppColors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _pickPdf();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -443,16 +478,19 @@ class _Step5BodyScreenState extends State<Step5BodyScreen> {
     final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context).languageCode;
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Column(children: [
-          const StepHeader(stepLabel: 'Paso 3 de 6'),
-          const SizedBox(height: 16),
-
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          child: Column(children: [
+            const StepHeader(stepLabel: 'Paso 3 de 6'),
+            const SizedBox(height: 16),
+  
+            Expanded(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -621,7 +659,7 @@ class _Step5BodyScreenState extends State<Step5BodyScreen> {
                     child: Column(children: [
                       // Preview / placeholder dinámico
                       GestureDetector(
-                        onTap: _pickImage,
+                        onTap: _showUploadChooser,
                         child: Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(
@@ -825,8 +863,9 @@ class _Step5BodyScreenState extends State<Step5BodyScreen> {
           ),
         ]),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ═══════════════════════════════════════════════════════════════

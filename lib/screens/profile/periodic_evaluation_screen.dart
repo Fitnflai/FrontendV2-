@@ -148,12 +148,15 @@ class _PeriodicEvaluationScreenState extends State<PeriodicEvaluationScreen> {
   Widget build(BuildContext context) {
     final theme = context.themeColors;
     final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      backgroundColor: theme.bg,
-      appBar: FitnflaiAppBar(title: l10n.periodicEvalTitle),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: theme.bg,
+        appBar: FitnflaiAppBar(title: l10n.periodicEvalTitle),
+        body: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
           // ── Banner opcional ──────────────────────────
           Container(
@@ -335,8 +338,9 @@ class _PeriodicEvaluationScreenState extends State<PeriodicEvaluationScreen> {
           const SizedBox(height: 16),
         ]),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ── Fila de medida ────────────────────────────────────────────

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../../config/app_colors.dart';
+import '../../config/app_routes.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../l10n/app_localizations.dart';
@@ -110,11 +111,12 @@ class _TestFeedbackScreenState extends State<TestFeedbackScreen> {
           // Marcar este test como completado y volver al selector
           final nowCompleted = List<int>.from(widget.completedTests)
             ..add(widget.testIndex);
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => TestSelectionScreen(
               completedTests: nowCompleted,
             )),
+            (route) => route.settings.name == AppRoutes.step3Fitness || route.isFirst,
           );
         } else {
           Navigator.pop(context);

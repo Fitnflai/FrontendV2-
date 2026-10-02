@@ -477,19 +477,22 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
   @override
   Widget build(BuildContext context) {
     final isEs = Localizations.localeOf(context).languageCode == 'es';
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Column(children: [
-          // ── Top bar ──────────────────────────────
-          const StepHeader(stepLabel: 'Paso 5 de 6'),
-          const SizedBox(height: 16),
-
-          // ── Scrollable content ───────────────────
-          Expanded(
-            child: SingleChildScrollView(
-              controller: _scrollCtrl,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          child: Column(children: [
+            // ── Top bar ──────────────────────────────
+            const StepHeader(stepLabel: 'Paso 5 de 6'),
+            const SizedBox(height: 16),
+  
+            // ── Scrollable content ───────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                controller: _scrollCtrl,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(children: [
                 const SizedBox(height: 10),
                 Align(
@@ -780,8 +783,9 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
           ),
         ]),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ─── Sport Card ────────────────────────────────────────────────

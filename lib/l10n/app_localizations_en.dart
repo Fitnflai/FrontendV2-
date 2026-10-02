@@ -455,10 +455,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingProfileOptional => 'Optional';
 
   @override
+  String get onboardingFitnessScreenTitle => 'How are you now?';
+
+  @override
   String get onboardingFitnessActivityTitle => 'Current activity level';
 
   @override
-  String get onboardingFitnessSessionTitle => 'Time per session';
+  String get onboardingFitnessSessionTitle => 'Time available to train';
 
   @override
   String get onboardingFitnessEquipmentTitle => 'Available equipment';

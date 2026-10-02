@@ -407,7 +407,7 @@ class _TestSelectionScreenState extends State<TestSelectionScreen> {
                         await OnboardingRouter.saveCompletedStep(userId, 5);
                       }
                       if (!context.mounted) return;
-                      Navigator.pushReplacementNamed(
+                      Navigator.pushNamed(
                           context, AppRoutes.step6Sport);
                     },                    style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.white,

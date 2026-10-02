@@ -259,6 +259,19 @@ class _Step3FitnessScreenState extends State<Step3FitnessScreen> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(children: [
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    l10n.onboardingFitnessScreenTitle,
+                    style: const TextStyle(
+                      color: AppColors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
 
                 // ── Nivel de actividad ────────────
                 _SectionCard(

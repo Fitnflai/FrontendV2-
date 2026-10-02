@@ -88,7 +88,7 @@ const allTests = [
     steps: [
       TestStep('Posición de plancha completa: manos al ancho de hombros, cuerpo recto de cabeza a talones.', 'Rodillas en el suelo si necesitas modificar la dificultad.'),
       TestStep('Baja hasta que el pecho casi toque el suelo. Codos a 45° del cuerpo — ni muy abiertos ni pegados.', 'Mantén el abdomen contraído durante todo el movimiento.'),
-      TestStep('Sube extendiendo completamente los codos. Solo cuentan las repeticiones completas: abajo Y arriba.'),
+      TestStep('Sube extendiendo completamente los codos. Solo cuentan las repeticiones completas: abajo y arriba.'),
       TestStep('Repite al ritmo que puedas mantener durante 60 segundos completos. Puedes pausar brevemente.', 'El cronómetro no se detiene aunque hagas una pausa.'),
     ],
     errors: [
@@ -130,7 +130,7 @@ const allTests = [
     steps: [
       TestStep('Párate con los pies al ancho de los hombros. Punta de los pies ligeramente hacia afuera (15–30°).', 'No es necesario calzado especial — descalzo funciona perfectamente.'),
       TestStep('Baja hasta que tus muslos queden paralelos al suelo — o lo más cerca posible. Espalda recta, pecho arriba.', 'Si no llegas al paralelo, llega hasta donde puedas sin dolor.'),
-      TestStep('Sube empujando con los talones. Extiende completamente las rodillas y caderas al llegar arriba.', 'Cada repetición cuenta solo si llegas abajo Y arriba completamente.'),
+      TestStep('Sube empujando con los talones. Extiende completamente las rodillas y caderas al llegar arriba.', 'Cada repetición cuenta solo si llegas abajo y arriba completamente.'),
       TestStep('Repite al ritmo que puedas mantener durante los 60 segundos completos.', 'El cronómetro no se detiene.'),
     ],
     errors: [

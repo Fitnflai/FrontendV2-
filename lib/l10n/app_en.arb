@@ -593,11 +593,16 @@
     "description": "Optional badge label"
   },
 
+  "onboardingFitnessScreenTitle": "How are you now?",
+  "@onboardingFitnessScreenTitle": {
+    "description": "Title of the fitness onboarding screen"
+  },
+
   "onboardingFitnessActivityTitle": "Current activity level",
   "@onboardingFitnessActivityTitle": {
     "description": "Title of current activity level section"
   },
-  "onboardingFitnessSessionTitle": "Time per session",
+  "onboardingFitnessSessionTitle": "Time available to train",
   "@onboardingFitnessSessionTitle": {
     "description": "Title of session time selection section"
   },

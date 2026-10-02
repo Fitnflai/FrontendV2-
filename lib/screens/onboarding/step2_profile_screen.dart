@@ -282,17 +282,20 @@ class _Step2ProfileScreenState extends State<Step2ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Column(children: [
-          const StepHeader(stepLabel: 'Paso 1 de 6'),
-          const SizedBox(height: 16),
-
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(children: [
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          child: Column(children: [
+            const StepHeader(stepLabel: 'Paso 1 de 6'),
+            const SizedBox(height: 16),
+  
+            Expanded(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(children: [
 
                 // ── Perfil básico ─────────────────
                 _Card(
@@ -618,8 +621,9 @@ class _Step2ProfileScreenState extends State<Step2ProfileScreen> {
           ),
         ]),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ═══════════════════════════════════════════════════════════════

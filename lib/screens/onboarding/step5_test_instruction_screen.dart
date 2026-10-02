@@ -497,8 +497,7 @@ class _StepCard extends StatelessWidget {
                   style: const TextStyle(
                       color: AppColors.orange,
                       fontSize: 12,
-                      height: 1.4,
-                      fontStyle: FontStyle.italic)),
+                      height: 1.4)),
             ),
           ]),
         ),

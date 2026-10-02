@@ -459,10 +459,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingProfileOptional => 'Opcional';
 
   @override
+  String get onboardingFitnessScreenTitle => '¿Cómo estás ahora?';
+
+  @override
   String get onboardingFitnessActivityTitle => 'Nivel de actividad actual';
 
   @override
-  String get onboardingFitnessSessionTitle => 'Tiempo por sesión';
+  String get onboardingFitnessSessionTitle => 'Tiempo disponible para entrenar';
 
   @override
   String get onboardingFitnessEquipmentTitle => 'Equipamiento disponible';
@@ -3146,7 +3149,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get testSquatsStep3Tip =>
-      'Cada repetición cuenta solo si llegas abajo Y arriba completamente.';
+      'Cada repetición cuenta solo si llegas abajo y arriba completamente.';
 
   @override
   String get testSquatsStep4Main =>
@@ -3284,7 +3287,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get testPushupsStep3Main =>
-      'Sube extendiendo completamente los codos. Solo cuentan las repeticiones completas: abajo Y arriba.';
+      'Sube extendiendo completamente los codos. Solo cuentan las repeticiones completas: abajo y arriba.';
 
   @override
   String get testPushupsStep4Main =>
