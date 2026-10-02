@@ -257,6 +257,8 @@ class _OnboardingFeedbackScreenState extends State<OnboardingFeedbackScreen> {
                           final success = await profileProvider.startFreeTrial(token);
                           if (success) {
                             if (!context.mounted) return;
+                            await authProvider.refreshUser();
+                            if (!context.mounted) return;
                             Navigator.pushAndRemoveUntil(
                               context,
                               MaterialPageRoute(builder: (_) => const HomeScreen(fromOnboarding: true)),
