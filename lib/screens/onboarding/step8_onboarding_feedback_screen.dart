@@ -259,6 +259,7 @@ class _OnboardingFeedbackScreenState extends State<OnboardingFeedbackScreen> {
                           if (success) {
                             if (!context.mounted) return;
                             final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                            await authProvider.refreshUser();
                             final userId = authProvider.user?.id;
                             if (userId != null) {
                               await OnboardingRouter.saveCompletedStep(userId, 8);

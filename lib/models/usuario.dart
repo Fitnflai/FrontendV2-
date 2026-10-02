@@ -70,9 +70,17 @@ abstract class Usuario with _$Usuario {
     'nombrePlanActivo': (json['nombre_plan_activo'] ?? json['nombrePlanActivo'])?.toString(),
     'fechaFinSuscripcion': (json['fecha_fin_suscripcion'] ?? json['fechaFinSuscripcion'])?.toString(),
     'estadoSuscripcion': (json['estado_suscripcion'] ?? json['estadoSuscripcion'])?.toString(),
-    'tienePlanActivo': ((json['estado_suscripcion'] ?? json['estadoSuscripcion'])?.toString().trim().toLowerCase() == 'activo') ||
-        ((json['tiene_plan_activo'] ?? json['tienePlanActivo']) is bool
-            ? (json['tiene_plan_activo'] ?? json['tienePlanActivo'])
-            : (json['tiene_plan_activo'] ?? json['tienePlanActivo'])?.toString().toLowerCase() == 'true'),
+    'tienePlanActivo': (() {
+      final estado = (json['estado_suscripcion'] ?? json['estadoSuscripcion'])?.toString().trim().toLowerCase();
+      final isActiveStatus = estado == 'activo' || 
+                             estado == 'active' || 
+                             estado == 'trialing' || 
+                             estado == 'trial' || 
+                             estado == 'trial_activo';
+      if (isActiveStatus) return true;
+      final tienePlan = json['tiene_plan_activo'] ?? json['tienePlanActivo'];
+      if (tienePlan is bool) return tienePlan;
+      return tienePlan?.toString().toLowerCase() == 'true';
+    })(),
   });
 }
