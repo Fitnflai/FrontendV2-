@@ -62,13 +62,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsDarkMode => 'Modo oscuro';
 
   @override
-  String get settingsSectionLanguageUnits => 'IDIOMA Y UNIDADES';
+  String get settingsSectionLanguageUnits => 'UNIDADES';
 
   @override
   String get settingsLanguage => 'Idioma';
 
   @override
   String get settingsDistance => 'Distancia';
+
+  @override
+  String get settingsHeight => 'Altura';
 
   @override
   String get settingsSectionPrivacy => 'PRIVACIDAD';
