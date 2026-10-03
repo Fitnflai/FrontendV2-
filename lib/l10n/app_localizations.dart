@@ -212,6 +212,12 @@ abstract class AppLocalizations {
   /// **'Distance'**
   String get settingsDistance;
 
+  /// Height selector label
+  ///
+  /// In en, this message translates to:
+  /// **'Height'**
+  String get settingsHeight;
+
   /// Privacy section label
   ///
   /// In en, this message translates to:

@@ -17,14 +17,26 @@ class GeneralSettingsScreen extends StatefulWidget {
 class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
 
   String _unidadDist = 'km';
+  String _unidadAltura = 'Cm';
   bool   _modoOscuro = true;
 
-
   static const _distancias = ['km', 'mi'];
+  static const _alturas = ['Cm', 'In'];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
 
-
-
+  void _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _unidadDist = prefs.getString('selected_distance_unit') ?? 'km';
+      _unidadAltura = prefs.getString('selected_height_unit') ?? 'Cm';
+      _modoOscuro = prefs.getBool('theme_dark_mode') ?? true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,13 +60,20 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
           const SizedBox(height: 20),
           _SectionLabel(l10n.settingsSectionLanguageUnits),
           _SettingsGroup(items: [
-
             _DropRow(
               icon: Icons.straighten_outlined,
               label: l10n.settingsDistance,
               value: _unidadDist,
               options: _distancias,
               onChanged: (v) => setState(() => _unidadDist = v!),
+              isLast: false,
+            ),
+            _DropRow(
+              icon: Icons.height_outlined,
+              label: l10n.settingsHeight,
+              value: _unidadAltura,
+              options: _alturas,
+              onChanged: (v) => setState(() => _unidadAltura = v!),
               isLast: true,
             ),
           ]),
@@ -87,6 +106,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     // Guardar cambios locales de configuración
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('selected_distance_unit', _unidadDist);
+    await prefs.setString('selected_height_unit', _unidadAltura);
     await prefs.setBool('theme_dark_mode', _modoOscuro);
 
     if (!mounted) return;
