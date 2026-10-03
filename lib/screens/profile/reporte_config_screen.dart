@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme_extension.dart';
 import '../../config/app_text_styles.dart';
@@ -61,20 +62,96 @@ class _ReporteConfigScreenState extends State<ReporteConfigScreen> {
 
   Future<void> _pickTime() async {
     final theme = context.themeColors;
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _hora ?? const TimeOfDay(hour: 8, minute: 0),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: ColorScheme.dark(
-            primary: theme.primary,
-            surface: theme.card,
-          ),
-        ),
-        child: child!,
-      ),
+    DateTime tempDateTime = DateTime(
+      2026, 1, 1, 
+      _hora?.hour ?? 8, 
+      _hora?.minute ?? 0,
     );
-    if (picked != null) setState(() { _hora = picked; _dirty = true; });
+
+    await showCupertinoModalPopup(
+      context: context,
+      builder: (ctx) {
+        return Container(
+          height: 300,
+          color: theme.card,
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                // Header con botones de acción
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: theme.border,
+                        width: 0.5,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        child: Text(
+                          'Cancelar',
+                          style: TextStyle(
+                            color: theme.textSecondary,
+                            fontSize: 16,
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                      CupertinoButton(
+                        child: Text(
+                          'Aceptar',
+                          style: TextStyle(
+                            color: theme.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _hora = TimeOfDay(
+                              hour: tempDateTime.hour,
+                              minute: tempDateTime.minute,
+                            );
+                            _dirty = true;
+                          });
+                          Navigator.pop(ctx);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                // Selector
+                Expanded(
+                  child: CupertinoTheme(
+                    data: CupertinoThemeData(
+                      brightness: Brightness.dark,
+                      textTheme: CupertinoTextThemeData(
+                        dateTimePickerTextStyle: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                        ),
+                      ),
+                    ),
+                    child: CupertinoDatePicker(
+                      mode: CupertinoDatePickerMode.time,
+                      initialDateTime: tempDateTime,
+                      use24hFormat: false,
+                      onDateTimeChanged: (DateTime newDateTime) {
+                        tempDateTime = newDateTime;
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _save() async {
