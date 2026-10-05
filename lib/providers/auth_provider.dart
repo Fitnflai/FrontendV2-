@@ -151,7 +151,12 @@ class AuthProvider with ChangeNotifier {
       return true;
     } catch (e) {
       _status       = AuthStatus.unauthenticated;
-      _errorMessage = _friendlyError(e.toString());
+      final errStr  = e.toString();
+      if (errStr.contains('canceled') || errStr.contains('Custom Tab')) {
+        _errorMessage = null;
+      } else {
+        _errorMessage = _friendlyError(errStr);
+      }
       notifyListeners();
       return false;
     } finally {
