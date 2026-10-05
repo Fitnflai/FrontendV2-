@@ -307,6 +307,7 @@ class _PlanScreenState extends State<PlanScreen> {
                               data: s,
                               weekContext: _weekContext,
                               onAdjusted: () {
+                                CachedHttp.clearCache();
                                 _cache.clear();
                                 _loadWeek(_weekStart);
                               },
@@ -610,8 +611,11 @@ class _SessionCard extends StatelessWidget {
             SizedBox(
               width: double.infinity, height: 44,
               child: ElevatedButton.icon(
-                onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => WorkoutDetailScreen(entrenamiento: data))),
+                onPressed: () async {
+                  await Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => WorkoutDetailScreen(entrenamiento: data)));
+                  onAdjusted?.call();
+                },
                 icon: const Icon(Icons.play_arrow, size: 18),
                 label: Text(l10n.planSessionCardStartBtn,
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
@@ -659,10 +663,13 @@ class _SessionCard extends StatelessWidget {
               width: double.infinity,
               height: 40,
               child: OutlinedButton.icon(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => WorkoutDetailScreen(entrenamiento: data)),
-                ),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => WorkoutDetailScreen(entrenamiento: data)),
+                  );
+                  onAdjusted?.call();
+                },
                 icon: Icon(Icons.info_outline, size: 16),
                 label: Text(l10n.planSessionCardDetailBtn, style: TextStyle(fontSize: 13)),
                 style: OutlinedButton.styleFrom(

@@ -173,6 +173,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         _AlsoThisWeekSection(report: report),
                         const SizedBox(height: 16),
 
+                        // ── Zonas de entrenamiento ────────────────
+                        const _TrainingZonesCard(),
+                        const SizedBox(height: 16),
+
                         // ── Enviar informe ───────────────────────
                         _SendReportCard(report: report),
                         const SizedBox(height: 24),
@@ -1260,8 +1264,8 @@ class _SendReportCard extends StatelessWidget {
                                     ),
                                     content: Text(
                                       isEs
-                                          ? 'No se ha generado el reporte de esta semana.'
-                                          : 'This week\'s report has not been generated yet.',
+                                          ? 'No se ha generado el reporte de esta semana. Ten en cuenta que los informes se generan automáticamente todos los lunes a las 12:00 PM.'
+                                          : 'This week\'s report has not been generated yet. Please note that reports are automatically generated every Monday at 12:00 PM.',
                                       style: TextStyle(
                                         color: theme.greyLight,
                                         fontSize: 14,
@@ -1549,4 +1553,166 @@ class _WeightChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_WeightChartPainter old) => false;
+}
+
+// ─────────────────────────────────────────────
+// TRAINING ZONES CARD
+// ─────────────────────────────────────────────
+class _TrainingZonesCard extends StatelessWidget {
+  const _TrainingZonesCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
+    final isEs  = Localizations.localeOf(context).languageCode == 'es';
+
+    final title = isEs ? 'Zonas de entrenamiento' : 'Training Heart Rate Zones';
+    final sub   = isEs 
+        ? 'Zonas de esfuerzo según tu frecuencia cardíaca máxima (% FC Máx).' 
+        : 'Effort zones based on your maximum heart rate (% Max HR).';
+
+    final List<_ZoneData> zones = [
+      _ZoneData(
+        label: 'Z5',
+        name: isEs ? 'MÁXIMO' : 'MAXIMUM',
+        range: '90-100%',
+        lpm: isEs ? '171-190 Lpm' : '171-190 bpm',
+        duration: isEs ? '0-2 min.' : '0-2 min',
+        benefit: isEs 
+            ? 'Mejora la velocidad y tonifica el sistema neuromuscular.' 
+            : 'Improves speed and tones the neuromuscular system.',
+        color: const Color(0xFFFF3B30), // Red
+      ),
+      _ZoneData(
+        label: 'Z4',
+        name: isEs ? 'INTENSO' : 'HARD',
+        range: '80-90%',
+        lpm: isEs ? '152-172 Lpm' : '152-172 bpm',
+        duration: isEs ? '2-10 min.' : '2-10 min',
+        benefit: isEs 
+            ? 'Incrementa la resistencia anaeróbica en sesiones cortas.' 
+            : 'Increases anaerobic endurance in short sessions.',
+        color: const Color(0xFFFF9500), // Orange
+      ),
+      _ZoneData(
+        label: 'Z3',
+        name: isEs ? 'MODERADO' : 'MODERATE',
+        range: '70-80%',
+        lpm: isEs ? '133-152 Lpm' : '133-152 bpm',
+        duration: isEs ? '10-40 min.' : '10-40 min',
+        benefit: isEs 
+            ? 'Mejora la resistencia aeróbica y capacidad cardiovascular.' 
+            : 'Improves aerobic endurance and cardiovascular capacity.',
+        color: const Color(0xFF34C759), // Green
+      ),
+      _ZoneData(
+        label: 'Z2',
+        name: isEs ? 'SUAVE' : 'LIGHT',
+        range: '60-70%',
+        lpm: isEs ? '114-133 Lpm' : '114-133 bpm',
+        duration: isEs ? '40-80 min.' : '40-80 min',
+        benefit: isEs 
+            ? 'Mejora la resistencia básica y estimula la quema de grasas.' 
+            : 'Improves basic endurance and stimulates fat burning.',
+        color: const Color(0xFF007AFF), // Blue
+      ),
+      _ZoneData(
+        label: 'Z1',
+        name: isEs ? 'MUY SUAVE' : 'VERY LIGHT',
+        range: '50-60%',
+        lpm: isEs ? '104-114 Lpm' : '104-114 bpm',
+        duration: isEs ? '20-40 min.' : '20-40 min',
+        benefit: isEs 
+            ? 'Ayuda a la recuperación post-esfuerzo y calentamiento.' 
+            : 'Aids post-exercise recovery and warm-up.',
+        color: const Color(0xFF8E8E93), // Grey
+      ),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.border),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Header
+        Row(children: [
+          Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(
+              color: theme.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(Icons.favorite_border, color: theme.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: TextStyle(color: theme.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 2),
+              Text(sub, style: TextStyle(color: theme.grey, fontSize: 11, height: 1.3)),
+            ],
+          )),
+        ]),
+        const SizedBox(height: 18),
+
+        // Zones List
+        ...zones.map((z) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: theme.cardDark,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.border.withValues(alpha: 0.5)),
+            ),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+              // Colored Label Pill
+              Container(
+                width: 76,
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                decoration: BoxDecoration(
+                  color: z.color,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text(z.label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900)),
+                  Text(z.range, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold, height: 1)),
+                ]),
+              ),
+              const SizedBox(width: 12),
+              // Name, Lpm, Duration and Benefit
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(z.name, style: TextStyle(color: z.color, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    Icon(Icons.favorite, color: z.color, size: 11),
+                    const SizedBox(width: 4),
+                    Text(z.lpm, style: TextStyle(color: theme.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                    const SizedBox(width: 16),
+                    Icon(Icons.timer_outlined, color: theme.grey, size: 11),
+                    const SizedBox(width: 4),
+                    Text(z.duration, style: TextStyle(color: theme.greyLight, fontSize: 10, fontWeight: FontWeight.w600)),
+                  ]),
+                  const SizedBox(height: 6),
+                  Text(z.benefit, style: TextStyle(color: theme.greyLight, fontSize: 11, height: 1.3)),
+                ],
+              )),
+            ]),
+          ),
+        )),
+      ]),
+    );
+  }
+}
+
+class _ZoneData {
+  final String label, name, range, lpm, duration, benefit;
+  final Color color;
+  const _ZoneData({required this.label, required this.name, required this.range, required this.lpm, required this.duration, required this.benefit, required this.color});
 }

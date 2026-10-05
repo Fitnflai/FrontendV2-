@@ -1209,13 +1209,19 @@ class _TodaySession extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isMissed
-            ? theme.redMid.withValues(alpha: 0.1)
-            : cfg.bgColor.withValues(alpha: 0.12),
+        color: isCompletado
+            ? theme.greenMid.withValues(alpha: 0.08)
+            : isMissed
+                ? theme.redMid.withValues(alpha: 0.1)
+                : cfg.bgColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isMissed ? theme.redMid : cfg.bgColor.withValues(alpha: 0.6),
-          width: isMissed ? 1.2 : 1,
+          color: isCompletado
+              ? theme.greenMid
+              : isMissed
+                  ? theme.redMid
+                  : cfg.bgColor.withValues(alpha: 0.6),
+          width: (isCompletado || isMissed) ? 1.5 : 1,
         ),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1303,9 +1309,12 @@ class _TodaySession extends StatelessWidget {
           width: double.infinity,
           height: 44,
           child: OutlinedButton.icon(
-            onPressed: data != null ? () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) =>
-                    WorkoutDetailScreen(entrenamiento: data))) : null,
+            onPressed: data != null ? () async {
+              await Navigator.push(context,
+                  MaterialPageRoute(builder: (_) =>
+                      WorkoutDetailScreen(entrenamiento: data)));
+              onAdjusted?.call();
+            } : null,
             icon: Icon(Icons.info_outline, size: 16),
             label: Text(l10n.homeWorkoutDetailButton,
                 style: TextStyle(fontSize: 14)),
@@ -1326,9 +1335,12 @@ class _TodaySession extends StatelessWidget {
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: data != null ? () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) =>
-                      WorkoutDetailScreen(entrenamiento: data))) : null,
+              onPressed: data != null ? () async {
+                await Navigator.push(context,
+                    MaterialPageRoute(builder: (_) =>
+                        WorkoutDetailScreen(entrenamiento: data)));
+                onAdjusted?.call();
+              } : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.primary,
                 disabledBackgroundColor: theme.cardDark,
@@ -1820,21 +1832,24 @@ class _TipCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.yellow.withValues(alpha: 0.25)),
       ),
-      child: Row(children: [
-        const Text('💡', style: TextStyle(fontSize: 24)),
-        const SizedBox(width: 12),
-        Expanded(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.homeTipOfTheDayTitle, style: TextStyle(color: theme.white, fontSize: 14, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(
-              displayText,
-              style: TextStyle(color: theme.greyLight, fontSize: 13),
-            ),
-          ],
-        )),
-      ]),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('💡', style: TextStyle(fontSize: 24)),
+          const SizedBox(width: 12),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.homeTipOfTheDayTitle, style: TextStyle(color: theme.white, fontSize: 14, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(
+                displayText,
+                style: TextStyle(color: theme.greyLight, fontSize: 13),
+              ),
+            ],
+          )),
+        ],
+      ),
     );
   }
 }

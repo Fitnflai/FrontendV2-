@@ -201,6 +201,9 @@ class _WorkoutActiveScreenState extends State<WorkoutActiveScreen>
   void _markCurrentComplete(int seriesCompletadas) {
     setState(() => _completedSteps.add(_pasoIdx));
     _saveCompletedExercise(_pasoIdx, seriesCompletadas);
+    if (_pasoIdx < _pasos.length - 1) {
+      _nextStep();
+    }
   }
 
   Future<void> _saveCompletedExercise(int index, int seriesCompletadas) async {
@@ -765,6 +768,7 @@ class _InteriorLayoutState extends State<_InteriorLayout> {
 
     Expanded(
       child: SingleChildScrollView(
+        key: ValueKey(widget.pasoIdx),
         padding: EdgeInsets.symmetric(horizontal: AppLayout.hPadding(context)),
         child: Column(children: [
           // Card multimedia + descripción
@@ -778,15 +782,17 @@ class _InteriorLayoutState extends State<_InteriorLayout> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(17)),
-                child: (widget.current['multimedia'] as String? ?? '').isNotEmpty
-                    ? Image.network(
-                        widget.current['multimedia'] as String,
-                        width: double.infinity, fit: BoxFit.fitWidth,
-                        errorBuilder: (_, __, ___) => _MultimediaPlaceholder(
-                            nombre: widget.current['nombre'] as String? ?? '', height: 200),
-                      )
-                    : _MultimediaPlaceholder(
-                        nombre: widget.current['nombre'] as String? ?? '', height: 200),
+                child: _Watermark(
+                  child: (widget.current['multimedia'] as String? ?? '').isNotEmpty
+                      ? Image.network(
+                          widget.current['multimedia'] as String,
+                          width: double.infinity, fit: BoxFit.fitWidth,
+                          errorBuilder: (_, __, ___) => _MultimediaPlaceholder(
+                              nombre: widget.current['nombre'] as String? ?? '', height: 200),
+                        )
+                      : _MultimediaPlaceholder(
+                          nombre: widget.current['nombre'] as String? ?? '', height: 200),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.all(14),
@@ -957,6 +963,7 @@ class _InteriorLayoutState extends State<_InteriorLayout> {
       isCurrent:               widget.completedSteps.contains(widget.pasoIdx),
       isLastStep:              widget.onNextStep == null,
       todasSeriesCompletadas:  _seriesCompletadas.length >= _totalSeries,
+      hasSets:                 _totalSeries > 0,
     ),
   ]);
   }
@@ -1097,15 +1104,17 @@ class _ExteriorLayout extends StatelessWidget {
                 if (!showMap)
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
-                    child: (current['multimedia'] as String? ?? '').isNotEmpty
-                        ? Image.network(
-                            current['multimedia'] as String,
-                            width: double.infinity, fit: BoxFit.fitWidth,
-                            errorBuilder: (_, __, ___) => _MultimediaPlaceholder(
-                                nombre: current['nombre'] as String? ?? '', height: 160),
-                          )
-                        : _MultimediaPlaceholder(
-                            nombre: current['nombre'] as String? ?? '', height: 160),
+                    child: _Watermark(
+                      child: (current['multimedia'] as String? ?? '').isNotEmpty
+                          ? Image.network(
+                              current['multimedia'] as String,
+                              width: double.infinity, fit: BoxFit.fitWidth,
+                              errorBuilder: (_, __, ___) => _MultimediaPlaceholder(
+                                  nombre: current['nombre'] as String? ?? '', height: 160),
+                            )
+                          : _MultimediaPlaceholder(
+                              nombre: current['nombre'] as String? ?? '', height: 160),
+                    ),
                   ),
                 if ((current['descripcion'] as String? ?? '').isNotEmpty || current['instrucciones'] != null)
                   Padding(
@@ -1200,6 +1209,7 @@ class _ExteriorLayout extends StatelessWidget {
       onFinish:    onFinish,
       isCurrent:   completedSteps.contains(pasoIdx),
       isLastStep:  onNextStep == null,
+      hasSets:     false,
     ),
   ]);
 }
@@ -1214,6 +1224,7 @@ class _WorkoutControls extends StatelessWidget {
   final VoidCallback? onNextStep;
   final bool isCurrent, isLastStep;
   final bool todasSeriesCompletadas;
+  final bool hasSets;
 
   const _WorkoutControls({
     required this.state,
@@ -1226,6 +1237,7 @@ class _WorkoutControls extends StatelessWidget {
     required this.isCurrent,
     required this.isLastStep,
     this.todasSeriesCompletadas = true,
+    this.hasSets = false,
   });
 
   @override
@@ -1253,58 +1265,37 @@ class _WorkoutControls extends StatelessWidget {
       ],
 
       if (state == _WState.running || state == _WState.paused) ...[
-        // Marcar completado + Siguiente
-        Row(children: [
-          // Marcar completado
-          Expanded(
-            child: SizedBox(
-              height: 46,
-              child: OutlinedButton.icon(
-                onPressed: isCurrent ? null : (!todasSeriesCompletadas ? null : onComplete),
-                icon: Icon(
-                  isCurrent ? Icons.check_circle : Icons.check_circle_outline,
-                  size: 16,
-                ),
-                label: Text(
-                  isCurrent ? AppLocalizations.of(context).workoutActiveCompleted
-                      : !todasSeriesCompletadas ? AppLocalizations.of(context).workoutActiveCompleteSets
-                      : AppLocalizations.of(context).workoutActiveMarkDone,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: isCurrent
-                      ? context.colors.successText : context.colors.text,
-                  side: BorderSide(
-                    color: isCurrent
-                        ? context.colors.successBorder : context.colors.border,
-                  ),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(23)),
-                ),
+        // Marcar completado (anteriormente Marcar completado + Siguiente)
+        SizedBox(
+          width: double.infinity,
+          height: 46,
+          child: OutlinedButton.icon(
+            onPressed: isCurrent ? null : (!todasSeriesCompletadas ? null : onComplete),
+            icon: Icon(
+              isCurrent ? Icons.check_circle : Icons.check_circle_outline,
+              size: 16,
+            ),
+            label: Text(
+              isCurrent
+                  ? AppLocalizations.of(context).workoutActiveCompleted
+                  : hasSets
+                      ? AppLocalizations.of(context).workoutActiveCompleteSets
+                      : !todasSeriesCompletadas
+                          ? AppLocalizations.of(context).workoutActiveCompleteSets
+                          : AppLocalizations.of(context).workoutActiveMarkDone,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: isCurrent
+                  ? context.colors.successText : context.colors.text,
+              side: BorderSide(
+                color: isCurrent
+                    ? context.colors.successBorder : context.colors.border,
               ),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(23)),
             ),
           ),
-          if (onNextStep != null) ...[
-            const SizedBox(width: 8),
-            Expanded(
-              child: SizedBox(
-                height: 46,
-                child: OutlinedButton.icon(
-                  onPressed: isCurrent ? onNextStep : null,
-                  icon: const Icon(Icons.skip_next_outlined, size: 16),
-                  label: Text(AppLocalizations.of(context).workoutActiveNext,
-                      style: const TextStyle(fontSize: 13,
-                          fontWeight: FontWeight.w600)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.colors.text,
-                    side: BorderSide(color: context.colors.border),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(23)),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ]),
+        ),
         const SizedBox(height: 10),
 
         // Pausar / Reanudar  +  Terminar
@@ -1548,4 +1539,52 @@ class _MultimediaPlaceholder extends StatelessWidget {
           style: TextStyle(color: context.colors.textMuted, fontSize: 12)),
     ]),
   );
+}
+
+class _Watermark extends StatelessWidget {
+  final Widget child;
+  const _Watermark({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        child,
+        Positioned.fill(
+          child: Center(
+            child: Opacity(
+              opacity: 0.22,
+              child: Image.asset(
+                'assets/images/watermark.png',
+                height: 150,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Opacity(
+                  opacity: 0.22,
+                  child: Transform.rotate(
+                    angle: -0.25,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white24, width: 2.0),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'FITNFLAI',
+                        style: TextStyle(
+                          color: Colors.white24,
+                          fontSize: 44,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

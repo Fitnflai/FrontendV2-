@@ -168,7 +168,6 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
       }
       // Bloquear si hay alerta y no fue aceptada
       if (_showRiskAlert && !_riskAccepted) return false;
-      if (_showSemanasAlert && !_semanasRiskAccepted) return false;
       return true;
     }
     if (_selectedGoalIdx == 1) {
@@ -328,6 +327,11 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
     // Helpers de tiempo en ISO 8601 duration-like string "HH:MM:SS"
     String toTimeStr(int h, int m, int s) =>
         '${h.toString().padLeft(2,'0')}:${m.toString().padLeft(2,'0')}:${s.toString().padLeft(2,'0')}';
+
+    // Si es competencia, la duración en semanas es igual a las semanas disponibles para la competencia
+    if (_selectedGoalIdx == 0) {
+      _semanas = _weeksAvailableForRace;
+    }
 
     try {
 
@@ -640,114 +644,116 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
                 // ── Info banner ───────────────────────
 
                 // ── Cuántas semanas ───────────────────
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.card,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Expanded(
-                        child: Text(AppLocalizations.of(context).onboardingSportWeeksDurationTitle,
-                            style: const TextStyle(color: AppColors.orange,
-                                fontSize: 16, fontWeight: FontWeight.w800, height: 1.3)),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF3A1515),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          const Icon(Icons.circle, color: AppColors.redText, size: 8),
-                          const SizedBox(width: 4),
-                          Text(AppLocalizations.of(context).onboardingSportObligatory,
-                              style: const TextStyle(color: AppColors.redText, fontSize: 11)),
-                        ]),
-                      ),
-                    ]),
-                    const SizedBox(height: 20),
-                    _SemanasSlider(
-                      value: _semanas,
-                      options: _semanasOptions,
-                      requiredWeeks: _minSemanasRequeridas,
-                      onChanged: (v) {
-                        final offset = _scrollCtrl.hasClients ? _scrollCtrl.offset : 0.0;
-                        setState(() {
-                          _semanas = v;
-                          _semanasRiskAccepted = false;
-                        });
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (_scrollCtrl.hasClients) {
-                            _scrollCtrl.jumpTo(offset);
-                          }
-                        });
-                      },
+                if (_selectedGoalIdx != 0) ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.card,
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    // Alerta semanas insuficientes — AnimatedSize evita el salto de scroll
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 400),
-                      curve: Curves.easeInOut,
-                      clipBehavior: Clip.hardEdge,
-                      child: _showSemanasAlert
-                          ? Padding(
-                              padding: const EdgeInsets.only(top: 14),
-                              child: Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF2A1A00),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0xFFCC7700), width: 1.5),
-                                ),
-                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                  Row(children: [
-                                    const Text('⚠️', style: TextStyle(fontSize: 16)),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(AppLocalizations.of(context).onboardingSportTimeTight,
-                                        style: const TextStyle(color: Color(0xFFFFAA33),
-                                            fontSize: 14, fontWeight: FontWeight.w700)),
-                                    ),
-                                  ]),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    AppLocalizations.of(context).onboardingSportTimeTightDesc(_minSemanasRequeridas),
-                                    style: const TextStyle(color: Color(0xFFFFCC88), fontSize: 13, height: 1.5),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        Expanded(
+                          child: Text(AppLocalizations.of(context).onboardingSportWeeksDurationTitle,
+                              style: const TextStyle(color: AppColors.orange,
+                                  fontSize: 16, fontWeight: FontWeight.w800, height: 1.3)),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3A1515),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.circle, color: AppColors.redText, size: 8),
+                            const SizedBox(width: 4),
+                            Text(AppLocalizations.of(context).onboardingSportObligatory,
+                                style: const TextStyle(color: AppColors.redText, fontSize: 11)),
+                          ]),
+                        ),
+                      ]),
+                      const SizedBox(height: 20),
+                      _SemanasSlider(
+                        value: _semanas,
+                        options: _semanasOptions,
+                        requiredWeeks: _minSemanasRequeridas,
+                        onChanged: (v) {
+                          final offset = _scrollCtrl.hasClients ? _scrollCtrl.offset : 0.0;
+                          setState(() {
+                            _semanas = v;
+                            _semanasRiskAccepted = false;
+                          });
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (_scrollCtrl.hasClients) {
+                              _scrollCtrl.jumpTo(offset);
+                            }
+                          });
+                        },
+                      ),
+                      // Alerta semanas insuficientes — AnimatedSize evita el salto de scroll
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeInOut,
+                        clipBehavior: Clip.hardEdge,
+                        child: _showSemanasAlert
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 14),
+                                child: Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF2A1A00),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: const Color(0xFFCC7700), width: 1.5),
                                   ),
-                                  const SizedBox(height: 12),
-                                  GestureDetector(
-                                    onTap: () => setState(() => _semanasRiskAccepted = !_semanasRiskAccepted),
-                                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                      AnimatedContainer(
-                                        duration: const Duration(milliseconds: 150),
-                                        width: 22, height: 22,
-                                        decoration: BoxDecoration(
-                                          color: _semanasRiskAccepted ? const Color(0xFFCC7700) : Colors.transparent,
-                                          borderRadius: BorderRadius.circular(5),
-                                          border: Border.all(color: const Color(0xFFFFAA33), width: 1.5),
-                                        ),
-                                        child: _semanasRiskAccepted
-                                            ? const Icon(Icons.check, color: Colors.white, size: 14)
-                                            : null,
-                                      ),
-                                      const SizedBox(width: 10),
+                                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                    Row(children: [
+                                      const Text('⚠️', style: TextStyle(fontSize: 16)),
+                                      const SizedBox(width: 8),
                                       Expanded(
-                                        child: Text(
-                                          AppLocalizations.of(context).onboardingSportTimeTightCheckbox,
-                                          style: const TextStyle(color: Color(0xFFFFCC88), fontSize: 12, height: 1.5),
-                                        ),
+                                        child: Text(AppLocalizations.of(context).onboardingSportTimeTight,
+                                          style: const TextStyle(color: Color(0xFFFFAA33),
+                                              fontSize: 14, fontWeight: FontWeight.w700)),
                                       ),
                                     ]),
-                                  ),
-                                ]),
-                              ),
-                            )
-                          : const SizedBox(width: double.infinity),
-                    ),
-                  ]),
-                ),
-                const SizedBox(height: 12),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      AppLocalizations.of(context).onboardingSportTimeTightDesc(_minSemanasRequeridas),
+                                      style: const TextStyle(color: Color(0xFFFFCC88), fontSize: 13, height: 1.5),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    GestureDetector(
+                                      onTap: () => setState(() => _semanasRiskAccepted = !_semanasRiskAccepted),
+                                      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                        AnimatedContainer(
+                                          duration: const Duration(milliseconds: 150),
+                                          width: 22, height: 22,
+                                          decoration: BoxDecoration(
+                                            color: _semanasRiskAccepted ? const Color(0xFFCC7700) : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(5),
+                                            border: Border.all(color: const Color(0xFFFFAA33), width: 1.5),
+                                          ),
+                                          child: _semanasRiskAccepted
+                                              ? const Icon(Icons.check, color: Colors.white, size: 14)
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            AppLocalizations.of(context).onboardingSportTimeTightCheckbox,
+                                            style: const TextStyle(color: Color(0xFFFFCC88), fontSize: 12, height: 1.5),
+                                          ),
+                                        ),
+                                      ]),
+                                    ),
+                                  ]),
+                                ),
+                              )
+                            : const SizedBox(width: double.infinity),
+                      ),
+                    ]),
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
                 // ── Info banner (debajo de semanas) ───
                 Container(

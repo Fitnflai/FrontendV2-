@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:fitnflaifrontendv2/services/auth_service.dart';
 import 'package:fitnflaifrontendv2/services/health/base_health_service.dart';
 import 'package:fitnflaifrontendv2/services/health/android_health_connect_service.dart';
 import 'package:fitnflaifrontendv2/services/health/apple_health_kit_service.dart';
@@ -111,15 +112,26 @@ class HealthRepository {
       return null;
     }
 
-    // Simulate backend submission
     try {
-      // Assuming a POST endpoint for health data synchronization
-      // Replace with your actual backend endpoint and authentication
+      final token = await AuthService().getToken();
+
       final response = await CachedHttp.post(
-        Uri.parse('https://apifitnflai.com/api/v1/health/sync'),
-        body: jsonEncode(healthData),
+        Uri.parse('https://apifitnflai.com/health-service-integration/sync-health'),
+        body: jsonEncode({
+          'fecha': healthData['fecha'],
+          'pasos': healthData['pasos'] as int? ?? 0,
+          'calorias_quemadas': (healthData['calorias_quemadas'] as num?)?.toDouble() ?? 0.0,
+          'distancia_km': (healthData['distancia_km'] as num?)?.toDouble() ?? 0.0,
+          'ritmo_cardiaco_promedio': (healthData['ritmo_cardiaco_promedio'] as num?)?.toDouble() ?? 0.0,
+          'ritmo_cardiaco_reposo': (healthData['ritmo_cardiaco_reposo'] as num?)?.toDouble() ?? 0.0,
+          'peso_kg': (healthData['peso_kg'] as num?)?.toDouble() ?? 0.0,
+          'horas_sueno': (healthData['horas_sueno'] as num?)?.toDouble() ?? 0.0,
+          'fuente': healthData['fuente'] ?? 'none',
+          'fc_reposo': (healthData['fc_reposo'] as num?)?.toDouble() ?? 0.0,
+        }),
         headers: {
           'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
         },
       );
 

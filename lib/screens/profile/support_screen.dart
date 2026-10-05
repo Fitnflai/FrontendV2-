@@ -90,12 +90,28 @@ class _SupportScreenState extends State<SupportScreen> with WidgetsBindingObserv
           _sectionLabel(l10n.supportContact),
           const SizedBox(height: 10),
           _ContactCard(
-            icon: Icons.email_outlined,
+            icon: Icon(Icons.email_outlined, color: theme.orange, size: 20),
             title: l10n.supportEmail,
             subtitle: 'info@fitnflai.com',
             badge: '24–48h',
             badgeColor: theme.orange,
             onTap: () => _showSupportForm(context),
+          ),
+          const SizedBox(height: 12),
+          _ContactCard(
+            icon: const SocialSvgIcon(svgData: SocialSvgIcons.whatsapp, size: 20),
+            title: 'WhatsApp',
+            subtitle: '+593 99 900 0939',
+            badge: null,
+            badgeColor: Colors.transparent,
+            onTap: () async {
+              final uri = Uri.parse('https://wa.me/593999000939');
+              try {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              } catch (e) {
+                debugPrint('🚨 Error abriendo WhatsApp: $e');
+              }
+            },
           ),
           const SizedBox(height: 24),
 
@@ -390,7 +406,7 @@ class _SupportScreenState extends State<SupportScreen> with WidgetsBindingObserv
 
 // ── Contact Card ──────────────────────────────────────────────
 class _ContactCard extends StatelessWidget {
-  final IconData icon;
+  final Widget icon;
   final String title, subtitle;
   final String? badge;
   final Color badgeColor;
@@ -419,7 +435,7 @@ class _ContactCard extends StatelessWidget {
             color: theme.cardDark,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: theme.orange, size: 20),
+          child: Center(child: icon),
         ),
         const SizedBox(width: 14),
         Expanded(child: Column(
