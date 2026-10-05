@@ -1567,7 +1567,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get nutritionAIBannerDesc =>
-      'Tu plan nutricional semanal, macros personalizados y tipo de alimentación antes de cada sesión. Generado por Fitnflai según tu carga de entrenamiento.';
+      'Tu plan nutricional semanal y tipo de alimentación antes de cada sesión. Generado por Fitnflai según tu carga de entrenamiento.';
 
   @override
   String get nutritionAIBannerProTitle => 'Con el plan Pro desbloqueas:';
@@ -2812,7 +2812,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get workoutActiveExitTitle => '¿Salir del entrenamiento?';
 
   @override
-  String get workoutActiveExitDesc => 'El progreso se perderá.';
+  String get workoutActiveExitDesc =>
+      'El progreso se guardará y podrás continuar sin perder el avance de tu entrenamiento.';
 
   @override
   String get workoutActiveExitContinue => 'Continuar';
@@ -2863,7 +2864,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get workoutActiveCompleted => 'Completado';
 
   @override
-  String get workoutActiveCompleteSets => 'Completa las series';
+  String get workoutActiveCompleteSets => 'Series completadas';
 
   @override
   String get workoutActiveMarkDone => 'Marcar hecho';
@@ -3042,7 +3043,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingTestSelectionDesc =>
-      'Evaluamos tu condición física real. Solo toma 20–30 min.';
+      'Estas pruebas sencillas miden tu fuerza, resistencia y flexibilidad para adaptar el plan a tu nivel de forma segura. Solo toma 20–30 minutos.';
 
   @override
   String get onboardingTestSelectionObligatory => 'Obligatorio';

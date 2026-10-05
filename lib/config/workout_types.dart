@@ -84,8 +84,8 @@ class WorkoutTypes {
   static const _default = WorkoutTypeConfig(
     tipo:       'Entrenamiento',
     icon:       Icons.sports,
-    color:      Color(0xFFFF6B35),
-    bgColor:    Color(0xFF2E1A0D),
+    color:      Color(0xFF2E1A0D),
+    bgColor:    Color(0xFFFF6B35),
     emoji:      '🏋️',
     shortLabel: 'Ent.',
   );

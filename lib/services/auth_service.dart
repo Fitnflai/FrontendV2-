@@ -180,11 +180,19 @@ class AuthService {
 
   // ── Apple Sign In ────────────────────────────────────────────
   Future<Map<String, dynamic>> loginWithApple() async {
+    final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+
     final credential = await SignInWithApple.getAppleIDCredential(
       scopes: [
         AppleIDAuthorizationScopes.email,
         AppleIDAuthorizationScopes.fullName,
       ],
+      webAuthenticationOptions: isAndroid
+          ? WebAuthenticationOptions(
+              clientId: 'com.fitnflai.frontend.signin',
+              redirectUri: Uri.parse('https://apifitnflai.com/auth/apple/callback'),
+            )
+          : null,
     );
 
     final identityToken = credential.identityToken;
@@ -203,6 +211,7 @@ class AuthService {
       body: jsonEncode({
         'identity_token': identityToken,
         if (fullName.isNotEmpty) 'full_name': fullName,
+        'idioma': 'es',
       }),
     );
 

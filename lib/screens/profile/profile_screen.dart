@@ -1292,7 +1292,7 @@ class _FooterLinks extends StatelessWidget {
         () async {
           final emailUri = Uri(
             scheme: 'mailto',
-            path: 'legal@fitnflai.com',
+            path: 'info@fitnflai.com',
             query: 'subject=${Uri.encodeComponent(isEs ? 'Empleo FITNFLAI' : 'Careers FITNFLAI')}',
           );
           if (await canLaunchUrl(emailUri)) {
