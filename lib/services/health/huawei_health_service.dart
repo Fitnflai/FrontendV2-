@@ -18,16 +18,9 @@ class HuaweiHealthService implements BaseHealthService {
 
   @override
   Future<bool> checkAvailability() async {
-    try {
-      if (!Platform.isAndroid) return false;
-      return await SettingController.getHealthAppAuthorization();
-    } on PlatformException catch (e) {
-      debugPrint('PlatformException checking Huawei Health availability: ${e.message}');
-      return false;
-    } catch (e) {
-      debugPrint('Error checking Huawei Health availability: $e');
-      return false;
-    }
+    // getHealthAppAuthorization() only returns true AFTER the user has already authorized our app.
+    // To allow the initial connection flow to trigger, we must return true if running on Android.
+    return Platform.isAndroid;
   }
 
   @override
