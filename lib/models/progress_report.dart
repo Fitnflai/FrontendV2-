@@ -37,6 +37,7 @@ abstract class ProgressReport with _$ProgressReport {
     CurrentPreviousValue? musculos,
     CaloriasDetail? calorias,
     @JsonKey(name: 'tiempo_activo') ActiveTimeDetail? tiempoActivo,
+    @JsonKey(name: 'zonas_esfuerzo') ZonasEsfuerzo? zonasEsfuerzo,
   }) = _ProgressReport;
 
   factory ProgressReport.fromJson(Map<String, dynamic> json) => _$ProgressReportFromJson(json);
@@ -167,4 +168,39 @@ abstract class CaloriasDetail with _$CaloriasDetail {
     num? diferencia,
   }) = _CaloriasDetail;
   factory CaloriasDetail.fromJson(Map<String, dynamic> json) => _$CaloriasDetailFromJson(json);
+}
+
+@freezed
+abstract class ZonasEsfuerzo with _$ZonasEsfuerzo {
+  const factory ZonasEsfuerzo({
+    @JsonKey(name: 'fc_max') num? fcMax,
+    @JsonKey(name: 'fc_reposo_utilizada') num? fcReposoUtilizada,
+    @JsonKey(name: 'fc_reserva') num? fcReserva,
+    @JsonKey(name: 'rangos_fc') RangosFc? rangosFc,
+  }) = _ZonasEsfuerzo;
+
+  factory ZonasEsfuerzo.fromJson(Map<String, dynamic> json) => _$ZonasEsfuerzoFromJson(json);
+}
+
+@freezed
+abstract class RangosFc with _$RangosFc {
+  const factory RangosFc({
+    @JsonKey(name: 'zona_1') ZonaRango? zona1,
+    @JsonKey(name: 'zona_2') ZonaRango? zona2,
+    @JsonKey(name: 'zona_3') ZonaRango? zona3,
+    @JsonKey(name: 'zona_4') ZonaRango? zona4,
+    @JsonKey(name: 'zona_5') ZonaRango? zona5,
+  }) = _RangosFc;
+
+  factory RangosFc.fromJson(Map<String, dynamic> json) => _$RangosFcFromJson(json);
+}
+
+@freezed
+abstract class ZonaRango with _$ZonaRango {
+  const factory ZonaRango({
+    num? min,
+    num? max,
+  }) = _ZonaRango;
+
+  factory ZonaRango.fromJson(Map<String, dynamic> json) => _$ZonaRangoFromJson(json);
 }
