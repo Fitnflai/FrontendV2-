@@ -276,13 +276,61 @@ class _TrainingSettingsScreenState extends State<TrainingSettingsScreen> {
 
   Future<void> _save() async {
     if (!mounted) return;
-    final theme = context.themeColors;
-    setState(() => _dirty = false);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(AppLocalizations.of(context).trainingSettingsSaved),
-      backgroundColor: theme.successBorder,
-    ));
-    Navigator.pop(context);
+    final token = context.read<AuthProvider>().token;
+    if (token == null) return;
+
+    setState(() {
+      _loading = true;
+      _dirty   = false;
+    });
+
+    try {
+      final nivelIdx = _nivelActividad.indexOf(_nivelDificultad);
+      
+      final patchRes = await CachedHttp.patch(
+        Uri.parse('https://apifitnflai.com/users/me'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'nombre_disciplina': _disciplina,
+          'nivel_actividad': nivelIdx >= 0 ? nivelIdx : 1,
+          'dias_entrenamiento': _diasEntrenamiento,
+        }),
+      );
+
+      debugPrint('TRAINING SETTINGS SAVE STATUS: ${patchRes.statusCode}');
+      
+      if (patchRes.statusCode == 200) {
+        if (mounted) {
+          await context.read<ProfileProvider>().loadAll(token, force: true);
+        }
+
+        if (mounted) {
+          final theme = context.themeColors;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(AppLocalizations.of(context).trainingSettingsSaved),
+            backgroundColor: theme.successBorder,
+          ));
+          Navigator.pop(context);
+        }
+      } else {
+        throw Exception('Server returned ${patchRes.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('ERROR SAVING TRAINING SETTINGS: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Error al guardar los cambios en el servidor.'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
   }
 }
 

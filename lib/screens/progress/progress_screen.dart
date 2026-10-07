@@ -174,7 +174,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         const SizedBox(height: 16),
 
                         // ── Zonas de entrenamiento ────────────────
-                        const _TrainingZonesCard(),
+                        _TrainingZonesCard(report: report),
                         const SizedBox(height: 16),
 
                         // ── Enviar informe ───────────────────────
@@ -1559,7 +1559,8 @@ class _WeightChartPainter extends CustomPainter {
 // TRAINING ZONES CARD
 // ─────────────────────────────────────────────
 class _TrainingZonesCard extends StatelessWidget {
-  const _TrainingZonesCard();
+  final ProgressReport? report;
+  const _TrainingZonesCard({this.report});
 
   @override
   Widget build(BuildContext context) {
@@ -1571,12 +1572,23 @@ class _TrainingZonesCard extends StatelessWidget {
         ? 'Zonas de esfuerzo según tu frecuencia cardíaca máxima (% FC Máx).' 
         : 'Effort zones based on your maximum heart rate (% Max HR).';
 
+    final rangos = report?.zonasEsfuerzo?.rangosFc;
+
+    String getLpm(ZonaRango? rango, String fallback) {
+      if (rango == null || rango.min == null || rango.max == null) {
+        return fallback;
+      }
+      final minStr = rango.min! % 1 == 0 ? rango.min!.toInt().toString() : rango.min!.toStringAsFixed(1);
+      final maxStr = rango.max! % 1 == 0 ? rango.max!.toInt().toString() : rango.max!.toStringAsFixed(1);
+      return isEs ? '$minStr-$maxStr Lpm' : '$minStr-$maxStr bpm';
+    }
+
     final List<_ZoneData> zones = [
       _ZoneData(
         label: 'Z5',
         name: isEs ? 'MÁXIMO' : 'MAXIMUM',
         range: '90-100%',
-        lpm: isEs ? '171-190 Lpm' : '171-190 bpm',
+        lpm: getLpm(rangos?.zona5, isEs ? '171-190 Lpm' : '171-190 bpm'),
         duration: isEs ? '0-2 min.' : '0-2 min',
         benefit: isEs 
             ? 'Mejora la velocidad y tonifica el sistema neuromuscular.' 
@@ -1587,7 +1599,7 @@ class _TrainingZonesCard extends StatelessWidget {
         label: 'Z4',
         name: isEs ? 'INTENSO' : 'HARD',
         range: '80-90%',
-        lpm: isEs ? '152-172 Lpm' : '152-172 bpm',
+        lpm: getLpm(rangos?.zona4, isEs ? '152-172 Lpm' : '152-172 bpm'),
         duration: isEs ? '2-10 min.' : '2-10 min',
         benefit: isEs 
             ? 'Incrementa la resistencia anaeróbica en sesiones cortas.' 
@@ -1598,7 +1610,7 @@ class _TrainingZonesCard extends StatelessWidget {
         label: 'Z3',
         name: isEs ? 'MODERADO' : 'MODERATE',
         range: '70-80%',
-        lpm: isEs ? '133-152 Lpm' : '133-152 bpm',
+        lpm: getLpm(rangos?.zona3, isEs ? '133-152 Lpm' : '133-152 bpm'),
         duration: isEs ? '10-40 min.' : '10-40 min',
         benefit: isEs 
             ? 'Mejora la resistencia aeróbica y capacidad cardiovascular.' 
@@ -1609,7 +1621,7 @@ class _TrainingZonesCard extends StatelessWidget {
         label: 'Z2',
         name: isEs ? 'SUAVE' : 'LIGHT',
         range: '60-70%',
-        lpm: isEs ? '114-133 Lpm' : '114-133 bpm',
+        lpm: getLpm(rangos?.zona2, isEs ? '114-133 Lpm' : '114-133 bpm'),
         duration: isEs ? '40-80 min.' : '40-80 min',
         benefit: isEs 
             ? 'Mejora la resistencia básica y estimula la quema de grasas.' 
@@ -1620,7 +1632,7 @@ class _TrainingZonesCard extends StatelessWidget {
         label: 'Z1',
         name: isEs ? 'MUY SUAVE' : 'VERY LIGHT',
         range: '50-60%',
-        lpm: isEs ? '104-114 Lpm' : '104-114 bpm',
+        lpm: getLpm(rangos?.zona1, isEs ? '104-114 Lpm' : '104-114 bpm'),
         duration: isEs ? '20-40 min.' : '20-40 min',
         benefit: isEs 
             ? 'Ayuda a la recuperación post-esfuerzo y calentamiento.' 

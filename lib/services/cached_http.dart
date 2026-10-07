@@ -18,6 +18,8 @@ class CachedHttp {
     final urlStr = url.toString();
     final now = DateTime.now();
     final actualHeaders = headers ?? {};
+    final authHeader = actualHeaders['Authorization'] ?? '';
+    final cacheKey = '$urlStr|$authHeader';
 
     // Cache policy: only GET requests to specific endpoints are cached
     final isCacheable = urlStr.contains('/entrenamientos/semana') || 
@@ -26,14 +28,14 @@ class CachedHttp {
                         urlStr.contains('/usuarios/mi-plan-activo');
 
     if (isCacheable) {
-      final cached = _cache[urlStr];
+      final cached = _cache[cacheKey];
       if (cached != null && !cached.isExpired) {
         debugPrint('🎯 CachedHttp GET HIT: $urlStr');
         return cached.response;
       }
 
       // Deduplication of concurrent identical requests
-      final pending = _pendingRequests[urlStr];
+      final pending = _pendingRequests[cacheKey];
       if (pending != null) {
         debugPrint('🔗 CachedHttp GET DEDUPLICATED: $urlStr');
         return pending;
@@ -43,7 +45,7 @@ class CachedHttp {
       final future = client != null
           ? client!.get(url, headers: actualHeaders)
           : http.get(url, headers: actualHeaders);
-      _pendingRequests[urlStr] = future;
+      _pendingRequests[cacheKey] = future;
 
       try {
         final response = await future;
@@ -52,11 +54,11 @@ class CachedHttp {
           final duration = urlStr.contains('/users/me') 
               ? const Duration(minutes: 1) 
               : const Duration(minutes: 5);
-          _cache[urlStr] = _CacheEntry(response, now.add(duration));
+          _cache[cacheKey] = _CacheEntry(response, now.add(duration));
         }
         return response;
       } finally {
-        _pendingRequests.remove(urlStr);
+        _pendingRequests.remove(cacheKey);
       }
     }
 

@@ -638,12 +638,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: () async {
-                          await auth.logout();
-                          if (!context.mounted) return;
-                          Navigator.pushNamedAndRemoveUntil(
-                              context, AppRoutes.welcome, (_) => false);
-                        },
+                        onPressed: () => _confirmLogout(context, auth),
                         icon: Icon(Icons.logout_outlined,
                             color: theme.redText, size: 18),
                         label: Text(l10n.profileButtonLogout,
@@ -946,6 +941,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final hour12 = hour % 12 == 0 ? 12 : hour % 12;
       return '$month $day, $year · $hour12:$minute $period';
     }
+  }
+
+  void _confirmLogout(BuildContext ctx, AuthProvider auth) {
+    final theme = Theme.of(ctx).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
+    final isEs  = Localizations.localeOf(ctx).languageCode == 'es';
+
+    final title = isEs ? '¿Cerrar sesión?' : 'Log out?';
+    final desc  = isEs 
+        ? '¿Seguro que quieres cerrar tu sesión en Fitnflai?' 
+        : 'Are you sure you want to log out of Fitnflai?';
+    final cancelText = isEs ? 'Cancelar' : 'Cancel';
+    final confirmText = isEs ? 'Cerrar sesión' : 'Log out';
+
+    showDialog(
+      context: ctx,
+      builder: (_) => AlertDialog(
+        backgroundColor: theme.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(title,
+            style: TextStyle(color: theme.white, fontSize: 16,
+                fontWeight: FontWeight.w700)),
+        content: Text(
+          desc,
+          style: TextStyle(color: theme.grey, fontSize: 13, height: 1.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(cancelText,
+                style: TextStyle(color: theme.grey))),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx); // Close dialog
+              
+              // Show loading dialog
+              showDialog(
+                context: ctx,
+                barrierDismissible: false,
+                builder: (loadingCtx) => PopScope(
+                  canPop: false,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: const BoxDecoration(
+                        color: Colors.transparent,
+                      ),
+                      child: const CircularProgressIndicator(color: Colors.orange),
+                    ),
+                  ),
+                ),
+              );
+
+              try {
+                await auth.logout();
+                if (ctx.mounted) {
+                  Navigator.pop(ctx); // Close loading dialog
+                  Navigator.pushNamedAndRemoveUntil(
+                      ctx, AppRoutes.welcome, (_) => false);
+                }
+              } catch (e) {
+                if (ctx.mounted) {
+                  Navigator.pop(ctx); // Close loading dialog
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: Text(confirmText,
+                style: TextStyle(color: theme.redText, fontWeight: FontWeight.w700))),
+        ],
+      ),
+    );
   }
 
   void _confirmDeleteAccount(BuildContext ctx, AuthProvider auth) {
