@@ -1160,7 +1160,7 @@
   "onboardingTestSelectionCompletedTitle": "¿Deseas hacer más tests?",
   "onboardingTestSelectionTitle": "Batería de tests funcionales",
   "onboardingTestSelectionCompletedDesc": "Cada test adicional hace tu plan más preciso.",
-  "onboardingTestSelectionDesc": "Estas pruebas sencillas miden tu fuerza, resistencia y flexibilidad para adaptar el plan a tu nivel de forma segura. Solo toma 20–30 minutos.",
+  "onboardingTestSelectionDesc": "Estas pruebas sencillas miden tu fuerza, resistencia y flexibilidad para adaptar el plan a tu nivel de forma segura.",
   "onboardingTestSelectionObligatory": "Obligatorio",
   "onboardingTestSelectionCompletedBadge": "✅ Completado",
   "onboardingTestSelectionCompletedInfo": "Puedes hacer los tests restantes ahora o más adelante desde \"Mis tests\" en tu perfil.",

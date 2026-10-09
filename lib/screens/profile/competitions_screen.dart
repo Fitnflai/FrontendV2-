@@ -344,7 +344,7 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
                             tipoEvento:   tipo,
                             lugar:  lugarCtrl.text.trim(),
                             fecha:  fecha!,
-                            distancia: double.tryParse(distanciaCtrl.text.trim()) ?? 0.0,
+                            distancia: double.tryParse(distanciaCtrl.text.trim().replaceAll(',', '.')) ?? 0.0,
                             tiempoEstimado: tiempoCtrl.text.trim(),
                             unidadDistancia: unidadDistancia,
                             esPrincipal: esPrincipal,

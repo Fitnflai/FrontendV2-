@@ -3043,7 +3043,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingTestSelectionDesc =>
-      'Estas pruebas sencillas miden tu fuerza, resistencia y flexibilidad para adaptar el plan a tu nivel de forma segura. Solo toma 20–30 minutos.';
+      'Estas pruebas sencillas miden tu fuerza, resistencia y flexibilidad para adaptar el plan a tu nivel de forma segura.';
 
   @override
   String get onboardingTestSelectionObligatory => 'Obligatorio';

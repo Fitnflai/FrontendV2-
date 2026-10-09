@@ -355,7 +355,7 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
 
         // Distancia: si es 'Otro' usa el campo manual; si no, extraemos número del nombre
         if (comp == 'Otro' && _raceDistCtrl.text.isNotEmpty) {
-          body['distancia_objetivo'] = double.tryParse(_raceDistCtrl.text) ?? 0;
+          body['distancia_objetivo'] = double.tryParse(_raceDistCtrl.text.replaceAll(',', '.')) ?? 0;
           body['unidad_distancia']   = _raceDistUnit;
         } else {
           // Intenta extraer km del nombre de la competencia (ej. "5 Kilómetros" → 5)
@@ -370,7 +370,7 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
       // ── Goal 1: Mejorar tiempo ──────────────────────────────
       if (_selectedGoalIdx == 1) {
         if (_timeDistCtrl.text.isNotEmpty) {
-          body['distancia_objetivo'] = double.tryParse(_timeDistCtrl.text) ?? 0;
+          body['distancia_objetivo'] = double.tryParse(_timeDistCtrl.text.replaceAll(',', '.')) ?? 0;
           body['unidad_distancia']   = _timeDistUnit;
         }
         if (_timeHours > 0 || _timeMin > 0 || _timeSec > 0) {
@@ -772,13 +772,14 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
                     )),
                   ]),
                 ),
+                const SizedBox(height: 20),
               ]),
             ),
           ),
 
           // ── Continue button ──────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: AppColors.orange))
                 : PrimaryButton(
