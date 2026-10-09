@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../../config/app_theme_extension.dart';
@@ -482,6 +483,10 @@ class _ProfileTestTimerScreenState extends State<ProfileTestTimerScreen>
           TextField(
             controller: _resultCtrl,
             keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(_cfg.unit == 'metros' ? 5 : (_cfg.unit == 'segundos' ? 4 : 3)),
+            ],
             style: TextStyle(color: theme.text,
                 fontSize: 22, fontWeight: FontWeight.w700),
             decoration: InputDecoration(

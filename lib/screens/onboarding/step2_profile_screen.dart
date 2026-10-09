@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import '../../l10n/app_localizations.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_routes.dart';
@@ -205,6 +206,13 @@ class _Step2ProfileScreenState extends State<Step2ProfileScreen> {
     final userId = authProvider.user?.id;
     setState(() => _loading = true);
     try {
+      String? timezone;
+      try {
+        final tzInfo = await FlutterTimezone.getLocalTimezone();
+        timezone = tzInfo.identifier;
+      } catch (e) {
+        debugPrint('Error fetching timezone: $e');
+      }
 
       final body = <String, dynamic>{
         'adaptacion_ciclo_menstrual': (_isMale == false) && _menstrualActive,
@@ -213,6 +221,7 @@ class _Step2ProfileScreenState extends State<Step2ProfileScreen> {
         'ciudad':                     _selectedCityName,
         'genero':                     _isMale == true ? 'Masculino' : 'Femenino',
         'peso':                       double.tryParse(_weightCtrl.text) ?? 0,
+        'timezone':                   timezone ?? 'America/Guayaquil',
         'unidad_altura':              _heightUnit,
         'unidad_peso':                _weightUnit,
       };
@@ -283,7 +292,8 @@ class _Step2ProfileScreenState extends State<Step2ProfileScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
         backgroundColor: AppColors.bg,
         body: SafeArea(
@@ -295,7 +305,10 @@ class _Step2ProfileScreenState extends State<Step2ProfileScreen> {
               child: SingleChildScrollView(
                 keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(children: [
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                  child: Column(children: [
 
                 // ── Perfil básico ─────────────────
                 _Card(
@@ -604,7 +617,7 @@ class _Step2ProfileScreenState extends State<Step2ProfileScreen> {
                   ),
 
                 const SizedBox(height: 16),
-              ]),
+              ])),
             ),
           ),
 
@@ -785,7 +798,14 @@ class _NumUnitField extends StatelessWidget {
         controller: controller,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+          TextInputFormatter.withFunction((oldValue, newValue) {
+            final text = newValue.text.replaceAll(',', '.');
+            return newValue.copyWith(
+              text: text,
+              selection: newValue.selection,
+            );
+          }),
         ],
         style: const TextStyle(
             color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w600),

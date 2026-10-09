@@ -665,154 +665,116 @@ class _Step4BodyScreenState extends State<Step4BodyScreen> {
                     title: l10n.onboardingBodyUploadTitle,
                     badge: _OptionalBadge(),
                     child: Column(children: [
-                      // Preview / placeholder dinámico
+                      // Preview / placeholder dinámico (sin acción de tap)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 28, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardDark,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: _uploadingScale
+                            ? Column(children: [
+                                const CircularProgressIndicator(color: AppColors.orange),
+                                const SizedBox(height: 12),
+                                Text(l10n.onboardingBodyUploadProcessing,
+                                    style: const TextStyle(
+                                        color: AppColors.greyLight,
+                                        fontSize: 13)),
+                              ])
+                            : _uploadedFile == null
+                            ? Column(children: [
+                                const Text('📤', style: TextStyle(fontSize: 36)),
+                                const SizedBox(height: 10),
+                                Text(l10n.onboardingBodyUploadScaleHint,
+                                    style: const TextStyle(
+                                        color: AppColors.greyLight,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 6),
+                                Text(
+                                  l10n.onboardingBodyUploadScaleDesc,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      color: AppColors.grey,
+                                      fontSize: 12,
+                                      height: 1.4),
+                                ),
+                              ])
+                            : _isImage
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.file(_uploadedFile!,
+                                        fit: BoxFit.cover,
+                                        height: 180,
+                                        width: double.infinity),
+                                  )
+                                : Column(children: [
+                                    const Text('📄',
+                                        style: TextStyle(fontSize: 36)),
+                                    const SizedBox(height: 8),
+                                    Text(_uploadedFileName ?? '',
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                            color: AppColors.greenText,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600)),
+                                    const SizedBox(height: 4),
+                                    Text(locale == 'es' ? 'PDF cargado correctamente' : 'PDF loaded successfully',
+                                        style: const TextStyle(
+                                            color: AppColors.grey,
+                                            fontSize: 12)),
+                                    if (_scaleData != null) ...[
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.orange.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(locale == 'es' ? '✅ Datos extraídos' : '✅ Data extracted',
+                                            style: const TextStyle(
+                                                color: AppColors.orange,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600)),
+                                      ),
+                                    ],
+                                  ]),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Botón subir unificado
                       GestureDetector(
                         onTap: _showUploadChooser,
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 28, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
                           decoration: BoxDecoration(
-                            color: AppColors.cardDark,
+                            color: AppColors.orange,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border),
                           ),
-                          child: _uploadingScale
-                              ? Column(children: [
-                                  const CircularProgressIndicator(color: AppColors.orange),
-                                  const SizedBox(height: 12),
-                                  Text(l10n.onboardingBodyUploadProcessing,
-                                      style: const TextStyle(
-                                          color: AppColors.greyLight,
-                                          fontSize: 13)),
-                                ])
-                              : _uploadedFile == null
-                              ? Column(children: [
-                                  const Text('📤', style: TextStyle(fontSize: 36)),
-                                  const SizedBox(height: 10),
-                                  Text(l10n.onboardingBodyUploadScaleHint,
-                                      style: const TextStyle(
-                                          color: AppColors.greyLight,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600)),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    l10n.onboardingBodyUploadScaleDesc,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                        color: AppColors.grey,
-                                        fontSize: 12,
-                                        height: 1.4),
-                                  ),
-                                ])
-                              : _isImage
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Image.file(_uploadedFile!,
-                                          fit: BoxFit.cover,
-                                          height: 180,
-                                          width: double.infinity),
-                                    )
-                                  : Column(children: [
-                                      const Text('📄',
-                                          style: TextStyle(fontSize: 36)),
-                                      const SizedBox(height: 8),
-                                      Text(_uploadedFileName ?? '',
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                              color: AppColors.greenText,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600)),
-                                      const SizedBox(height: 4),
-                                      Text(locale == 'es' ? 'PDF cargado correctamente' : 'PDF loaded successfully',
-                                          style: const TextStyle(
-                                              color: AppColors.grey,
-                                              fontSize: 12)),
-                                      if (_scaleData != null) ...[
-                                        const SizedBox(height: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 10, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.orange.withValues(alpha: 0.15),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Text(locale == 'es' ? '✅ Datos extraídos' : '✅ Data extracted',
-                                              style: const TextStyle(
-                                                  color: AppColors.orange,
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w600)),
-                                        ),
-                                      ],
-                                    ]),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.cloud_upload_outlined, color: AppColors.white, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                locale == 'es' ? 'Subir' : 'Upload',
+                                style: const TextStyle(
+                                  color: AppColors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 14),
-
-                      // Botones subir
-                      Row(children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: _pickImage,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              decoration: BoxDecoration(
-                                color: AppColors.cardDark,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _isImage && _uploadedFile != null
-                                      ? AppColors.orange
-                                      : AppColors.border,
-                                  width: _isImage && _uploadedFile != null ? 1.5 : 1,
-                                ),
-                              ),
-                              child: Column(children: [
-                                const Text('🖼️', style: TextStyle(fontSize: 28)),
-                                const SizedBox(height: 6),
-                                Text(l10n.onboardingBodyUploadImageBtn,
-                                    style: TextStyle(
-                                        color: _isImage && _uploadedFile != null
-                                            ? AppColors.orange
-                                            : AppColors.greyLight,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600)),
-                              ]),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: _pickPdf,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              decoration: BoxDecoration(
-                                color: AppColors.cardDark,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: !_isImage && _uploadedFile != null
-                                      ? AppColors.orange
-                                      : AppColors.border,
-                                  width: !_isImage && _uploadedFile != null ? 1.5 : 1,
-                                ),
-                              ),
-                              child: Column(children: [
-                                const Text('📄', style: TextStyle(fontSize: 28)),
-                                const SizedBox(height: 6),
-                                Text(l10n.onboardingBodyUploadPdfBtn,
-                                    style: TextStyle(
-                                        color: !_isImage && _uploadedFile != null
-                                            ? AppColors.orange
-                                            : AppColors.greyLight,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600)),
-                              ]),
-                            ),
-                          ),
-                        ),
-                      ]),
                       if (_uploadedFile != null) ...[
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 12),
                         GestureDetector(
                           onTap: () => setState(() {
                             _uploadedFile     = null;

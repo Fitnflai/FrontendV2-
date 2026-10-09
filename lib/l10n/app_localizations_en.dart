@@ -3025,7 +3025,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingTestSelectionDesc =>
-      'These simple tests measure your strength, endurance, and flexibility to safely tailor the plan to your level. It only takes 20–30 minutes.';
+      'These simple tests measure your strength, endurance, and flexibility to safely tailor the plan to your level.';
 
   @override
   String get onboardingTestSelectionObligatory => 'Mandatory';

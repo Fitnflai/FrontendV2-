@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../../config/app_colors.dart';
@@ -694,6 +695,10 @@ class _TestTimerScreenState extends State<TestTimerScreen>
             TextField(
               controller: _resultCtrl,
               keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(_cfg.unit == 'metros' ? 5 : (_cfg.unit == 'segundos' ? 4 : 3)),
+              ],
               style: const TextStyle(
                   color: AppColors.white, fontSize: 22, fontWeight: FontWeight.w700),
               decoration: InputDecoration(

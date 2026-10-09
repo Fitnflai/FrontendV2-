@@ -2560,7 +2560,7 @@
   "@onboardingTestSelectionCompletedDesc": {
     "description": "Completed description for test selection"
   },
-  "onboardingTestSelectionDesc": "These simple tests measure your strength, endurance, and flexibility to safely tailor the plan to your level. It only takes 20–30 minutes.",
+  "onboardingTestSelectionDesc": "These simple tests measure your strength, endurance, and flexibility to safely tailor the plan to your level.",
   "@onboardingTestSelectionDesc": {
     "description": "Description for test selection"
   },

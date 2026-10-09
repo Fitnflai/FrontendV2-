@@ -149,14 +149,18 @@ class _PeriodicEvaluationScreenState extends State<PeriodicEvaluationScreen> {
     final theme = context.themeColors;
     final l10n = AppLocalizations.of(context);
     return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
         backgroundColor: theme.bg,
         appBar: FitnflaiAppBar(title: l10n.periodicEvalTitle),
         body: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.all(16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
           // ── Banner opcional ──────────────────────────
           Container(
@@ -336,7 +340,7 @@ class _PeriodicEvaluationScreenState extends State<PeriodicEvaluationScreen> {
             onTap: _saving ? null : _saveEvaluation,
           ),
           const SizedBox(height: 16),
-        ]),
+        ])),
       ),
     ),
   );
@@ -378,7 +382,16 @@ class _MedidaRow extends StatelessWidget {
             child: TextField(
               controller: controller,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))],
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+                TextInputFormatter.withFunction((oldValue, newValue) {
+                  final text = newValue.text.replaceAll(',', '.');
+                  return newValue.copyWith(
+                    text: text,
+                    selection: newValue.selection,
+                  );
+                }),
+              ],
               style: TextStyle(color: theme.text,
                   fontSize: 14, fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
