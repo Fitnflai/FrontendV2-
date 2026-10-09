@@ -5582,7 +5582,7 @@ abstract class AppLocalizations {
   /// Description for test selection
   ///
   /// In en, this message translates to:
-  /// **'These simple tests measure your strength, endurance, and flexibility to safely tailor the plan to your level. It only takes 20–30 minutes.'**
+  /// **'These simple tests measure your strength, endurance, and flexibility to safely tailor the plan to your level.'**
   String get onboardingTestSelectionDesc;
 
   /// Mandatory label
