@@ -61,62 +61,97 @@ class OnboardingRouter {
     }
 
     int backendDeducedStep = 0; // Default to PARQ (Step 1)
+    bool onboardingCompletoFromBackend = false;
+    bool fetchedFromBackend = false;
 
-    // Step 1: PARQ
-    if (profileProvider.parqStatus != 'CLEAR' && profileProvider.parqStatus != 'WARNING') {
-      backendDeducedStep = 0;
-    }
-    // Step 2: Profile
-    else if (user.genero == null || user.genero!.isEmpty || user.ciudad == null || user.ciudad!.isEmpty) {
-      backendDeducedStep = 1;
-    }
-    // Step 3: Fitness
-    else if ((user.nivelActividad ?? '').isEmpty || user.diasEntrenamiento.isEmpty) {
-      backendDeducedStep = 2;
-    } else {
-      // At this point, PARQ, Profile, Fitness are done. Now check Body, Test Selection, Sport, Generating.
-      bool squatsTestCompleted = false;
-      try {
-        final response = await http.get(
-          Uri.parse('https://apifitnflai.com/evaluacion/listar-resultados-tests'),
-          headers: {'Authorization': 'Bearer $token'},
-        ).timeout(const Duration(seconds: 5));
+    // 1. Intentar consultar el paso actual en el backend
+    try {
+      final progressRes = await http.get(
+        Uri.parse('https://apifitnflai.com/onboarding/consultar-paso-onboarding'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 4));
 
-        if (response.statusCode == 200) {
-          final List<dynamic> tests = json.decode(response.body);
-          squatsTestCompleted = tests.any((test) => test['nombreTest'] == 'sentadillas' && (test['completado'] ?? false) == true);
+      if (progressRes.statusCode == 200) {
+        final data = jsonDecode(progressRes.body) as Map<String, dynamic>;
+        if (data['onboarding_completo'] == true) {
+          onboardingCompletoFromBackend = true;
         }
-      } catch (e) {
-        debugPrint('Error checking squats test: $e');
-        // Treat as not completed if there's an error
+        final paso = data['onboarding_paso'] as int?;
+        if (paso != null) {
+          backendDeducedStep = paso;
+          fetchedFromBackend = true;
+          debugPrint('Onboarding progress fetched from backend: step $paso, completo: ${data['onboarding_completo']}');
+        }
       }
-      
-      final prefs = await SharedPreferences.getInstance();
-      final int? localCompletedStep = prefs.getInt('$_onboardingCompletedStepKey$userId');
+    } catch (e) {
+      debugPrint('Error getting onboarding progress from backend: $e');
+    }
 
+    if (onboardingCompletoFromBackend) {
+      return AppRoutes.home;
+    }
 
-      // Check for Step 4 (Body) and Step 5 (Test Selection)
-      // The prompt suggests if `objetivoPrincipal` or `nombreDisciplina` are empty, then it's either Step 4 or 5.
-      // If those are filled, it means they are past Step 6 (Sport).
-      // This implies that the body details (which are not explicitly listed in user model for checks) are considered "done" if we are at this stage.
-
-      if (user.objetivoPrincipal == null || user.objetivoPrincipal!.isEmpty || user.nombreDisciplina == null || user.nombreDisciplina!.isEmpty) {
-        // If these are empty, they are either at Step 4 (Body) or Step 5 (Test Selection)
-        if (localCompletedStep != null && localCompletedStep == 4) { // This means they finished Step 4 (Body)
-          backendDeducedStep = 4; // Step 5: Test Selection
-        } else {
-          backendDeducedStep = 3; // Step 4: Body
-        }
+    // 2. Si no pudimos obtenerlo del backend o es inválido, usamos heurística local como fallback
+    if (!fetchedFromBackend) {
+      // Step 1: PARQ
+      if (profileProvider.parqStatus != 'CLEAR' && profileProvider.parqStatus != 'WARNING') {
+        backendDeducedStep = 0;
+      }
+      // Step 2: Profile
+      else if (user.genero == null || user.genero!.isEmpty || user.ciudad == null || user.ciudad!.isEmpty) {
+        backendDeducedStep = 1;
+      }
+      // Step 3: Fitness
+      else if ((user.nivelActividad ?? '').isEmpty || user.diasEntrenamiento.isEmpty) {
+        backendDeducedStep = 2;
       } else {
-        // If objetivoPrincipal and nombreDisciplina are NOT empty, they are past Step 6 (Sport).
-        // This means they have completed Body (Step 4) and Sport (Step 6).
-        // We need to check if they completed Test Selection (Step 5).
-        if (!squatsTestCompleted) {
-          backendDeducedStep = 4; // Step 5: Test Selection
+        // At this point, PARQ, Profile, Fitness are done. Now check Body, Test Selection, Sport, Generating.
+        bool squatsTestCompleted = false;
+        try {
+          final response = await http.get(
+            Uri.parse('https://apifitnflai.com/evaluacion/listar-resultados-tests'),
+            headers: {'Authorization': 'Bearer $token'},
+          ).timeout(const Duration(seconds: 5));
+
+          if (response.statusCode == 200) {
+            final List<dynamic> tests = json.decode(response.body);
+            squatsTestCompleted = tests.any((test) => test['nombreTest'] == 'sentadillas' && (test['completado'] ?? false) == true);
+          }
+        } catch (e) {
+          debugPrint('Error checking squats test: $e');
+          // Treat as not completed if there's an error
+        }
+        
+        final prefs = await SharedPreferences.getInstance();
+        final int? localCompletedStep = prefs.getInt('$_onboardingCompletedStepKey$userId');
+
+
+        // Check for Step 4 (Body) and Step 5 (Test Selection)
+        // The prompt suggests if `objetivoPrincipal` or `nombreDisciplina` are empty, then it's either Step 4 or 5.
+        // If those are filled, it means they are past Step 6 (Sport).
+        // This implies that the body details (which are not explicitly listed in user model for checks) are considered "done" if we are at this stage.
+
+        if (user.objetivoPrincipal == null || user.objetivoPrincipal!.isEmpty || user.nombreDisciplina == null || user.nombreDisciplina!.isEmpty) {
+          // If these are empty, they are either at Step 4 (Body) or Step 5 (Test Selection)
+          if (localCompletedStep != null && localCompletedStep == 4) { // This means they finished Step 4 (Body)
+            backendDeducedStep = 4; // Step 5: Test Selection
+          } else {
+            backendDeducedStep = 3; // Step 4: Body
+          }
         } else {
-          // All previous steps (PARQ, Profile, Fitness, Body, Test Selection, Sport) are done.
-          // Next is Generating
-          backendDeducedStep = 6; // Step 7: Generating
+          // If objetivoPrincipal and nombreDisciplina are NOT empty, they are past Step 6 (Sport).
+          // This means they have completed Body (Step 4) and Sport (Step 6).
+          // We need to check if they completed Test Selection (Step 5).
+          if (!squatsTestCompleted) {
+            backendDeducedStep = 4; // Step 5: Test Selection
+          } else {
+            // All previous steps (PARQ, Profile, Fitness, Body, Test Selection, Sport) are done.
+            // Next is Generating
+            backendDeducedStep = 6; // Step 7: Generating
+          }
         }
       }
     }
@@ -144,8 +179,24 @@ class OnboardingRouter {
     }
   }
 
-  static Future<void> saveCompletedStep(String userId, int step) async {
+  static Future<void> saveCompletedStep(String userId, int step, {String? token}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('$_onboardingCompletedStepKey$userId', step);
+
+    if (token != null && token.isNotEmpty) {
+      try {
+        final res = await http.patch(
+          Uri.parse('https://apifitnflai.com/onboarding/actualizar-paso-onboarding'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({'onboarding_paso': step}),
+        ).timeout(const Duration(seconds: 4));
+        debugPrint('PATCH onboarding progress response: ${res.statusCode} ${res.body}');
+      } catch (e) {
+        debugPrint('Error patching onboarding progress to backend: $e');
+      }
+    }
   }
 }

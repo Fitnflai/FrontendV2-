@@ -414,7 +414,7 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
       }
       // Save completed step 6 after successful API response
       if (userId != null) {
-        await OnboardingRouter.saveCompletedStep(userId, 6);
+        await OnboardingRouter.saveCompletedStep(userId, 6, token: token);
       }
     } catch (e) {
       debugPrint('SAVE ERROR: $e');

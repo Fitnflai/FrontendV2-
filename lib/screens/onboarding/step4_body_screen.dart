@@ -425,7 +425,7 @@ class _Step4BodyScreenState extends State<Step4BodyScreen> {
       if (res.statusCode == 200 || res.statusCode == 201) {
         // Save completed step 4 after successful API response
         if (userId != null) {
-          await OnboardingRouter.saveCompletedStep(userId, 4);
+          await OnboardingRouter.saveCompletedStep(userId, 4, token: token);
         }
         if (!mounted) return;
         // Éxito — continuar al selector de tests

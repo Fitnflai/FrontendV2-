@@ -97,8 +97,9 @@ class _PARQResultClearScreenState extends State<PARQResultClearScreen> {
             onTap: () async {
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
               final userId = authProvider.user?.id;
+              final token = authProvider.token;
               if (userId != null) {
-                await OnboardingRouter.saveCompletedStep(userId, 1);
+                await OnboardingRouter.saveCompletedStep(userId, 1, token: token);
               }
               if (!context.mounted) return;
               Navigator.pushNamed(context, AppRoutes.step2Profile);
