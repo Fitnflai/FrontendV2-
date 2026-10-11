@@ -25,8 +25,13 @@ class _TrainingSettingsScreenState extends State<TrainingSettingsScreen> {
   bool _dirty   = false;
   bool _loading = true;
 
+  List<Map<String, dynamic>> _equipmentList = [];
+  final Set<int> _selectedEquipmentIds = {};
+  bool _loadingEquipment = true;
+
   static const _nivelActividad = ['Suave', 'Moderado', 'Exigente', 'Competitivo'];
   List<String> _disciplinas = [];
+  List<Map<String, dynamic>> _allDisciplinesList = [];
   static const _disciplinaEmojis = <String, String>{};
   static const _tiempos    = [30, 45, 60, 75, 90, 120];
   static const _diasKeys   = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
@@ -45,14 +50,22 @@ class _TrainingSettingsScreenState extends State<TrainingSettingsScreen> {
             headers: {'Authorization': 'Bearer $token'}),
         CachedHttp.get(Uri.parse('https://apifitnflai.com/onboarding/obtener-disciplinas'),
             headers: {'Authorization': 'Bearer $token'}),
+        CachedHttp.get(Uri.parse('https://apifitnflai.com/onboarding/equipments'),
+            headers: {'Authorization': 'Bearer $token'}),
       ]);
 
       if (results[1].statusCode == 200) {
         final list = jsonDecode(results[1].body) as List;
-        _disciplinas = list
+        _allDisciplinesList = list.cast<Map<String, dynamic>>();
+        _disciplinas = _allDisciplinesList
             .map((e) => (e['nombre'] as String?) ?? '')
             .where((n) => n.isNotEmpty)
             .toList();
+      }
+
+      if (results[2].statusCode == 200) {
+        final list = jsonDecode(results[2].body) as List;
+        _equipmentList = list.cast<Map<String, dynamic>>();
       }
 
       if (results[0].statusCode == 200 && mounted) {
@@ -64,11 +77,36 @@ class _TrainingSettingsScreenState extends State<TrainingSettingsScreen> {
             _disciplinas.add(nombreDisciplina);
           }
           _disciplina      = nombreDisciplina ?? (_disciplinas.isNotEmpty ? _disciplinas.first : '');
-          _nivelDificultad = _nivelActividad[nivelIdx.clamp(0, 3)];
+          
+          final rawDificultad = d['nivel_dificultad'] as String?;
+          if (rawDificultad != null && rawDificultad.isNotEmpty) {
+            _nivelDificultad = rawDificultad;
+          } else {
+            _nivelDificultad = _nivelActividad[nivelIdx.clamp(0, 3)];
+          }
+
+          _adaptacionAltura = d['altitud_inteligente_zona_fc_hidratacion'] as bool? ?? true;
+          _alertasLesion    = d['alertas_lesion'] as bool? ?? true;
+          _tiempoPorSesion  = (d['tiempo_por_sesion'] as num?)?.toInt() ?? 60;
+
           final dias = d['dias_entrenamiento'] as List<dynamic>?;
           if (dias != null) {
             _diasEntrenamiento = dias.map((e) => e.toString().toLowerCase()).toList();
           }
+
+          final equipoList = d['equipo'] as List<dynamic>?;
+          _selectedEquipmentIds.clear();
+          if (equipoList != null) {
+            final userEquipos = equipoList.map((e) => e.toString().trim().toLowerCase()).toSet();
+            for (var eq in _equipmentList) {
+              final id = eq['id_implemento'] as int?;
+              final name = eq['nombre'] as String?;
+              if (id != null && name != null && userEquipos.contains(name.trim().toLowerCase())) {
+                _selectedEquipmentIds.add(id);
+              }
+            }
+          }
+          _loadingEquipment = false;
           _loading = false;
           _dirty   = false;
         });
@@ -244,6 +282,85 @@ class _TrainingSettingsScreenState extends State<TrainingSettingsScreen> {
           ),
           const SizedBox(height: 20),
 
+          _SectionLabel(l10n.onboardingFitnessEquipmentTitle),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.card,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: theme.border),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                Localizations.localeOf(context).languageCode == 'es'
+                    ? 'Selecciona los equipamientos que tienes para entrenar'
+                    : 'Select the equipment you have for training',
+                style: TextStyle(color: theme.textMuted, fontSize: 12),
+              ),
+              const SizedBox(height: 14),
+              if (_loadingEquipment)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: CircularProgressIndicator(color: theme.primary),
+                  ),
+                )
+              else if (_equipmentList.isEmpty)
+                Center(
+                  child: Text(
+                    Localizations.localeOf(context).languageCode == 'es'
+                        ? 'No se pudieron cargar los equipamientos.'
+                        : 'Could not load equipment.',
+                    style: TextStyle(color: theme.textMuted, fontSize: 14),
+                  ),
+                )
+              else
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _equipmentList.map((e) {
+                    final id = e['id_implemento'] as int;
+                    final nombre = e['nombre'] as String;
+                    final selected = _selectedEquipmentIds.contains(id);
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          if (selected) {
+                            _selectedEquipmentIds.remove(id);
+                          } else {
+                            _selectedEquipmentIds.add(id);
+                          }
+                          _dirty = true;
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                        decoration: BoxDecoration(
+                          color: selected ? theme.primary.withValues(alpha: 0.1) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: selected ? theme.primary : theme.border,
+                            width: selected ? 2 : 1,
+                          ),
+                        ),
+                        child: Text(
+                          nombre,
+                          style: TextStyle(
+                            color: selected ? theme.primary : theme.textSecondary,
+                            fontSize: 13,
+                            fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+            ]),
+          ),
+          const SizedBox(height: 20),
+
           _SectionLabel(l10n.trainingSettingsCompetitions),
           _SettingsCard(children: [
             _NavTile(
@@ -285,18 +402,50 @@ class _TrainingSettingsScreenState extends State<TrainingSettingsScreen> {
     });
 
     try {
-      final nivelIdx = _nivelActividad.indexOf(_nivelDificultad);
-      
+      int? idDis;
+      for (var d in _allDisciplinesList) {
+        if (d['nombre'] == _disciplina) {
+          idDis = d['id_disciplina'] as int?;
+          break;
+        }
+      }
+      if (idDis == null) {
+        const sportIdsByName = {
+          'trail running': 1,
+          'triatlón': 4,
+          'ciclismo de ruta': 2,
+          'ciclismo': 2,
+          'mtb': 3,
+          'senderismo': 5,
+          'acondicionamiento': 6,
+        };
+        idDis = sportIdsByName[_disciplina.toLowerCase()] ?? 1;
+      }
+
+      final selectedEquipmentNames = _equipmentList
+          .where((eq) => _selectedEquipmentIds.contains(eq['id_implemento']))
+          .map((eq) => eq['nombre'] as String)
+          .toList();
+
+      final capitalizedDays = _diasEntrenamiento.map((day) {
+        if (day.isEmpty) return '';
+        return day[0].toUpperCase() + day.substring(1);
+      }).toList();
+
       final patchRes = await CachedHttp.patch(
-        Uri.parse('https://apifitnflai.com/users/me'),
+        Uri.parse('https://apifitnflai.com/users/usuarios/perfil/plan'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'nombre_disciplina': _disciplina,
-          'nivel_actividad': nivelIdx >= 0 ? nivelIdx : 1,
-          'dias_entrenamiento': _diasEntrenamiento,
+          'alertas_lesion': _alertasLesion,
+          'altitud_inteligente_zona_fc_hidratacion': _adaptacionAltura,
+          'dias_entrenamiento': capitalizedDays,
+          'equipo': selectedEquipmentNames,
+          'id_disciplina': idDis,
+          'nivel_dificultad': _nivelDificultad,
+          'tiempo_por_sesion': _tiempoPorSesion,
         }),
       );
 
