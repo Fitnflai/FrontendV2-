@@ -403,8 +403,9 @@ class _TestSelectionScreenState extends State<TestSelectionScreen> {
                     onPressed: () async {
                       final authProvider = Provider.of<AuthProvider>(context, listen: false);
                       final userId = authProvider.user?.id;
+                      final token = authProvider.token;
                       if (userId != null) {
-                        await OnboardingRouter.saveCompletedStep(userId, 5);
+                        await OnboardingRouter.saveCompletedStep(userId, 5, token: token);
                       }
                       if (!context.mounted) return;
                       Navigator.pushNamed(

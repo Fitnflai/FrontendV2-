@@ -220,7 +220,7 @@ class _Step3FitnessScreenState extends State<Step3FitnessScreen> {
       }
       // Save completed step 3 after successful API response
       if (userId != null) {
-        await OnboardingRouter.saveCompletedStep(userId, 3);
+        await OnboardingRouter.saveCompletedStep(userId, 3, token: token);
       }
     } catch (e) {
       debugPrint('STEP4 ERROR: $e');

@@ -81,7 +81,7 @@ class _GeneratingScreenState extends State<GeneratingScreen>
       debugPrint('GENERATE PLAN: ${res.statusCode} ${res.body}');
       // Save completed step 7 after successful API response
       if (userId != null) {
-        await OnboardingRouter.saveCompletedStep(userId, 7);
+        await OnboardingRouter.saveCompletedStep(userId, 7, token: token);
       }
     } catch (e) {
       debugPrint('GENERATE PLAN ERROR: $e');

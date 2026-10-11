@@ -262,7 +262,7 @@ class _OnboardingFeedbackScreenState extends State<OnboardingFeedbackScreen> {
                             await authProvider.refreshUser();
                             final userId = authProvider.user?.id;
                             if (userId != null) {
-                              await OnboardingRouter.saveCompletedStep(userId, 8);
+                              await OnboardingRouter.saveCompletedStep(userId, 8, token: token);
                             }
                             if (!context.mounted) return;
                             Navigator.pushAndRemoveUntil(

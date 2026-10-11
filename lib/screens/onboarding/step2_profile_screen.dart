@@ -268,7 +268,7 @@ class _Step2ProfileScreenState extends State<Step2ProfileScreen> {
       }
       // Save completed step 2 after successful API response
       if (userId != null) {
-        await OnboardingRouter.saveCompletedStep(userId, 2);
+        await OnboardingRouter.saveCompletedStep(userId, 2, token: token);
       }
     } catch (e) {
       debugPrint('STEP3 ERROR: $e');
