@@ -27,7 +27,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   DateTime _selectedDay  = DateTime.now();
   bool     _calExpanded  = false;
 
@@ -48,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadCheckinState();
     _loadDeviceConnectedState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -56,6 +57,22 @@ class _HomeScreenState extends State<HomeScreen> {
         healthProvider.silentSyncToday();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final healthProvider = context.read<HealthProvider>();
+      if (healthProvider.connectedProvider != HealthProviderType.none) {
+        healthProvider.silentSyncToday();
+      }
+    }
   }
 
   @override
@@ -287,8 +304,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final l10n  = AppLocalizations.of(context);
 
     final authProvider = context.watch<AuthProvider>();
+    final healthProvider = context.watch<HealthProvider>();
     final user = authProvider.user;
     final tienePlan = user?.tienePlanActivo == true;
+    final isDeviceConnected = _deviceConnected || healthProvider.connectedProvider != HealthProviderType.none;
 
     if (!tienePlan) {
       return Scaffold(
@@ -349,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
 
                   // ── Device banner ────────────────
-                  _deviceConnected
+                  isDeviceConnected
                       ? _DeviceConnectedBanner()
                       : _DeviceBanner(onTap: () async {
                           await Navigator.push(context, MaterialPageRoute(
@@ -361,7 +380,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 14),
 
                   // ── Stats row — solo si hay dispositivo ──
-                  if (_deviceConnected) ...[
+                  if (isDeviceConnected) ...[
                     const _StatsRow(),
                     const SizedBox(height: 14),
                   ],
@@ -1002,12 +1021,12 @@ class _StatsRowState extends State<_StatsRow> {
 
     final isEs = Localizations.localeOf(context).languageCode == 'es';
     final stepsLabel = isEs ? 'Pasos\nhoy' : 'Steps\ntoday';
-    final caloriesLabel = isEs ? 'Calorías\nhoy' : 'Calories\ntoday';
+    final heartRateLabel = isEs ? 'Ritmo\ncardíaco' : 'Heart\nrate';
     final distanceLabel = isEs ? 'Distancia\nhoy' : 'Distance\ntoday';
 
     final stats = [
       ('👟', '${healthProvider.steps}', stepsLabel),
-      ('🔥', '${healthProvider.calories.toStringAsFixed(0)} kcal', caloriesLabel),
+      ('❤️', healthProvider.heartRate > 0 ? '${healthProvider.heartRate.toStringAsFixed(0)} bpm' : '--', heartRateLabel),
       ('🏃', '${healthProvider.distance.toStringAsFixed(1)} km', distanceLabel),
       ('🌡️', _temp,  l10n.homeTemperatureLabel),
       (_condIcon, _condText, l10n.homeWeatherLabel),

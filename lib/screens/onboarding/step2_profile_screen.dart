@@ -441,6 +441,7 @@ class _Step2ProfileScreenState extends State<Step2ProfileScreen> {
                                             ? '$nombre, $estado' : nombre;
                                         _citySuggestions  = [];
                                       });
+                                      FocusScope.of(context).unfocus();
                                       if (lat != 0.0 || lon != 0.0) {
                                         _fetchElevation(lat, lon);
                                       }
@@ -622,16 +623,17 @@ class _Step2ProfileScreenState extends State<Step2ProfileScreen> {
           ),
 
           // ── Continuar ────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            child: _loading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.orange))
-                : PrimaryButton(
-                    labelWidget: Text(l10n.onboardingContinue, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                    enabled: _isValid,
-                    onTap: _saveAndContinue,
-                  ),
-          ),
+          if (MediaQuery.of(context).viewInsets.bottom == 0)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.orange))
+                  : PrimaryButton(
+                      labelWidget: Text(l10n.onboardingContinue, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      enabled: _isValid,
+                      onTap: _saveAndContinue,
+                    ),
+            ),
         ]),
       ),
     ),

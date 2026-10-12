@@ -128,6 +128,25 @@ class HealthRepository {
           'horas_sueno': (healthData['horas_sueno'] as num?)?.toDouble() ?? 0.0,
           'fuente': healthData['fuente'] ?? 'none',
           'fc_reposo': (healthData['fc_reposo'] as num?)?.toDouble() ?? 0.0,
+          'agua': (healthData['agua'] as num?)?.toDouble() ?? 0.0,
+          'cadencia_bicicleta': (healthData['cadencia_bicicleta'] as num?)?.toDouble() ?? 0.0,
+          'distancia_nadar': (healthData['distancia_nadar'] as num?)?.toDouble() ?? 0.0,
+          'distancia_caminata_trote': (healthData['distancia_caminata_trote'] as num?)?.toDouble() ?? 0.0,
+          'distancia_deportes_invernales': (healthData['distancia_deportes_invernales'] as num?)?.toDouble() ?? 0.0,
+          'distancia_bicicleta': (healthData['distancia_bicicleta'] as num?)?.toDouble() ?? 0.0,
+          'energia_reposar': (healthData['energia_reposar'] as num?)?.toDouble() ?? 0.0,
+          'energia_actividad': (healthData['energia_actividad'] as num?)?.toDouble() ?? 0.0,
+          'pisos_subidos': (healthData['pisos_subidos'] as num?)?.toDouble() ?? 0.0,
+          'porcentaje_grasa_corporal': (healthData['porcentaje_grasa_corporal'] as num?)?.toDouble() ?? 0.0,
+          'potencia_correr': (healthData['potencia_correr'] as num?)?.toDouble() ?? 0.0,
+          'potencia_bicicleta': (healthData['potencia_bicicleta'] as num?)?.toDouble() ?? 0.0,
+          'presion_arterial': healthData['presion_arterial'] as int? ?? 0,
+          'imc': (healthData['imc'] as num?)?.toDouble() ?? 0.0,
+          'entrenamientos': healthData['entrenamientos'] as int? ?? 0,
+          'fecha_nacimiento': healthData['fecha_nacimiento'] ?? healthData['fecha'],
+          'rutas_entrenamientos': healthData['rutas_entrenamientos'] as int? ?? 0,
+          'genero': healthData['genero'] ?? 'string',
+          'silla_ruedas': healthData['silla_ruedas'] as bool? ?? false,
         }),
         headers: {
           'Content-Type': 'application/json',
@@ -137,15 +156,16 @@ class HealthRepository {
 
       if (response.statusCode == 200) {
         debugPrint('Health data successfully synced to backend.');
-        return healthData;
       } else {
         debugPrint('Failed to sync health data to backend: ${response.statusCode}');
         debugPrint('Response body: ${response.body}');
-        return null;
       }
+      // Return the fetched health data even if backend sync fails (offline-first resilience)
+      return healthData;
     } catch (e) {
       debugPrint('Error syncing health data to backend: $e');
-      return null;
+      // Still return the fetched health data so the local UI updates (offline-first resilience)
+      return healthData;
     }
   }
 

@@ -12,6 +12,7 @@ class HealthProvider extends ChangeNotifier {
   int _steps = 0;
   double _calories = 0.0;
   double _distance = 0.0;
+  double _heartRate = 0.0;
 
   HealthProvider(this._healthRepository) {
     _loadConnectedProvider();
@@ -23,6 +24,7 @@ class HealthProvider extends ChangeNotifier {
   int get steps => _steps;
   double get calories => _calories;
   double get distance => _distance;
+  double get heartRate => _heartRate;
 
   Future<void> _loadConnectedProvider() async {
     final prefs = await SharedPreferences.getInstance();
@@ -36,6 +38,7 @@ class HealthProvider extends ChangeNotifier {
     _steps = prefs.getInt('health_today_steps') ?? 0;
     _calories = prefs.getDouble('health_today_calories') ?? 0.0;
     _distance = prefs.getDouble('health_today_distance') ?? 0.0;
+    _heartRate = prefs.getDouble('health_today_heart_rate') ?? 0.0;
     
     notifyListeners();
   }
@@ -45,12 +48,14 @@ class HealthProvider extends ChangeNotifier {
     _steps = data['pasos'] as int? ?? 0;
     _calories = (data['calorias_quemadas'] as num?)?.toDouble() ?? 0.0;
     _distance = (data['distancia_km'] as num?)?.toDouble() ?? 0.0;
+    _heartRate = (data['ritmo_cardiaco_promedio'] as num?)?.toDouble() ?? 0.0;
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('health_today_steps', _steps);
     await prefs.setDouble('health_today_calories', _calories);
     await prefs.setDouble('health_today_distance', _distance);
+    await prefs.setDouble('health_today_heart_rate', _heartRate);
   }
 
   void _setLoading(bool value) {
@@ -89,10 +94,12 @@ class HealthProvider extends ChangeNotifier {
       _steps = 0;
       _calories = 0.0;
       _distance = 0.0;
+      _heartRate = 0.0;
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('health_today_steps');
       await prefs.remove('health_today_calories');
       await prefs.remove('health_today_distance');
+      await prefs.remove('health_today_heart_rate');
     } catch (e) {
       debugPrint('Error disconnecting provider: $e');
     } finally {
