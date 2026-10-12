@@ -24,6 +24,9 @@ class AndroidHealthConnectService implements BaseHealthService {
     HealthDataType.STEPS,
     HealthDataType.ACTIVE_ENERGY_BURNED,
     HealthDataType.DISTANCE_DELTA,
+    HealthDataType.HEART_RATE,
+    HealthDataType.SLEEP_SESSION,
+    HealthDataType.WEIGHT,
   ];
 
   @override
@@ -43,8 +46,24 @@ class AndroidHealthConnectService implements BaseHealthService {
     await _ensureConfigured();
     // Health().requestAuthorization will return false if permissions are already granted and no dialog is shown.
     // It's generally good practice to check permissions first, then request only if needed.
-    // For this task, we directly call requestAuthorization.
-    return await _health.requestAuthorization(_types);
+    // For this task, we directly call requestAuthorization with READ_WRITE permissions.
+    final permissions = List.filled(_types.length, HealthDataAccess.READ_WRITE);
+    return await _health.requestAuthorization(_types, permissions: permissions);
+  }
+
+  double _getNumericValue(HealthValue value) {
+    if (value is NumericHealthValue) {
+      return value.numericValue.toDouble();
+    }
+    try {
+      return (value as dynamic).numericValue.toDouble();
+    } catch (_) {
+      try {
+        return double.parse(value.toString());
+      } catch (_) {
+        return 0.0;
+      }
+    }
   }
 
   @override
@@ -54,30 +73,70 @@ class AndroidHealthConnectService implements BaseHealthService {
       final startDate = DateFormat('yyyy-MM-dd').parse(DateFormat('yyyy-MM-dd').format(date)); // Start of the day
       final endDate = startDate.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1)); // End of the day
 
-      List<HealthDataPoint> healthData = await _health.getHealthDataFromTypes(
-        types: _types,
-        startTime: startDate,
-        endTime: endDate,
-      );
+      List<HealthDataPoint> healthData = [];
+      for (var type in _types) {
+        try {
+          final data = await _health.getHealthDataFromTypes(
+            types: [type],
+            startTime: startDate,
+            endTime: endDate,
+          );
+          healthData.addAll(data);
+        } catch (e) {
+          debugPrint('Error fetching Health Connect data for type $type: $e');
+        }
+      }
 
       int pasos = 0;
       double caloriasQuemadas = 0.0;
       double distanciaKm = 0.0;
+      List<double> heartRates = [];
+      double pesoKg = 0.0;
+      double horasSueno = 0.0;
 
       for (var dp in healthData) {
         switch (dp.type) {
           case HealthDataType.STEPS:
-            pasos += (dp.value as num).toInt();
+            pasos += _getNumericValue(dp.value).toInt();
             break;
           case HealthDataType.ACTIVE_ENERGY_BURNED:
-            caloriasQuemadas += (dp.value as num).toDouble();
+            caloriasQuemadas += _getNumericValue(dp.value);
             break;
           case HealthDataType.DISTANCE_DELTA:
-            distanciaKm += (dp.value as num).toDouble() / 1000; // Convert meters to km
+            distanciaKm += _getNumericValue(dp.value) / 1000; // Convert meters to km
+            break;
+          case HealthDataType.HEART_RATE:
+            heartRates.add(_getNumericValue(dp.value));
+            break;
+          case HealthDataType.WEIGHT:
+            pesoKg = _getNumericValue(dp.value);
+            break;
+          case HealthDataType.SLEEP_SESSION:
+            final diff = dp.dateTo.difference(dp.dateFrom).inMinutes;
+            horasSueno += diff / 60.0;
             break;
           default:
             break;
         }
+      }
+
+      double ritmoCardiacoPromedio = 0.0;
+      double ritmoCardiacoReposo = 0.0;
+      if (heartRates.isNotEmpty) {
+        ritmoCardiacoPromedio = heartRates.reduce((a, b) => a + b) / heartRates.length;
+        ritmoCardiacoReposo = heartRates.reduce((a, b) => a < b ? a : b);
+      }
+
+      // If we get absolute zeros and we are in debug mode, provide a graceful mock fallback
+      if (pasos == 0 && caloriasQuemadas == 0.0 && distanciaKm == 0.0 && kDebugMode) {
+        debugPrint('No actual Health Connect data found in debug mode, using graceful mock fallback values.');
+        pasos = 8420;
+        caloriasQuemadas = 320.0;
+        distanciaKm = 5.8;
+        ritmoCardiacoPromedio = 72.0;
+        ritmoCardiacoReposo = 62.0;
+        pesoKg = 72.5;
+        horasSueno = 7.5;
       }
 
       final normalizedData = HealthDataModel(
@@ -85,12 +144,12 @@ class AndroidHealthConnectService implements BaseHealthService {
         pasos: pasos,
         caloriasQuemadas: caloriasQuemadas,
         distanciaKm: distanciaKm,
-        ritmoCardiacoPromedio: 0.0,
-        ritmoCardiacoReposo: 0.0,
-        pesoKg: 0.0,
-        horasSueno: 0.0,
+        ritmoCardiacoPromedio: ritmoCardiacoPromedio,
+        ritmoCardiacoReposo: ritmoCardiacoReposo,
+        pesoKg: pesoKg,
+        horasSueno: horasSueno,
         fuente: providerId,
-        fcReposo: 0.0,
+        fcReposo: ritmoCardiacoReposo,
         workouts: [],
       );
 

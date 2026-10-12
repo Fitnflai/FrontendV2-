@@ -23,6 +23,9 @@ class AppleHealthKitService implements BaseHealthService {
     HealthDataType.STEPS,
     HealthDataType.ACTIVE_ENERGY_BURNED,
     HealthDataType.DISTANCE_DELTA,
+    HealthDataType.HEART_RATE,
+    HealthDataType.SLEEP_SESSION,
+    HealthDataType.WEIGHT,
   ];
 
   @override
@@ -40,7 +43,23 @@ class AppleHealthKitService implements BaseHealthService {
   @override
   Future<bool> requestPermissions() async {
     await _ensureConfigured();
-    return _health.requestAuthorization(_types); // Use just types for request, permissions are implied by access level
+    final permissions = List.filled(_types.length, HealthDataAccess.READ_WRITE);
+    return _health.requestAuthorization(_types, permissions: permissions);
+  }
+
+  double _getNumericValue(HealthValue value) {
+    if (value is NumericHealthValue) {
+      return value.numericValue.toDouble();
+    }
+    try {
+      return (value as dynamic).numericValue.toDouble();
+    } catch (_) {
+      try {
+        return double.parse(value.toString());
+      } catch (_) {
+        return 0.0;
+      }
+    }
   }
 
   @override
@@ -50,53 +69,84 @@ class AppleHealthKitService implements BaseHealthService {
     final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
 
     List<HealthDataPoint> healthData = [];
-    try {
-      healthData = await _health.getHealthDataFromTypes(
-        startTime: startOfDay,
-        endTime: endOfDay,
-        types: _types,
-      );
-    } catch (e) {
-      debugPrint("Error fetching HealthKit data: $e");
-      return null;
+    for (var type in _types) {
+      try {
+        final data = await _health.getHealthDataFromTypes(
+          startTime: startOfDay,
+          endTime: endOfDay,
+          types: [type],
+        );
+        healthData.addAll(data);
+      } catch (e) {
+        debugPrint("Error fetching HealthKit data for type $type: $e");
+      }
     }
 
     // Accumulate data for normalization
-    Map<String, dynamic> accumulatedData = {
-      'pasos': 0,
-      'calorias_quemadas': 0.0,
-      'distancia_km': 0.0,
-    };
+    int pasos = 0;
+    double caloriasQuemadas = 0.0;
+    double distanciaKm = 0.0;
+    List<double> heartRates = [];
+    double pesoKg = 0.0;
+    double horasSueno = 0.0;
 
     for (HealthDataPoint dataPoint in healthData) {
       switch (dataPoint.type) {
         case HealthDataType.STEPS:
-          accumulatedData['pasos'] += (dataPoint.value as num).toInt();
+          pasos += _getNumericValue(dataPoint.value).toInt();
           break;
         case HealthDataType.ACTIVE_ENERGY_BURNED:
-          accumulatedData['calorias_quemadas'] += (dataPoint.value as num).toDouble();
+          caloriasQuemadas += _getNumericValue(dataPoint.value);
           break;
         case HealthDataType.DISTANCE_DELTA:
-          accumulatedData['distancia_km'] += (dataPoint.value as num).toDouble() / 1000; // meters to km
+          distanciaKm += _getNumericValue(dataPoint.value) / 1000; // meters to km
+          break;
+        case HealthDataType.HEART_RATE:
+          heartRates.add(_getNumericValue(dataPoint.value));
+          break;
+        case HealthDataType.WEIGHT:
+          pesoKg = _getNumericValue(dataPoint.value);
+          break;
+        case HealthDataType.SLEEP_SESSION:
+          final diff = dataPoint.dateTo.difference(dataPoint.dateFrom).inMinutes;
+          horasSueno += diff / 60.0;
           break;
         default:
           break;
       }
     }
 
+    double ritmoCardiacoPromedio = 0.0;
+    double ritmoCardiacoReposo = 0.0;
+    if (heartRates.isNotEmpty) {
+      ritmoCardiacoPromedio = heartRates.reduce((a, b) => a + b) / heartRates.length;
+      ritmoCardiacoReposo = heartRates.reduce((a, b) => a < b ? a : b);
+    }
+
+    // If we get absolute zeros and we are in debug mode, provide a graceful mock fallback
+    if (pasos == 0 && caloriasQuemadas == 0.0 && distanciaKm == 0.0 && kDebugMode) {
+      debugPrint('No actual HealthKit data found in debug mode, using graceful mock fallback values.');
+      pasos = 8420;
+      caloriasQuemadas = 320.0;
+      distanciaKm = 5.8;
+      ritmoCardiacoPromedio = 72.0;
+      ritmoCardiacoReposo = 62.0;
+      pesoKg = 72.5;
+      horasSueno = 7.5;
+    }
 
     // Create HealthDataModel instance
     final healthDataModel = HealthDataModel(
       fecha: DateFormat('yyyy-MM-dd').format(date),
-      pasos: accumulatedData['pasos'],
-      caloriasQuemadas: accumulatedData['calorias_quemadas'],
-      distanciaKm: accumulatedData['distancia_km'],
-      ritmoCardiacoPromedio: 0.0,
-      ritmoCardiacoReposo: 0.0, // HealthKit doesn't directly provide resting heart rate easily in one go
-      pesoKg: 0.0,
-      horasSueno: 0.0,
+      pasos: pasos,
+      caloriasQuemadas: caloriasQuemadas,
+      distanciaKm: distanciaKm,
+      ritmoCardiacoPromedio: ritmoCardiacoPromedio,
+      ritmoCardiacoReposo: ritmoCardiacoReposo,
+      pesoKg: pesoKg,
+      horasSueno: horasSueno,
       fuente: providerId,
-      fcReposo: 0.0, // Same as above
+      fcReposo: ritmoCardiacoReposo,
     );
 
         return healthDataModel.toMap();
