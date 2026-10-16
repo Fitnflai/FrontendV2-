@@ -79,6 +79,20 @@ class AuthService {
     debugPrint('REGISTER STATUS: ${response.statusCode}');
     debugPrint('REGISTER BODY: ${response.body}');
 
+    // Si el servidor retorna un error 500, es muy probable que haya guardado el usuario exitosamente
+    // en la base de datos pero haya fallado en un paso posterior (como enviar un email de bienvenida).
+    // Para no bloquear al usuario, intentamos hacer un login automático de recuperación de forma transparente.
+    if (response.statusCode == 500) {
+      try {
+        debugPrint('REGISTER 500: Intentando auto-login de recuperación transparente...');
+        final loginData = await login(email, password);
+        return loginData;
+      } catch (loginErr) {
+        debugPrint('Auto-login de recuperación falló: $loginErr');
+        throw Exception('Error del servidor. Intenta de nuevo.');
+      }
+    }
+
     // Proteger contra respuestas no-JSON (HTML de error 500, etc.)
     Map<String, dynamic> data;
     try {
@@ -91,7 +105,14 @@ class AuthService {
         data = {};
       }
     } catch (_) {
-      throw Exception('Error del servidor. Intenta de nuevo.');
+      try {
+        debugPrint('REGISTER PARSE ERROR: Intentando auto-login de recuperación transparente...');
+        final loginData = await login(email, password);
+        return loginData;
+      } catch (loginErr) {
+        debugPrint('Auto-login de recuperación falló: $loginErr');
+        throw Exception('Error del servidor. Intenta de nuevo.');
+      }
     }
 
     if (response.statusCode == 200 || response.statusCode == 201) {
