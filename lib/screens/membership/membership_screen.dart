@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../config/app_colors.dart';
 import '../../widgets/shared_widgets.dart';
+import '../../widgets/three_ds_challenge_dialog.dart';
 import '../../widgets/blocking_loading_overlay.dart'; // Import the new overlay widget
 import '../../widgets/specialist_selection_bottom_sheet.dart';
 
@@ -425,7 +426,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                 final screenHeight = mediaQuery.size.height.toInt();
                                 final timezoneOffset = DateTime.now().timeZoneOffset.inMinutes;
 
-                                await profileProvider.subscribeNuveiAction(
+                                final response = await profileProvider.subscribeNuveiAction(
                                   token!,
                                   priceId,
                                   cvc: cvv,
@@ -438,6 +439,44 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                     errorMessageCheckout = profileProvider.subscriptionError;
                                   });
                                 } else {
+                                  final requires3ds = response?['requires_3ds'] as bool? ?? false;
+                                  if (requires3ds) {
+                                    final challengeHtml = response?['challenge_html'] as String?;
+                                    if (challengeHtml != null && challengeHtml.isNotEmpty) {
+                                      setModalState(() {
+                                        showCvvPrompt = false;
+                                      });
+                                      if (dialogContext.mounted) {
+                                        final completed = await ThreeDsChallengeDialog.show(dialogContext, challengeHtml);
+                                        if (completed == true) {
+                                          if (dialogContext.mounted) {
+                                            setModalState(() {
+                                              checkoutStep = 2; // Show processing loader
+                                            });
+                                          }
+                                          await profileProvider.loadAll(token, force: true);
+                                          await authProvider.refreshUser();
+                                          if (dialogContext.mounted) {
+                                            setModalState(() {
+                                              checkoutStep = 3; // Success!
+                                            });
+                                            cvvController.clear();
+                                          }
+                                        } else {
+                                          if (dialogContext.mounted) {
+                                            setModalState(() {
+                                              errorMessageCheckout = 'Validación 3DS cancelada.';
+                                            });
+                                          }
+                                        }
+                                      }
+                                    } else {
+                                      setModalState(() {
+                                        errorMessageCheckout = 'Falta el contenido del desafío 3DS.';
+                                      });
+                                    }
+                                    return;
+                                  }
                                   setModalState(() {
                                     checkoutStep = 3;
                                     showCvvPrompt = false;
@@ -658,7 +697,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                   errorMessageCheckout = null;
                                 });
 
-                                await profileProvider.subscribeNuveiAction(
+                                final response = await profileProvider.subscribeNuveiAction(
                                   token!,
                                   priceId,
                                   cvc: cvv,
@@ -673,6 +712,42 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                     errorMessageCheckout = profileProvider.subscriptionError;
                                   });
                                 } else {
+                                  final requires3ds = response?['requires_3ds'] as bool? ?? false;
+                                  if (requires3ds) {
+                                    final challengeHtml = response?['challenge_html'] as String?;
+                                    if (challengeHtml != null && challengeHtml.isNotEmpty) {
+                                      if (dialogContext.mounted) {
+                                        final completed = await ThreeDsChallengeDialog.show(dialogContext, challengeHtml);
+                                        if (completed == true) {
+                                          if (dialogContext.mounted) {
+                                            setModalState(() {
+                                              checkoutStep = 2; // Show processing loader
+                                            });
+                                          }
+                                          await profileProvider.loadAll(token, force: true);
+                                          await authProvider.refreshUser();
+                                          if (dialogContext.mounted) {
+                                            setModalState(() {
+                                              checkoutStep = 3; // Success!
+                                            });
+                                          }
+                                        } else {
+                                          if (dialogContext.mounted) {
+                                            setModalState(() {
+                                              checkoutStep = 0; // Go back to card selection
+                                              errorMessageCheckout = 'Validación 3DS cancelada.';
+                                            });
+                                          }
+                                        }
+                                      }
+                                    } else {
+                                      setModalState(() {
+                                        checkoutStep = 0; // Go back to card selection
+                                        errorMessageCheckout = 'Falta el contenido del desafío 3DS.';
+                                      });
+                                    }
+                                    return;
+                                  }
                                   setModalState(() {
                                     checkoutStep = 3; // Success!
                                   });

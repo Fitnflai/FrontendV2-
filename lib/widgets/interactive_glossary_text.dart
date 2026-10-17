@@ -134,16 +134,14 @@ class _InteractiveGlossaryTextState extends State<InteractiveGlossaryText> {
         ..onTap = () => _showTermDialog(context, matchedTerm);
       _recognizers.add(recognizer);
 
-      final theme = context.themeColors;
-
       spans.add(TextSpan(
         text: matchedText,
         style: (widget.style ?? const TextStyle()).copyWith(
+          color: const Color(0xFFFFEB3B),
           fontWeight: FontWeight.bold,
-          backgroundColor: const Color(0x4DFFEB3B),
           decoration: TextDecoration.underline,
           decorationStyle: TextDecorationStyle.dashed,
-          decorationColor: theme.primary,
+          decorationColor: const Color(0xFFFFEB3B),
         ),
         recognizer: recognizer,
       ));

@@ -956,8 +956,8 @@ class _SecondaryMetricCard extends StatelessWidget {
                           Icon(icon, color: iconColor, size: 18),
                           const SizedBox(width: 6),
                           Expanded(
-                            child: Text(
-                              title,
+                            child: InteractiveGlossaryText(
+                              text: title,
                               style: TextStyle(
                                 color: theme.greyLight,
                                 fontSize: 12,
@@ -987,8 +987,8 @@ class _SecondaryMetricCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        sub,
+                      InteractiveGlossaryText(
+                        text: sub,
                         style: TextStyle(color: theme.grey, fontSize: 11, height: 1.3),
                       ),
                     ],
@@ -1016,8 +1016,12 @@ class _SecondaryMetricCard extends StatelessWidget {
                 Row(children: [
                   Icon(icon, color: iconColor, size: 18),
                   const SizedBox(width: 6),
-                  Expanded(child: Text(title,
-                      style: TextStyle(color: theme.greyLight, fontSize: 12, fontWeight: FontWeight.w600))),
+                  Expanded(
+                    child: InteractiveGlossaryText(
+                      text: title,
+                      style: TextStyle(color: theme.greyLight, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ),
                 ]),
                 const SizedBox(height: 8),
                 RichText(text: TextSpan(children: [
@@ -1025,7 +1029,10 @@ class _SecondaryMetricCard extends StatelessWidget {
                   TextSpan(text: ' $unit', style: TextStyle(color: theme.grey, fontSize: 14)),
                 ])),
                 const SizedBox(height: 4),
-                Text(sub, style: TextStyle(color: theme.grey, fontSize: 11, height: 1.3)),
+                InteractiveGlossaryText(
+                  text: sub,
+                  style: TextStyle(color: theme.grey, fontSize: 11, height: 1.3),
+                ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
