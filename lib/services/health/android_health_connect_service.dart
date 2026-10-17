@@ -44,10 +44,16 @@ class AndroidHealthConnectService implements BaseHealthService {
   @override
   Future<bool> requestPermissions() async {
     await _ensureConfigured();
-    // Health().requestAuthorization will return false if permissions are already granted and no dialog is shown.
-    // It's generally good practice to check permissions first, then request only if needed.
-    // For this task, we directly call requestAuthorization with READ_WRITE permissions.
-    final permissions = List.filled(_types.length, HealthDataAccess.READ_WRITE);
+    final permissions = List.filled(_types.length, HealthDataAccess.READ);
+    try {
+      final hasPerm = await _health.hasPermissions(_types, permissions: permissions) ?? false;
+      if (hasPerm) {
+        debugPrint('Health Connect permissions already granted.');
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error checking Health Connect permissions: $e');
+    }
     return await _health.requestAuthorization(_types, permissions: permissions);
   }
 
@@ -125,18 +131,6 @@ class AndroidHealthConnectService implements BaseHealthService {
       if (heartRates.isNotEmpty) {
         ritmoCardiacoPromedio = heartRates.reduce((a, b) => a + b) / heartRates.length;
         ritmoCardiacoReposo = heartRates.reduce((a, b) => a < b ? a : b);
-      }
-
-      // If we get absolute zeros and we are in debug mode, provide a graceful mock fallback
-      if (pasos == 0 && caloriasQuemadas == 0.0 && distanciaKm == 0.0 && kDebugMode) {
-        debugPrint('No actual Health Connect data found in debug mode, using graceful mock fallback values.');
-        pasos = 8420;
-        caloriasQuemadas = 320.0;
-        distanciaKm = 5.8;
-        ritmoCardiacoPromedio = 72.0;
-        ritmoCardiacoReposo = 62.0;
-        pesoKg = 72.5;
-        horasSueno = 7.5;
       }
 
       final normalizedData = HealthDataModel(

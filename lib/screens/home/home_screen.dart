@@ -34,7 +34,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Map<String, dynamic>? _entrenamientoHoy;
   final Map<String, Map<String, dynamic>> _planPorFecha = {};
-  bool _deviceConnected = false;
   bool _checkinDone     = false;
   bool _hasFetched = false;
   bool _isLoading = false;
@@ -44,14 +43,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   // Clave para guardar la fecha del último checkin
   static const _checkinKey = 'last_checkin_date';
-  static const _deviceConnectedKey = 'device_connected_state';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadCheckinState();
-    _loadDeviceConnectedState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final healthProvider = context.read<HealthProvider>();
       if (healthProvider.connectedProvider != HealthProviderType.none) {
@@ -91,14 +88,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final lastDate  = prefs.getString(_checkinKey) ?? '';
     final today     = _fmt(DateTime.now());
     if (mounted) setState(() => _checkinDone = lastDate == today);
-  }
-
-  Future<void> _loadDeviceConnectedState() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isConnected = prefs.getBool(_deviceConnectedKey) ?? false;
-    if (mounted && isConnected) {
-      setState(() => _deviceConnected = true);
-    }
   }
 
   Future<void> _markCheckinDone() async {
@@ -308,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final healthProvider = context.watch<HealthProvider>();
     final user = authProvider.user;
     final tienePlan = user?.tienePlanActivo == true;
-    final isDeviceConnected = _deviceConnected || healthProvider.connectedProvider != HealthProviderType.none;
+    final isDeviceConnected = healthProvider.connectedProvider != HealthProviderType.none;
 
     if (!tienePlan) {
       return Scaffold(
@@ -374,9 +363,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       : _DeviceBanner(onTap: () async {
                           await Navigator.push(context, MaterialPageRoute(
                               builder: (_) => const ConnectedAppsScreen()));
-                          final prefs = await SharedPreferences.getInstance();
-                          await prefs.setBool(_deviceConnectedKey, true);
-                          if (mounted) setState(() => _deviceConnected = true);
                         }),
                   const SizedBox(height: 14),
 
