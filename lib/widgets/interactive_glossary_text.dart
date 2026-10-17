@@ -140,7 +140,7 @@ class _InteractiveGlossaryTextState extends State<InteractiveGlossaryText> {
         text: matchedText,
         style: (widget.style ?? const TextStyle()).copyWith(
           fontWeight: FontWeight.bold,
-          backgroundColor: Colors.yellow.withOpacity(0.3),
+          backgroundColor: const Color(0x4DFFEB3B),
           decoration: TextDecoration.underline,
           decorationStyle: TextDecorationStyle.dashed,
           decorationColor: theme.primary,
