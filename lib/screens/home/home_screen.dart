@@ -16,6 +16,7 @@ import 'daily_checkin_screen.dart';
 import '../workout/widgets/workout_adjustment_bottom_sheet.dart';
 import '../workout/workout_detail_screen.dart';
 import '../../widgets/bottom_nav.dart';
+import '../../widgets/interactive_glossary_text.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../l10n/app_localizations.dart';
 import '../../config/app_constants.dart';
@@ -1861,8 +1862,8 @@ class _TipCard extends StatelessWidget {
             children: [
               Text(l10n.homeTipOfTheDayTitle, style: TextStyle(color: theme.white, fontSize: 14, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              Text(
-                displayText,
+              InteractiveGlossaryText(
+                text: displayText,
                 style: TextStyle(color: theme.greyLight, fontSize: 13),
               ),
             ],
