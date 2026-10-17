@@ -10,6 +10,7 @@ import '../../providers/wellness_index_provider.dart';
 
 import '../../config/app_theme_extension.dart';
 import '../../widgets/bottom_nav.dart';
+import '../../widgets/interactive_glossary_text.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -333,7 +334,7 @@ class _StatusBanner extends StatelessWidget {
           Text(title, style: TextStyle(color: isGood ? theme.greenText : const Color(0xFFEF9F27), fontSize: 16, fontWeight: FontWeight.w800)),
           if (aiMsg.isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text(aiMsg, style: TextStyle(color: theme.greyLight, fontSize: 13, height: 1.4)),
+            InteractiveGlossaryText(text: aiMsg, style: TextStyle(color: theme.greyLight, fontSize: 13, height: 1.4)),
           ],
         ])),
       ]),
@@ -376,7 +377,7 @@ class _PainAlert extends StatelessWidget {
             Icon(Icons.chevron_right, color: theme.grey, size: 18),
           ]),
           const SizedBox(height: 4),
-          Text(body, style: TextStyle(color: theme.greyLight, fontSize: 12, height: 1.4)),
+          InteractiveGlossaryText(text: body, style: TextStyle(color: theme.greyLight, fontSize: 12, height: 1.4)),
         ])),
       ]),
     );
