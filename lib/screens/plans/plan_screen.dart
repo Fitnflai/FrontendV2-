@@ -7,6 +7,7 @@ import '../../config/app_theme_extension.dart';
 import '../../config/workout_types.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/bottom_nav.dart';
+import '../../widgets/interactive_glossary_text.dart';
 import '../../widgets/shared_widgets.dart';
 import '../workout/workout_detail_screen.dart';
 import '../workout/widgets/workout_adjustment_bottom_sheet.dart';
@@ -547,7 +548,7 @@ class _SessionCard extends StatelessWidget {
                 else
                   Text(fecha, style: TextStyle(color: theme.grey, fontSize: 11)),
                 const SizedBox(height: 4),
-                Text(titulo, style: TextStyle(
+                InteractiveGlossaryText(text: titulo, style: TextStyle(
                     color: theme.white,
                     fontSize: isToday ? 19 : 16,
                     fontWeight: FontWeight.w800)),
@@ -596,7 +597,7 @@ class _SessionCard extends StatelessWidget {
               if (nombre.isEmpty) return const SizedBox.shrink();
               return Padding(
                 padding: const EdgeInsets.only(bottom: 3),
-                child: Text('· $nombre',
+                child: InteractiveGlossaryText(text: '· $nombre',
                     style: TextStyle(color: theme.greyLight, fontSize: 12, height: 1.3)),
               );
             }),
@@ -846,7 +847,7 @@ class _RestDayCard extends StatelessWidget {
           const SizedBox(height: 12),
 
           // ── Mensaje ──────────────────────────────
-          Text(mensaje,
+          InteractiveGlossaryText(text: mensaje,
               style: TextStyle(color: theme.greyLight,
                   fontSize: 13, height: 1.5)),
           const SizedBox(height: 14),
