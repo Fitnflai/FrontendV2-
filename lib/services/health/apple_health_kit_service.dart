@@ -43,7 +43,16 @@ class AppleHealthKitService implements BaseHealthService {
   @override
   Future<bool> requestPermissions() async {
     await _ensureConfigured();
-    final permissions = List.filled(_types.length, HealthDataAccess.READ_WRITE);
+    final permissions = List.filled(_types.length, HealthDataAccess.READ);
+    try {
+      final hasPerm = await _health.hasPermissions(_types, permissions: permissions) ?? false;
+      if (hasPerm) {
+        debugPrint('HealthKit permissions already granted.');
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error checking HealthKit permissions: $e');
+    }
     return _health.requestAuthorization(_types, permissions: permissions);
   }
 
@@ -121,18 +130,6 @@ class AppleHealthKitService implements BaseHealthService {
     if (heartRates.isNotEmpty) {
       ritmoCardiacoPromedio = heartRates.reduce((a, b) => a + b) / heartRates.length;
       ritmoCardiacoReposo = heartRates.reduce((a, b) => a < b ? a : b);
-    }
-
-    // If we get absolute zeros and we are in debug mode, provide a graceful mock fallback
-    if (pasos == 0 && caloriasQuemadas == 0.0 && distanciaKm == 0.0 && kDebugMode) {
-      debugPrint('No actual HealthKit data found in debug mode, using graceful mock fallback values.');
-      pasos = 8420;
-      caloriasQuemadas = 320.0;
-      distanciaKm = 5.8;
-      ritmoCardiacoPromedio = 72.0;
-      ritmoCardiacoReposo = 62.0;
-      pesoKg = 72.5;
-      horasSueno = 7.5;
     }
 
     // Create HealthDataModel instance
