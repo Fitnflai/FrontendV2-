@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/nutrition_provider.dart';
 import '../../widgets/bottom_nav.dart';
+import '../../widgets/interactive_glossary_text.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../l10n/app_localizations.dart';
 import '../membership/membership_screen.dart';
@@ -723,9 +724,9 @@ class _MealCard extends StatelessWidget {
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: TextStyle(color: theme.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                InteractiveGlossaryText(text: name, style: TextStyle(color: theme.white, fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
-                Text(description, style: TextStyle(color: theme.grey, fontSize: 12, height: 1.4)),
+                InteractiveGlossaryText(text: description, style: TextStyle(color: theme.grey, fontSize: 12, height: 1.4)),
               ],
             )),
           ]),
@@ -828,8 +829,8 @@ class _HydrationCardState extends State<_HydrationCard> {
             child: Row(children: [
               const Icon(Icons.info_outline, color: Colors.blue, size: 13),
               const SizedBox(width: 8),
-              Expanded(child: Text(
-                displaySuggestion,
+              Expanded(child: InteractiveGlossaryText(
+                text: displaySuggestion,
                 style: TextStyle(color: theme.grey, fontSize: 12, height: 1.4),
               )),
             ]),
