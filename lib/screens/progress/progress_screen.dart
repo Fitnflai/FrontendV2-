@@ -10,6 +10,7 @@ import '../../providers/wellness_index_provider.dart';
 
 import '../../config/app_theme_extension.dart';
 import '../../widgets/bottom_nav.dart';
+import '../../widgets/interactive_glossary_text.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -333,7 +334,7 @@ class _StatusBanner extends StatelessWidget {
           Text(title, style: TextStyle(color: isGood ? theme.greenText : const Color(0xFFEF9F27), fontSize: 16, fontWeight: FontWeight.w800)),
           if (aiMsg.isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text(aiMsg, style: TextStyle(color: theme.greyLight, fontSize: 13, height: 1.4)),
+            InteractiveGlossaryText(text: aiMsg, style: TextStyle(color: theme.greyLight, fontSize: 13, height: 1.4)),
           ],
         ])),
       ]),
@@ -376,7 +377,7 @@ class _PainAlert extends StatelessWidget {
             Icon(Icons.chevron_right, color: theme.grey, size: 18),
           ]),
           const SizedBox(height: 4),
-          Text(body, style: TextStyle(color: theme.greyLight, fontSize: 12, height: 1.4)),
+          InteractiveGlossaryText(text: body, style: TextStyle(color: theme.greyLight, fontSize: 12, height: 1.4)),
         ])),
       ]),
     );
@@ -955,8 +956,8 @@ class _SecondaryMetricCard extends StatelessWidget {
                           Icon(icon, color: iconColor, size: 18),
                           const SizedBox(width: 6),
                           Expanded(
-                            child: Text(
-                              title,
+                            child: InteractiveGlossaryText(
+                              text: title,
                               style: TextStyle(
                                 color: theme.greyLight,
                                 fontSize: 12,
@@ -986,8 +987,8 @@ class _SecondaryMetricCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        sub,
+                      InteractiveGlossaryText(
+                        text: sub,
                         style: TextStyle(color: theme.grey, fontSize: 11, height: 1.3),
                       ),
                     ],
@@ -1015,8 +1016,12 @@ class _SecondaryMetricCard extends StatelessWidget {
                 Row(children: [
                   Icon(icon, color: iconColor, size: 18),
                   const SizedBox(width: 6),
-                  Expanded(child: Text(title,
-                      style: TextStyle(color: theme.greyLight, fontSize: 12, fontWeight: FontWeight.w600))),
+                  Expanded(
+                    child: InteractiveGlossaryText(
+                      text: title,
+                      style: TextStyle(color: theme.greyLight, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ),
                 ]),
                 const SizedBox(height: 8),
                 RichText(text: TextSpan(children: [
@@ -1024,7 +1029,10 @@ class _SecondaryMetricCard extends StatelessWidget {
                   TextSpan(text: ' $unit', style: TextStyle(color: theme.grey, fontSize: 14)),
                 ])),
                 const SizedBox(height: 4),
-                Text(sub, style: TextStyle(color: theme.grey, fontSize: 11, height: 1.3)),
+                InteractiveGlossaryText(
+                  text: sub,
+                  style: TextStyle(color: theme.grey, fontSize: 11, height: 1.3),
+                ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

@@ -12,6 +12,7 @@ import '../../config/app_theme_extension.dart';
 import '../../providers/auth_provider.dart';
 import 'workout_feedback_screen.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/interactive_glossary_text.dart';
 
 
 // AppLayout placeholder
@@ -798,7 +799,7 @@ class _InteriorLayoutState extends State<_InteriorLayout> {
                 padding: const EdgeInsets.all(14),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   if ((widget.current['descripcion'] as String? ?? '').isNotEmpty) ...[
-                    Text(widget.current['descripcion'] as String,
+                    InteractiveGlossaryText(text: widget.current['descripcion'] as String,
                         style: TextStyle(
                             color: context.colors.textSecondary, fontSize: 13, height: 1.5)),
                   ],
@@ -814,7 +815,7 @@ class _InteriorLayoutState extends State<_InteriorLayout> {
                               fontSize: 12,
                               fontWeight: FontWeight.w700)),
                       const SizedBox(height: 4),
-                      Text(posInicial,
+                      InteractiveGlossaryText(text: posInicial,
                           style: TextStyle(
                               color: context.colors.textSecondary,
                               fontSize: 12,
@@ -828,7 +829,7 @@ class _InteriorLayoutState extends State<_InteriorLayout> {
                               fontSize: 12,
                               fontWeight: FontWeight.w700)),
                       const SizedBox(height: 4),
-                      Text(ejecucion,
+                      InteractiveGlossaryText(text: ejecucion,
                           style: TextStyle(
                               color: context.colors.textSecondary,
                               fontSize: 12,
@@ -853,7 +854,7 @@ class _InteriorLayoutState extends State<_InteriorLayout> {
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold)),
                             Expanded(
-                              child: Text(consejo.toString(),
+                              child: InteractiveGlossaryText(text: consejo.toString(),
                                   style: TextStyle(
                                       color: context.colors.textSecondary,
                                       fontSize: 12,
@@ -1125,7 +1126,7 @@ class _ExteriorLayout extends StatelessWidget {
                         if ((current['descripcion'] as String? ?? '').isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8),
-                            child: Text(current['descripcion'] as String,
+                            child: InteractiveGlossaryText(text: current['descripcion'] as String,
                                 style: TextStyle(
                                     color: context.colors.textSecondary, fontSize: 12, height: 1.4)),
                           ),
@@ -1137,7 +1138,7 @@ class _ExteriorLayout extends StatelessWidget {
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700)),
                             const SizedBox(height: 2),
-                            Text(posInicial,
+                            InteractiveGlossaryText(text: posInicial,
                                 style: TextStyle(
                                     color: context.colors.textSecondary,
                                     fontSize: 11,
@@ -1151,7 +1152,7 @@ class _ExteriorLayout extends StatelessWidget {
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700)),
                             const SizedBox(height: 2),
-                            Text(ejecucion,
+                            InteractiveGlossaryText(text: ejecucion,
                                 style: TextStyle(
                                     color: context.colors.textSecondary,
                                     fontSize: 11,
@@ -1176,7 +1177,7 @@ class _ExteriorLayout extends StatelessWidget {
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold)),
                                   Expanded(
-                                    child: Text(consejo.toString(),
+                                    child: InteractiveGlossaryText(text: consejo.toString(),
                                         style: TextStyle(
                                             color: context.colors.textSecondary,
                                             fontSize: 11,

@@ -21,6 +21,7 @@ import 'services/progress_service.dart';
 import 'package:fitnflaifrontendv2/providers/health_provider.dart';
 import 'package:fitnflaifrontendv2/services/health/health_repository.dart';
 import 'package:fitnflaifrontendv2/providers/specialist_provider.dart';
+import 'package:fitnflaifrontendv2/providers/glossary_provider.dart';
 import 'package:fitnflaifrontendv2/services/specialist_service.dart';
 import 'screens/splash/splash_screen.dart';
 import 'screens/auth/welcome_screen.dart';
@@ -77,6 +78,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ProgressReportProvider(ProgressService())),
         ChangeNotifierProvider<HealthProvider>(create: (_) => HealthProvider(HealthRepository())),
         ChangeNotifierProvider(create: (_) => SpecialistProvider(SpecialistService())),
+        ChangeNotifierProvider(create: (_) => GlossaryProvider()),
       ],
       child: FitnflaiApp(initialLocale: initialLocale),
     ),

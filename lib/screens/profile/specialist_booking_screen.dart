@@ -816,7 +816,7 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
 
     // Collect device/browser properties for Nuvei security
     final extraData = {
-      'device_type': 'mobile',
+      'device_type': 'browser',
       'reference_id': DateTime.now().millisecondsSinceEpoch.toString(),
       'ip': '127.0.0.1', // Placeholder IP, backend overrides with connection IP
       'language': locale,

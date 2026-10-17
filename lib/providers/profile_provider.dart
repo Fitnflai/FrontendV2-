@@ -58,8 +58,8 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
-    if (state == AppLifecycleState.resumed && _isAssociatingCard) {
-      debugPrint('App resumed, reloading profile and cards after card association.');
+    if (state == AppLifecycleState.resumed && (_isAssociatingCard || _isProcessingOneClick)) {
+      debugPrint('App resumed, reloading profile and cards after card association or subscription payment.');
       CachedHttp.clearCache();
       final String? token = _authProvider.token; // Use injected AuthProvider to get token
       if (token != null) {
@@ -67,6 +67,8 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
         await loadSavedCards(token);
       }
       _isAssociatingCard = false;
+      _isProcessingOneClick = false;
+      notifyListeners();
     }
   }
 
@@ -435,7 +437,7 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<void> subscribeNuveiAction(
+  Future<Map<String, dynamic>?> subscribeNuveiAction(
     String token,
     String priceId, {
     String cvc = '123',
@@ -447,7 +449,7 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
     _subscriptionError = null;
     notifyListeners();
     try {
-      await _paymentsService.subscribeNuvei(
+      final response = await _paymentsService.subscribeNuvei(
         token,
         priceId,
         cvc: cvc,
@@ -455,10 +457,31 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
         screenWidth: screenWidth,
         timezoneOffset: timezoneOffset,
       );
-      await loadAll(token, force: true); // Reload all data to reflect new subscription
+
+      if (response is Map<String, dynamic>) {
+        final status = response['status'] as String?;
+        final requires3ds = response['requires_3ds'] as bool? ?? false;
+
+        if (status == 'success' || status == 'completed') {
+          await loadAll(token, force: true); // Reload all data to reflect new subscription
+        } else if (requires3ds) {
+          // Keep _isProcessingOneClick = true or false?
+          // Since we are showing the dialog inside the app, the app is not paused/resumed,
+          // so we don't rely on app lifecycle to reload. The dialog completion callback itself
+          // will trigger the reload in the UI! So we can set _isProcessingOneClick = false here.
+        } else {
+          // Status is failed, declined, or other non-successful status
+          final message = response['message'] as String? ?? 'La transacción no pudo completarse.';
+          _subscriptionError = message;
+        }
+        return response;
+      }
+      _subscriptionError = 'Respuesta de pasarela inválida.';
+      return null;
     } catch (e) {
       _subscriptionError = e.toString();
       debugPrint('Error subscribing with Nuvei: $e');
+      return null;
     } finally {
       _isProcessingOneClick = false;
       notifyListeners();

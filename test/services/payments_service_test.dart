@@ -59,8 +59,11 @@ void main() {
         body: anyNamed('body'),
       )).thenAnswer((_) async => http.Response(responseBody, 400));
 
-      expect(() => paymentsService.payMeetingSpecialistOneClick(token, trackingId),
-          throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('Failed to load data from https://apifitnflai.com/payments/nuvei/pay-meeting-specialist: 400 - {status: error, message: Invalid card}'))));
+      final future = paymentsService.payMeetingSpecialistOneClick(token, trackingId);
+      await expectLater(
+        future,
+        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('Failed to load data from https://apifitnflai.com/payments/nuvei/pay-meeting-specialist: 400 - {status: error, message: Invalid card}'))),
+      );
 
       verify(mockClient.post(
         Uri.parse('https://apifitnflai.com/payments/nuvei/pay-meeting-specialist'),
@@ -84,8 +87,11 @@ void main() {
         body: anyNamed('body'),
       )).thenAnswer((_) async => http.Response(responseBody, 500));
 
-      expect(() => paymentsService.payMeetingSpecialistOneClick(token, trackingId),
-          throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('Failed to load data from https://apifitnflai.com/payments/nuvei/pay-meeting-specialist: 500 - {status: error, message: Internal server error}'))));
+      final future = paymentsService.payMeetingSpecialistOneClick(token, trackingId);
+      await expectLater(
+        future,
+        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('Failed to load data from https://apifitnflai.com/payments/nuvei/pay-meeting-specialist: 500 - {status: error, message: Internal server error}'))),
+      );
     });
   });
 }

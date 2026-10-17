@@ -3,6 +3,7 @@ import '../../services/cached_http.dart';
 import 'dart:convert';
 import 'package:provider/provider.dart';
 import '../../config/app_theme_extension.dart';
+import '../../widgets/interactive_glossary_text.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
@@ -630,7 +631,7 @@ class _BloqueCard extends StatelessWidget {
                 // Nombre + detalle
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(ej['nombre'] as String? ?? '',
+                    InteractiveGlossaryText(text: ej['nombre'] as String? ?? '',
                         style: TextStyle(
                             color: isHecho ? theme.greenText : theme.white,
                             fontSize: 13,
@@ -829,7 +830,7 @@ class _SeccionCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Expanded(child: Text(text,
+                      Expanded(child: InteractiveGlossaryText(text: text,
                           style: TextStyle(
                               color: theme.greyLight,
                               fontSize: 13,
@@ -840,7 +841,7 @@ class _SeccionCard extends StatelessWidget {
               }
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: Text(line,
+                child: InteractiveGlossaryText(text: line,
                     style: TextStyle(
                         color: theme.greyLight,
                         fontSize: 13,
