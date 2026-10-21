@@ -8,6 +8,7 @@ import '../../config/app_colors.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/three_ds_challenge_dialog.dart';
 import '../../widgets/blocking_loading_overlay.dart'; // Import the new overlay widget
+import '../../widgets/otp_verification_dialog.dart';
 import '../../widgets/specialist_selection_bottom_sheet.dart';
 
 class _Plan {
@@ -429,28 +430,69 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                 final response = await profileProvider.subscribeNuveiAction(
                                   token!,
                                   priceId,
+                                  cardId: selectedCard.id,
                                   cvc: cvv,
                                   screenWidth: screenWidth,
                                   screenHeight: screenHeight,
                                   timezoneOffset: timezoneOffset,
                                 );
+                                debugPrint('Nuvei response (inline): $response');
                                 if (profileProvider.subscriptionError != null) {
                                   setModalState(() {
                                     errorMessageCheckout = profileProvider.subscriptionError;
                                   });
                                 } else {
                                   final requires3ds = response?['requires_3ds'] as bool? ?? false;
-                                  if (requires3ds) {
-                                    final challengeHtml = response?['challenge_html'] as String?;
-                                    if (challengeHtml != null && challengeHtml.isNotEmpty) {
-                                      setModalState(() {
-                                        showCvvPrompt = false;
-                                      });
+                                  final requiresOtp = response?['requires_otp'] as bool? ?? false;
+                                  final challengeHtml = response?['challenge_html'] as String? ??
+                                                        response?['challenge_url'] as String? ??
+                                                        response?['redirect_url'] as String? ??
+                                                        response?['checkout_url'] as String? ??
+                                                        response?['url'] as String? ?? '';
+                                  final transactionId = response?['transaction_id'] as String?;
+
+                                  if (requires3ds && challengeHtml.isNotEmpty) {
+                                    setModalState(() {
+                                      showCvvPrompt = false;
+                                    });
+                                    if (dialogContext.mounted) {
+                                      final completed = await ThreeDsChallengeDialog.show(dialogContext, challengeHtml);
+                                      if (completed == true) {
+                                        if (dialogContext.mounted) {
+                                          setModalState(() {
+                                            checkoutStep = 2; // Show processing loader
+                                          });
+                                        }
+                                        await profileProvider.loadAll(token, force: true);
+                                        await authProvider.refreshUser();
+                                        if (dialogContext.mounted) {
+                                          setModalState(() {
+                                            checkoutStep = 3; // Success!
+                                          });
+                                          cvvController.clear();
+                                        }
+                                      } else {
+                                        if (dialogContext.mounted) {
+                                          setModalState(() {
+                                            errorMessageCheckout = 'Validación 3DS cancelada.';
+                                          });
+                                        }
+                                      }
+                                    }
+                                  } else if (requiresOtp || (requires3ds && challengeHtml.isEmpty)) {
+                                    if (transactionId != null && transactionId.isNotEmpty) {
                                       if (dialogContext.mounted) {
-                                        final completed = await ThreeDsChallengeDialog.show(dialogContext, challengeHtml);
-                                        if (completed == true) {
+                                        final otpResult = await OtpVerificationDialog.show(
+                                          dialogContext,
+                                          transactionId: transactionId,
+                                          onVerify: (otpCode) async {
+                                            return await profileProvider.validateOtpAction(token, transactionId, otpCode);
+                                          },
+                                        );
+                                        if (otpResult != null) {
                                           if (dialogContext.mounted) {
                                             setModalState(() {
+                                              showCvvPrompt = false;
                                               checkoutStep = 2; // Show processing loader
                                             });
                                           }
@@ -465,24 +507,24 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                         } else {
                                           if (dialogContext.mounted) {
                                             setModalState(() {
-                                              errorMessageCheckout = 'Validación 3DS cancelada.';
+                                              errorMessageCheckout = 'Verificación OTP cancelada.';
                                             });
                                           }
                                         }
                                       }
                                     } else {
                                       setModalState(() {
-                                        errorMessageCheckout = 'Falta el contenido del desafío 3DS.';
+                                        errorMessageCheckout = 'Falta el id de transacción para la verificación OTP.';
                                       });
                                     }
-                                    return;
+                                  } else {
+                                    setModalState(() {
+                                      checkoutStep = 3;
+                                      showCvvPrompt = false;
+                                    });
+                                    cvvController.clear();
+                                    await authProvider.refreshUser();
                                   }
-                                  setModalState(() {
-                                    checkoutStep = 3;
-                                    showCvvPrompt = false;
-                                  });
-                                  cvvController.clear();
-                                  await authProvider.refreshUser();
                                 }
                               } catch (e) {
                                 setModalState(() {
@@ -700,11 +742,13 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                 final response = await profileProvider.subscribeNuveiAction(
                                   token!,
                                   priceId,
+                                  cardId: selectedCard.id,
                                   cvc: cvv,
                                   screenWidth: screenWidth,
                                   screenHeight: screenHeight,
                                   timezoneOffset: timezoneOffset,
                                 );
+                                debugPrint('Nuvei response (dialog): $response');
 
                                 if (profileProvider.subscriptionError != null) {
                                   setModalState(() {
@@ -713,12 +757,50 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                   });
                                 } else {
                                   final requires3ds = response?['requires_3ds'] as bool? ?? false;
-                                  if (requires3ds) {
-                                    final challengeHtml = response?['challenge_html'] as String?;
-                                    if (challengeHtml != null && challengeHtml.isNotEmpty) {
+                                  final requiresOtp = response?['requires_otp'] as bool? ?? false;
+                                  final challengeHtml = response?['challenge_html'] as String? ??
+                                                        response?['challenge_url'] as String? ??
+                                                        response?['redirect_url'] as String? ??
+                                                        response?['checkout_url'] as String? ??
+                                                        response?['url'] as String? ?? '';
+                                  final transactionId = response?['transaction_id'] as String?;
+
+                                  if (requires3ds && challengeHtml.isNotEmpty) {
+                                    if (dialogContext.mounted) {
+                                      final completed = await ThreeDsChallengeDialog.show(dialogContext, challengeHtml);
+                                      if (completed == true) {
+                                        if (dialogContext.mounted) {
+                                          setModalState(() {
+                                            checkoutStep = 2; // Show processing loader
+                                          });
+                                        }
+                                        await profileProvider.loadAll(token, force: true);
+                                        await authProvider.refreshUser();
+                                        if (dialogContext.mounted) {
+                                          setModalState(() {
+                                            checkoutStep = 3; // Success!
+                                          });
+                                        }
+                                      } else {
+                                        if (dialogContext.mounted) {
+                                          setModalState(() {
+                                            checkoutStep = 0; // Go back to card selection
+                                            errorMessageCheckout = 'Validación 3DS cancelada.';
+                                          });
+                                        }
+                                      }
+                                    }
+                                  } else if (requiresOtp || (requires3ds && challengeHtml.isEmpty)) {
+                                    if (transactionId != null && transactionId.isNotEmpty) {
                                       if (dialogContext.mounted) {
-                                        final completed = await ThreeDsChallengeDialog.show(dialogContext, challengeHtml);
-                                        if (completed == true) {
+                                        final otpResult = await OtpVerificationDialog.show(
+                                          dialogContext,
+                                          transactionId: transactionId,
+                                          onVerify: (otpCode) async {
+                                            return await profileProvider.validateOtpAction(token, transactionId, otpCode);
+                                          },
+                                        );
+                                        if (otpResult != null) {
                                           if (dialogContext.mounted) {
                                             setModalState(() {
                                               checkoutStep = 2; // Show processing loader
@@ -735,7 +817,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                           if (dialogContext.mounted) {
                                             setModalState(() {
                                               checkoutStep = 0; // Go back to card selection
-                                              errorMessageCheckout = 'Validación 3DS cancelada.';
+                                              errorMessageCheckout = 'Verificación OTP cancelada.';
                                             });
                                           }
                                         }
@@ -743,15 +825,15 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                     } else {
                                       setModalState(() {
                                         checkoutStep = 0; // Go back to card selection
-                                        errorMessageCheckout = 'Falta el contenido del desafío 3DS.';
+                                        errorMessageCheckout = 'Falta el id de transacción para la verificación OTP.';
                                       });
                                     }
-                                    return;
+                                  } else {
+                                    setModalState(() {
+                                      checkoutStep = 3; // Success!
+                                    });
+                                    await authProvider.refreshUser();
                                   }
-                                  setModalState(() {
-                                    checkoutStep = 3; // Success!
-                                  });
-                                  await authProvider.refreshUser();
                                 }
                               } catch (e) {
                                 setModalState(() {
