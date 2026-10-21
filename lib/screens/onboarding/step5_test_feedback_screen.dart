@@ -148,7 +148,7 @@ class _TestFeedbackScreenState extends State<TestFeedbackScreen> {
 
           // ── Top bar ──────────────────────────────
           widget.fromOnboarding
-              ? const StepHeader(stepLabel: 'Paso 6 de 6')
+              ? const StepHeader(stepLabel: 'Paso 4 de 6')
               : _buildTopBar(context),
 
           // ── Step tabs ────────────────────────────

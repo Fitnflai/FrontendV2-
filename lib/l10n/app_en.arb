@@ -467,7 +467,7 @@
   "@onboardingProfileBirthdateHint": {
     "description": "Placeholder for birthdate field"
   },
-  "onboardingProfileGender": "Gender",
+  "onboardingProfileGender": "Biological sex",
   "@onboardingProfileGender": {
     "description": "Label for gender selection"
   },
@@ -855,7 +855,7 @@
     "description": "Plan generation progress step 8 (pending)"
   },
 
-  "onboardingFeedbackReadyTitle": "Ready, {name}!",
+  "onboardingFeedbackReadyTitle": "Your training plan is ready!",
   "@onboardingFeedbackReadyTitle": {
     "description": "Onboarding feedback welcome header",
     "placeholders": {
@@ -864,27 +864,27 @@
       }
     }
   },
-  "onboardingFeedbackReadySubtitle": "Your plan is customized, start and\nachieve your goals.",
+  "onboardingFeedbackReadySubtitle": "We have prepared a plan based on your physical condition, availability, and goals.",
   "@onboardingFeedbackReadySubtitle": {
     "description": "Onboarding feedback subtitle"
   },
-  "onboardingFeedbackDetailTitle": "Your plan in detail",
+  "onboardingFeedbackDetailTitle": "How we designed your plan",
   "@onboardingFeedbackDetailTitle": {
     "description": "Header for customized plan details list"
   },
-  "onboardingFeedbackEcosystemTitle": "What you see here is just the surface. Behind your plan is a ",
+  "onboardingFeedbackEcosystemTitle": "Each session is organized to help you progress gradually towards your goal.",
   "@onboardingFeedbackEcosystemTitle": {
     "description": "General wellness ecosystem warning prefix"
   },
-  "onboardingFeedbackEcosystemHighlight": "wellness ecosystem",
+  "onboardingFeedbackEcosystemHighlight": "",
   "@onboardingFeedbackEcosystemHighlight": {
     "description": "General wellness ecosystem warning highlight"
   },
-  "onboardingFeedbackWorkingForYou": " working for you — each session, each intensity, each rest ",
+  "onboardingFeedbackWorkingForYou": "",
   "@onboardingFeedbackWorkingForYou": {
     "description": "General wellness ecosystem warning body text"
   },
-  "onboardingFeedbackHasReason": "has a reason.",
+  "onboardingFeedbackHasReason": "",
   "@onboardingFeedbackHasReason": {
     "description": "General wellness ecosystem warning suffix"
   },
@@ -900,7 +900,7 @@
   "@onboardingFeedbackStartLabel": {
     "description": "Start date label on hero details"
   },
-  "onboardingFeedbackZonesTitle": "Your training zones",
+  "onboardingFeedbackZonesTitle": "Your heart rate zones",
   "@onboardingFeedbackZonesTitle": {
     "description": "Training zones section title"
   },
@@ -1237,11 +1237,11 @@
   "@homeConnectDevicesDesc": {
     "description": "Description for connect devices banner"
   },
-  "homeDeviceConnectedTitle": "Device connected",
+  "homeDeviceConnectedTitle": "Device synced",
   "@homeDeviceConnectedTitle": {
     "description": "Title for connected device banner"
   },
-  "homeDeviceConnectedDesc": "Fitnflai is receiving your data in real-time.",
+  "homeDeviceConnectedDesc": "Last sync: ",
   "@homeDeviceConnectedDesc": {
     "description": "Description for connected device banner"
   },
@@ -1269,15 +1269,15 @@
   "@homeDailyCheckinDesc": {
     "description": "Daily check-in banner description"
   },
-  "homeSectionWeeklyDist": "WEEKLY DISTRIBUTION",
+  "homeSectionWeeklyDist": "YOUR TRAINING WEEK",
   "@homeSectionWeeklyDist": {
     "description": "Weekly distribution section label"
   },
-  "homeSectionWeeklyIntensity": "WEEKLY INTENSITY",
+  "homeSectionWeeklyIntensity": "SESSION INTENSITY",
   "@homeSectionWeeklyIntensity": {
     "description": "Weekly intensity section label"
   },
-  "homeSectionWeeklyAdherence": "ADHERENCE TO PLAN",
+  "homeSectionWeeklyAdherence": "COMPLIANCE WITH YOUR PLAN",
   "@homeSectionWeeklyAdherence": {
     "description": "Weekly adherence section label"
   },
@@ -1375,7 +1375,7 @@
   "@homeTipOfTheDayDesc": {
     "description": "Tip of the day description"
   },
-  "homeNoWorkoutTitle": "No workout today, {name}",
+  "homeNoWorkoutTitle": "Today is rest day",
   "@homeNoWorkoutTitle": {
     "description": "Title shown when there is no workout scheduled for today",
     "placeholders": {
@@ -1384,7 +1384,7 @@
       }
     }
   },
-  "homeNoWorkoutDesc": "Today is a free day. Use it to rest or do light activity.",
+  "homeNoWorkoutDesc": "Recovery is also part of your training. Use this day to rest and recover energy.",
   "@homeNoWorkoutDesc": {
     "description": "Description shown when there is no workout scheduled for today"
   },
@@ -2301,7 +2301,7 @@
   "dailyCheckinCtaRestNormal": "Rest today · mark as free day",
   "dailyCheckinCtaBottomNote": "Your plan adjusts automatically · You are still on track",
   "dailyCheckinSaveSuccess": "Daily status successfully recorded.",
-  "dailyCheckinSaveError": "Connection error or error recording status: {error}",
+  "dailyCheckinSaveError": "We couldn't save your assessment. Your answers are still here. Please try again.",
   "@dailyCheckinSaveError": {
     "placeholders": {
       "error": {
@@ -2640,7 +2640,7 @@
   "@testSquatsTag": { "description": "Squats tag" },
   "testSquatsDescShort": "Stand up, feet shoulder-width apart. Lower down to 90° knee flexion.",
   "@testSquatsDescShort": { "description": "Squats short desc" },
-  "testSquatsDescLong": "Count how many squats you can do in 1 minute. It measures the functional strength of your legs and local muscular endurance — one of the best predictors of athletic performance.",
+  "testSquatsDescLong": "This test helps us estimate your lower body muscular endurance and adjust your training starting point.",
   "@testSquatsDescLong": { "description": "Squats long desc" },
   "testSquatsDurationLabel": "1 min",
   "@testSquatsDurationLabel": { "description": "Squats duration label" },

@@ -109,6 +109,14 @@ class _OnboardingFeedbackScreenState extends State<OnboardingFeedbackScreen> {
     final nombre = (_user?['nombre'] as String?)?.trim() ?? '';
     final nombreMostrado = apodo.isNotEmpty ? apodo : (nombre.isNotEmpty ? nombre : 'Campeón');
 
+    // Fecha de inicio — del AuthProvider (guardado en step4) o del plan/usuario
+    final fechaInicioStr = _fechaInicioLocal
+                        ?? (_plan?['fecha_inicio']         as String?)
+                        ?? (_user?['fecha_inicio_deseada'] as String?)
+                        ?? (_user?['fecha_inicio']         as String?);
+    final diaInicio   = _diaDeSemana(context, fechaInicioStr);
+    final fechaInicio = _formatFecha(context, fechaInicioStr);
+
     // Datos del plan
     String tituloPlan = _plan?['titulo_plan'] as String? ?? '—';
     if (tituloPlan.toLowerCase().contains('kilómetros')) {
@@ -125,6 +133,54 @@ class _OnboardingFeedbackScreenState extends State<OnboardingFeedbackScreen> {
       if (line.contains('a nivel del mar') && (line.contains('altitud') || line.contains('metros') || line.contains('m '))) {
         line = line.replaceAll('a nivel del mar', 'sobre el nivel del mar');
       }
+
+      // 1. Title/Header mapping
+      if (line.contains('tomando en cuenta los siguientes detalles')) {
+        line = 'Estos son algunos de los datos que utilizamos para adaptar tu entrenamiento:';
+      }
+
+      // 2. Availability mapping
+      if (line.contains('Estás disponible para entrenar')) {
+        final daysSplit = line.split(',');
+        final count = daysSplit.length;
+        if (count >= 7 || line.contains('domingo') && line.contains('lunes') && line.contains('martes') && line.contains('miércoles') && line.contains('jueves') && line.contains('viernes') && line.contains('sábado')) {
+          line = 'Disponibilidad: los 7 días de la semana.';
+        } else {
+          line = 'Disponibilidad: los $count días seleccionados.';
+        }
+      }
+
+      // 3. Altitude mapping
+      if (line.contains('altitud de') && line.contains('sobre el nivel del mar')) {
+        final reg = RegExp(r'\d+');
+        final match = reg.firstMatch(line);
+        if (match != null) {
+          final metersStr = match.group(0)!;
+          String formattedMeters = metersStr;
+          if (metersStr.length > 3) {
+            formattedMeters = '${metersStr.substring(0, metersStr.length - 3)}.${metersStr.substring(metersStr.length - 3)}';
+          }
+          line = 'Altitud de entrenamiento: $formattedMeters m s. n. m.';
+        }
+      }
+
+      // 4. Experience/Level mapping
+      if (line.contains('Has seleccionado un nivel de dificultad')) {
+        final level = line.replaceAll('Has seleccionado un nivel de dificultad', '').trim().toLowerCase();
+        line = 'Nivel de experiencia: $level';
+      }
+
+      // 5. Restricciones mapping
+      if (line.contains('perfil saludable y sin restricciones')) {
+        line = 'No se registraron restricciones de entrenamiento en tu evaluación inicial.';
+      }
+
+      // 6. Inconsistency correction for start date
+      if (line.contains('Tu plan comienza el')) {
+        final shortDia = diaInicio.length > 3 ? '${diaInicio.substring(0, 3).toLowerCase()}.' : diaInicio.toLowerCase();
+        line = 'Tu plan comienza el $shortDia $fechaInicio';
+      }
+
       resumenList.add(line);
     }
 
@@ -143,13 +199,27 @@ class _OnboardingFeedbackScreenState extends State<OnboardingFeedbackScreen> {
     final ciudad = (_user?['ciudad'] as String?);
     final altitud = (_user?['altitud'] as num?)?.toString();
 
-    // Fecha de inicio — del AuthProvider (guardado en step4) o del plan/usuario
-    final fechaInicioStr = _fechaInicioLocal
-                        ?? (_plan?['fecha_inicio']         as String?)
-                        ?? (_user?['fecha_inicio_deseada'] as String?)
-                        ?? (_user?['fecha_inicio']         as String?);
-    final diaInicio   = _diaDeSemana(context, fechaInicioStr);
-    final fechaInicio = _formatFecha(context, fechaInicioStr);
+    // Formatear objetivo principal dinámicamente
+    String objetivoFormateado = '—';
+    final nombreCompetencia = _plan?['nombre_competencia'] ?? _user?['nombre_competencia'] as String? ?? '';
+
+    if (disciplina.toLowerCase().contains('competencia')) {
+      objetivoFormateado = nombreCompetencia.isNotEmpty 
+          ? 'Tu objetivo: $nombreCompetencia' 
+          : 'Tu objetivo: Prepararme para una competencia';
+    } else if (disciplina.isNotEmpty) {
+      if (disciplina.toLowerCase().contains('personal') || disciplina.toLowerCase().contains('tiempo')) {
+        if (nombreDisciplina == 'Senderismo') {
+          objetivoFormateado = 'Tu objetivo: Mejorar mi ritmo';
+        } else if (nombreDisciplina == 'Acondicionamiento') {
+          objetivoFormateado = 'Tu objetivo: Mejorar mi rendimiento';
+        } else {
+          objetivoFormateado = 'Tu objetivo: Mejorar mi tiempo personal';
+        }
+      } else {
+        objetivoFormateado = 'Tu objetivo: $disciplina';
+      }
+    }
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -164,7 +234,7 @@ class _OnboardingFeedbackScreenState extends State<OnboardingFeedbackScreen> {
                       // ── Hero con imagen de fondo ─────────
                       _PlanHeroCard(
                         nombreMostrado: nombreMostrado,
-                        disciplina:     disciplina,
+                        disciplina:     objetivoFormateado,
                         nombreDisciplina: nombreDisciplina,
                         diasEntrenamiento: diasEntrenamiento,
                         ciudad: ciudad,

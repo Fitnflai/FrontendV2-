@@ -6,6 +6,7 @@ import 'package:intl/intl.dart'; // Added for DateFormat
 import '../../l10n/app_localizations.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/specialist_selection_bottom_sheet.dart';
+import '../../widgets/otp_verification_dialog.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/specialist_provider.dart';
@@ -838,8 +839,43 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
         extraData: extraData,
       );
 
+      if (!mounted) return;
+
       if (success) {
-        await _verifyAndBook();
+        final paymentResponse = specialistProvider.lastPaymentResponse;
+        final requiresOtp = paymentResponse?['requires_otp'] as bool? ?? false;
+        if (requiresOtp) {
+          final transactionId = paymentResponse?['transaction_id'] as String?;
+          if (transactionId != null && transactionId.isNotEmpty) {
+            final otpResult = await OtpVerificationDialog.show(
+              context,
+              transactionId: transactionId,
+              onVerify: (otpCode) async {
+                return await specialistProvider.validateOtp(token, transactionId, otpCode);
+              },
+            );
+            if (!mounted) return;
+            if (otpResult != null) {
+              await _verifyAndBook();
+            } else {
+              setState(() {
+                _isLoading = false;
+              });
+              scaffoldMessenger.showSnackBar(
+                const SnackBar(content: Text('Verificación OTP cancelada.')),
+              );
+            }
+          } else {
+            setState(() {
+              _isLoading = false;
+            });
+            scaffoldMessenger.showSnackBar(
+              const SnackBar(content: Text('Falta el id de transacción para la verificación OTP.')),
+            );
+          }
+        } else {
+          await _verifyAndBook();
+        }
       } else {
         setState(() {
           _isLoading = false;

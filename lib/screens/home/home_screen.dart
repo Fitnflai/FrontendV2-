@@ -342,7 +342,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       final completed = await Navigator.push<bool>(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const DailyCheckinScreen()),
+                            builder: (_) => DailyCheckinScreen(
+                              selectedSession: _entrenamientoHoy,
+                              selectedDate: _selectedDay,
+                            )),
                       );
                       if (completed == true) {
                         await _markCheckinDone();
@@ -1771,6 +1774,29 @@ class _AdherenciaCard extends StatelessWidget {
     
     final pct = total > 0 ? (completed / total * 100).toInt() : 0;
 
+    // Determinar si hay alguna sesión evaluable (completada o en el pasado)
+    bool hasEvaluable = false;
+    final today = DateTime.now();
+    final todayStart = DateTime(today.year, today.month, today.day);
+
+    for (final s in workoutSessions) {
+      final estado = (s['estado'] as String?)?.toLowerCase() ?? '';
+      if (estado == 'completado' || estado == 'done') {
+        hasEvaluable = true;
+        break;
+      }
+      final fechaStr = s['fecha_programada'] as String?;
+      if (fechaStr != null) {
+        try {
+          final d = DateTime.parse(fechaStr.split('T')[0]);
+          if (d.isBefore(todayStart)) {
+            hasEvaluable = true;
+            break;
+          }
+        } catch (_) {}
+      }
+    }
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: theme.card, borderRadius: BorderRadius.circular(14)),
@@ -1780,7 +1806,8 @@ class _AdherenciaCard extends StatelessWidget {
           const SizedBox(width: 8),
           Text(l10n.homeSectionWeeklyAdherence, style: TextStyle(color: theme.white, fontWeight: FontWeight.bold, fontSize: 12)),
           const Spacer(),
-          Text(l10n.homeAdherencePct(pct), style: TextStyle(color: theme.primary, fontWeight: FontWeight.bold, fontSize: 16)),
+          if (hasEvaluable)
+            Text(l10n.homeAdherencePct(pct), style: TextStyle(color: theme.primary, fontWeight: FontWeight.bold, fontSize: 16)),
         ]),
         const SizedBox(height: 12),
         // Fila de puntos
@@ -1798,10 +1825,12 @@ class _AdherenciaCard extends StatelessWidget {
               if (estado == 'completado' || estado == 'done') {
                 dotColor = theme.greenText;
               } else if (fechaStr != null) {
-                final d = DateTime.parse(fechaStr.split('T')[0]);
-                if (d.isBefore(DateTime.now())) {
-                  dotColor = theme.redText; // Vencido y no completado
-                }
+                try {
+                  final d = DateTime.parse(fechaStr.split('T')[0]);
+                  if (d.isBefore(todayStart)) {
+                    dotColor = theme.redText; // Vencido y no completado
+                  }
+                } catch (_) {}
               }
 
               return Container(
@@ -1812,7 +1841,12 @@ class _AdherenciaCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Text(l10n.homeSessionCompleted(completed, total), style: TextStyle(color: theme.grey, fontSize: 12)),
+        Text(
+          hasEvaluable 
+              ? l10n.homeSessionCompleted(completed, total)
+              : 'Tu progreso comienza con tu primera sesión',
+          style: TextStyle(color: theme.grey, fontSize: 12),
+        ),
       ]),
     );
   }

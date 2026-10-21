@@ -814,7 +814,7 @@ class _AppHeaderState extends State<AppHeader> {
           final faltan = diff.abs();
           activo = faltan == 1 ? 'Empieza mañana' : 'Empieza en $faltan días';
         } else if (diff == 0) {
-          activo = '¡Hoy empieza!';
+          activo = 'Tu preparación está lista';
         } else if (diff < 7) {
           activo = 'Día ${diff + 1}';
         } else {
@@ -824,7 +824,7 @@ class _AppHeaderState extends State<AppHeader> {
       } catch (_) {}
     }
 
-    if (disciplina.isNotEmpty && activo.isNotEmpty) return '$disciplina / $activo';
+    if (disciplina.isNotEmpty && activo.isNotEmpty) return '$disciplina · $activo';
     if (disciplina.isNotEmpty) return disciplina;
     if (activo.isNotEmpty) return activo;
     return '';

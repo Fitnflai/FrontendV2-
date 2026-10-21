@@ -13,7 +13,15 @@ import '../../l10n/l10n_helpers.dart';
 // DAILY CHECK-IN SCREEN
 // ═══════════════════════════════════════════════════════════════
 class DailyCheckinScreen extends StatefulWidget {
-  const DailyCheckinScreen({super.key});
+  final Map<String, dynamic>? selectedSession;
+  final DateTime? selectedDate;
+
+  const DailyCheckinScreen({
+    super.key,
+    this.selectedSession,
+    this.selectedDate,
+  });
+
   @override
   State<DailyCheckinScreen> createState() => _DailyCheckinScreenState();
 }
@@ -43,6 +51,7 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
 
   Future<bool> _registerDailyState() async {
     if (_submitting) return false;
+    FocusScope.of(context).unfocus(); // Close keyboard on submit
     setState(() => _submitting = true);
     final token = context.read<AuthProvider>().token ?? '';
     const base = 'https://apifitnflai.com';
@@ -127,46 +136,76 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = context.themeColors;
-    return Scaffold(
-      backgroundColor: theme.bg,
-      body: SafeArea(
-        child: Column(children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Row(children: [
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Icon(Icons.arrow_back, color: theme.white),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Consumer<AuthProvider>(
-                  builder: (context, auth, _) {
-                    final user = auth.user;
-                    final nombreUsuario = user?.apodo 
-                        ?? (user?.nombre != null ? user!.nombre.split(' ').first : 'Campeón');
-                    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(AppLocalizations.of(context).dailyCheckinGreeting(nombreUsuario),
-                          style: TextStyle(color: theme.white,
-                              fontSize: 16, fontWeight: FontWeight.w600)),
-                      Text(AppLocalizations.of(context).dailyCheckinSubtitle,
-                          style: TextStyle(color: theme.grey, fontSize: 11)),
-                    ]);
-                  }
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: theme.bg,
+        body: SafeArea(
+          child: Column(children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Row(children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Icon(Icons.arrow_back, color: theme.white),
                 ),
-              ),
-            ]),
-          ),
-          Divider(color: theme.border, height: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Consumer<AuthProvider>(
+                    builder: (context, auth, _) {
+                      final user = auth.user;
+                      String nombreUsuario = user?.apodo 
+                          ?? (user?.nombre != null ? user!.nombre.split(' ').first : 'Campeón');
+                      // Filter out alphanumeric test usernames
+                      final isMockUsername = RegExp(r'^[a-z0-9]{8,15}$').hasMatch(nombreUsuario);
+                      if (isMockUsername) {
+                        nombreUsuario = 'Campeón';
+                      }
 
-          Expanded(
-            child: _result == null
-                ? _buildQuestions(theme)
-                : _buildResult(theme),
-          ),
-          const AppBottomNav(selectedIndex: 0),
-        ]),
+                      final greetingText = AppLocalizations.of(context).dailyCheckinGreeting(nombreUsuario);
+                      final now = DateTime.now();
+                      String saludo = 'Buenos días';
+                      if (now.hour >= 12 && now.hour < 19) {
+                        saludo = 'Buenas tardes';
+                      } else if (now.hour >= 19 || now.hour < 6) {
+                        saludo = 'Buenas noches';
+                      }
+                      final finalGreeting = greetingText.replaceFirst('Buenos días', saludo);
+
+                      final date = widget.selectedDate ?? DateTime.now();
+                      final isEs = Localizations.localeOf(context).languageCode == 'es';
+                      final diasEs = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+                      final diasEn = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+                      final diaSemanaName = isEs ? diasEs[date.weekday - 1] : diasEn[date.weekday - 1];
+
+                      final sessionTitle = widget.selectedSession?['titulo_entrenamiento'] as String? ?? '';
+                      final subtitleText = sessionTitle.isNotEmpty
+                          ? (isEs ? '$diaSemanaName · Sesión de hoy: $sessionTitle' : '$diaSemanaName · Today\'s session: $sessionTitle')
+                          : (isEs ? '$diaSemanaName · Día de descanso' : '$diaSemanaName · Rest day');
+
+                      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(finalGreeting,
+                            style: TextStyle(color: theme.white,
+                                fontSize: 16, fontWeight: FontWeight.w600)),
+                        Text(subtitleText,
+                            style: TextStyle(color: theme.grey, fontSize: 11)),
+                      ]);
+                    }
+                  ),
+                ),
+              ]),
+            ),
+            Divider(color: theme.border, height: 20),
+
+            Expanded(
+              child: _result == null
+                  ? _buildQuestions(theme)
+                  : _buildResult(theme),
+            ),
+            const AppBottomNav(selectedIndex: 0),
+          ]),
+        ),
       ),
     );
   }
@@ -197,9 +236,9 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(99),
               color: i < answered
-                  ? theme.greenText
+                  ? theme.orange
                   : i == answered
-                      ? theme.orange
+                      ? theme.orange.withValues(alpha: 0.3)
                       : theme.cardDark,
             ),
           ),
@@ -1263,11 +1302,11 @@ class _PulseTimerCardState extends State<_PulseTimerCard>
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.check_circle_outline, color: theme.greenText, size: 14),
+              Icon(Icons.info_outline, color: theme.orange, size: 14),
               const SizedBox(width: 6),
               Text(
                 l10n.dailyCheckinPulseCalculated(calculatedBpm.toString()),
-                style: TextStyle(color: theme.greenText, fontSize: 11, fontWeight: FontWeight.w600),
+                style: TextStyle(color: theme.greyLight, fontSize: 11, fontWeight: FontWeight.w600),
               ),
             ],
           ),

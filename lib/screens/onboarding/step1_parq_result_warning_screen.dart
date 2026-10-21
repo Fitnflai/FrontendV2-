@@ -9,7 +9,14 @@ import '../../l10n/app_localizations.dart';
 
 class PARQResultWarningScreen extends StatefulWidget {
   final List<String> triggered;
-  const PARQResultWarningScreen({super.key, required this.triggered});
+  final bool isBlocked;
+
+  const PARQResultWarningScreen({
+    super.key,
+    required this.triggered,
+    this.isBlocked = false,
+  });
+
   @override
   State<PARQResultWarningScreen> createState() => _PARQResultWarningScreenState();
 }
@@ -79,62 +86,104 @@ class _PARQResultWarningScreenState extends State<PARQResultWarningScreen> {
                   ]),
                 ),
                 const SizedBox(height: 18),
-                Container(
-                  width: double.infinity, height: 48,
-                  decoration: BoxDecoration(
-                      color: const Color(0xFF7B2020), borderRadius: BorderRadius.circular(10)),
-                  child: Center(child: Text(l10n.onboardingParqWarningUnderstoodButton,
-                      style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w600))),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: double.infinity, height: 48,
+                    decoration: BoxDecoration(
+                        color: const Color(0xFF7B2020), borderRadius: BorderRadius.circular(10)),
+                    child: Center(child: Text(l10n.onboardingParqWarningUnderstoodButton,
+                        style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w600))),
+                  ),
                 ),
               ]),
             ),
             const SizedBox(height: 16),
 
-            // Override card
-            Container(
-              width: double.infinity, padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(14)),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(l10n.onboardingParqWarningOverrideTitle,
-                    style: const TextStyle(color: AppColors.white, fontSize: 15, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.onboardingParqWarningOverrideDesc,
-                  style: const TextStyle(color: AppColors.grey, fontSize: 13, height: 1.5)),
-                const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: () => setState(() => _accepted = !_accepted),
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    CheckIcon(checked: _accepted),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(
-                      l10n.onboardingParqWarningOverrideCheckboxLabel,
-                      style: const TextStyle(color: AppColors.white, fontSize: 13, height: 1.5))),
-                  ]),
+            if (widget.isBlocked) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2A1E08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.orange, width: 1),
                 ),
-              ]),
-            ),
-            const SizedBox(height: 20),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: AppColors.orange, size: 20),
+                        SizedBox(width: 10),
+                        Text(
+                          'Restricción del Protocolo',
+                          style: TextStyle(color: AppColors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Por tu seguridad, ante respuestas afirmativas relacionadas con dolor en el pecho o pérdida de conocimiento, no se permite habilitar el plan de entrenamiento únicamente por autodeclaración.',
+                      style: TextStyle(color: AppColors.greyLight, fontSize: 13, height: 1.5),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Si cometiste un error al responder, podés tocar el botón de arriba ("Entendido · Lo consultará con mi médico") para volver a la pantalla anterior y corregir tu respuesta.',
+                      style: TextStyle(color: AppColors.greyLight, fontSize: 13, height: 1.5),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ] else ...[
+              // Override card
+              Container(
+                width: double.infinity, padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(14)),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(l10n.onboardingParqWarningOverrideTitle,
+                      style: const TextStyle(color: AppColors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.onboardingParqWarningOverrideDesc,
+                    style: const TextStyle(color: AppColors.grey, fontSize: 13, height: 1.5)),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () => setState(() => _accepted = !_accepted),
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      CheckIcon(checked: _accepted),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(
+                        l10n.onboardingParqWarningOverrideCheckboxLabel,
+                        style: const TextStyle(color: AppColors.white, fontSize: 13, height: 1.5))),
+                    ]),
+                  ),
+                ]),
+              ),
+              const SizedBox(height: 20),
+            ],
           ]),
         )),
 
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          child: PrimaryButton(
-            labelWidget: Text(l10n.onboardingContinue, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-            enabled: _accepted,
-            onTap: () async {
-              final authProvider = Provider.of<AuthProvider>(context, listen: false);
-              final userId = authProvider.user?.id;
-              final token = authProvider.token;
-              if (userId != null) {
-                await OnboardingRouter.saveCompletedStep(userId, 1, token: token);
-              }
-              if (!context.mounted) return;
-              Navigator.pushNamed(context, AppRoutes.step2Profile);
-            },
+        if (!widget.isBlocked)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            child: PrimaryButton(
+              labelWidget: Text(l10n.onboardingContinue, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              enabled: _accepted,
+              onTap: () async {
+                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                final userId = authProvider.user?.id;
+                final token = authProvider.token;
+                if (userId != null) {
+                  await OnboardingRouter.saveCompletedStep(userId, 1, token: token);
+                }
+                if (!context.mounted) return;
+                Navigator.pushNamed(context, AppRoutes.step2Profile);
+              },
+            ),
           ),
-        ),
       ])),
     );
   }

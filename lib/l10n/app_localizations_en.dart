@@ -368,7 +368,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingProfileBirthdateHint => 'DD / MM / YYYY';
 
   @override
-  String get onboardingProfileGender => 'Gender';
+  String get onboardingProfileGender => 'Biological sex';
 
   @override
   String get onboardingProfileGenderMale => 'Male';
@@ -666,29 +666,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String onboardingFeedbackReadyTitle(String name) {
-    return 'Ready, $name!';
+    return 'Your training plan is ready!';
   }
 
   @override
   String get onboardingFeedbackReadySubtitle =>
-      'Your plan is customized, start and\nachieve your goals.';
+      'We have prepared a plan based on your physical condition, availability, and goals.';
 
   @override
-  String get onboardingFeedbackDetailTitle => 'Your plan in detail';
+  String get onboardingFeedbackDetailTitle => 'How we designed your plan';
 
   @override
   String get onboardingFeedbackEcosystemTitle =>
-      'What you see here is just the surface. Behind your plan is a ';
+      'Each session is organized to help you progress gradually towards your goal.';
 
   @override
-  String get onboardingFeedbackEcosystemHighlight => 'wellness ecosystem';
+  String get onboardingFeedbackEcosystemHighlight => '';
 
   @override
-  String get onboardingFeedbackWorkingForYou =>
-      ' working for you — each session, each intensity, each rest ';
+  String get onboardingFeedbackWorkingForYou => '';
 
   @override
-  String get onboardingFeedbackHasReason => 'has a reason.';
+  String get onboardingFeedbackHasReason => '';
 
   @override
   String get onboardingFeedbackStartFreeTrial => 'Start my 21 days free';
@@ -700,7 +699,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingFeedbackStartLabel => 'Start';
 
   @override
-  String get onboardingFeedbackZonesTitle => 'Your training zones';
+  String get onboardingFeedbackZonesTitle => 'Your heart rate zones';
 
   @override
   String get onboardingFeedbackZonesDesc =>
@@ -962,11 +961,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Optional but recommended. With your wearable data, Fitnflai adapts your plan in real-time: steps, sleep, HR and more.';
 
   @override
-  String get homeDeviceConnectedTitle => 'Device connected';
+  String get homeDeviceConnectedTitle => 'Device synced';
 
   @override
-  String get homeDeviceConnectedDesc =>
-      'Fitnflai is receiving your data in real-time.';
+  String get homeDeviceConnectedDesc => 'Last sync: ';
 
   @override
   String get homeSleepLabel => 'Sleep\nlast night';
@@ -988,13 +986,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Answer 4 quick questions so Fitnflai can adjust your session.';
 
   @override
-  String get homeSectionWeeklyDist => 'WEEKLY DISTRIBUTION';
+  String get homeSectionWeeklyDist => 'YOUR TRAINING WEEK';
 
   @override
-  String get homeSectionWeeklyIntensity => 'WEEKLY INTENSITY';
+  String get homeSectionWeeklyIntensity => 'SESSION INTENSITY';
 
   @override
-  String get homeSectionWeeklyAdherence => 'ADHERENCE TO PLAN';
+  String get homeSectionWeeklyAdherence => 'COMPLIANCE WITH YOUR PLAN';
 
   @override
   String homeSessionCompleted(int completed, int total) {
@@ -1064,12 +1062,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String homeNoWorkoutTitle(String name) {
-    return 'No workout today, $name';
+    return 'Today is rest day';
   }
 
   @override
   String get homeNoWorkoutDesc =>
-      'Today is a free day. Use it to rest or do light activity.';
+      'Recovery is also part of your training. Use this day to rest and recover energy.';
 
   @override
   String get settingsRefundRequest => 'Request refund';
@@ -2540,7 +2538,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dailyCheckinSaveError(String error) {
-    return 'Connection error or error recording status: $error';
+    return 'We couldn\'t save your assessment. Your answers are still here. Please try again.';
   }
 
   @override
@@ -3094,7 +3092,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get testSquatsDescLong =>
-      'Count how many squats you can do in 1 minute. It measures the functional strength of your legs and local muscular endurance — one of the best predictors of athletic performance.';
+      'This test helps us estimate your lower body muscular endurance and adjust your training starting point.';
 
   @override
   String get testSquatsDurationLabel => '1 min';

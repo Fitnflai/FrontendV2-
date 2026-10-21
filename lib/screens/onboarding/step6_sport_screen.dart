@@ -138,23 +138,36 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
     'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
   ];
 
-  final List<GoalOption> _goals = [
-    GoalOption(
-      title: 'Prepararme para una competencia',
-      subtitle: 'Tengo una fecha objetivo en mente',
-      emoji: '🏆',
-    ),
-    GoalOption(
-      title: 'Mejorar mi tiempo personal',
-      subtitle: 'Ya compito, quiero ser más rápido',
-      emoji: '⏱️',
-    ),
-    GoalOption(
-      title: 'Mejorar mi condición general',
-      subtitle: 'Sin competencia específica por ahora',
-      emoji: '🌱',
-    ),
-  ];
+  List<GoalOption> _getGoals(BuildContext context) {
+    String title = 'Mejorar mi tiempo personal';
+    String subtitle = 'Ya compito, quiero ser más rápido';
+    
+    if (_selectedSportIdx == 5) { // Acondicionamiento
+      title = 'Mejorar mi rendimiento';
+      subtitle = 'Entrenar con mayor intensidad y fuerza';
+    } else if (_selectedSportIdx == 4) { // Senderismo
+      title = 'Mejorar mi ritmo';
+      subtitle = 'Caminar más rápido o cubrir más distancia';
+    }
+
+    return [
+      GoalOption(
+        title: 'Prepararme para una competencia',
+        subtitle: 'Tengo una fecha objetivo en mente',
+        emoji: '🏆',
+      ),
+      GoalOption(
+        title: title,
+        subtitle: subtitle,
+        emoji: '⏱️',
+      ),
+      GoalOption(
+        title: 'Mejorar mi condición general',
+        subtitle: 'Sin competencia específica por ahora',
+        emoji: '🌱',
+      ),
+    ];
+  }
 
   bool get _isValid {
     if (_selectedSportIdx < 0 || _selectedGoalIdx < 0) return false;
@@ -575,71 +588,78 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
                 ],
 
                 // ── Goal options with expandable forms ──
-                ...List.generate(_goals.length, (i) {
-                  // Ocultar "Prepararme para una competencia" si es Acondicionamiento
-                  if (i == 0 && _selectedSportIdx == 5) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Column(children: [
-                      _GoalCard(
-                        goal: _goals[i],
-                        selected: i == _selectedGoalIdx,
-                        onTap: () => _selectGoal(i),
-                      ),
-                      if (i == _selectedGoalIdx) ...[
-                        const SizedBox(height: 4),
-                        _GoalForm(
-                          goalIdx: i,
-                          selectedSportIdx: _selectedSportIdx,
-                          competenciaOpciones: _competenciaOpciones[_selectedSportIdx] ?? [],
-                          selectedCompetencia: _selectedCompetencia,
-                          onCompetenciaChanged: (v) => setState(() {
-                            _selectedCompetencia = v;
-                            _riskAccepted = false;
-                          }),
-                          showRiskAlert: _showRiskAlert,
-                          requiredWeeks: _requiredWeeks,
-                          weeksAvailable: _weeksAvailableForRace,
-                          riskAccepted: _riskAccepted,
-                          onRiskAcceptedChanged: (v) => setState(() => _riskAccepted = v),
-                          // Goal 0
-                          raceNameCtrl: _raceNameCtrl,
-                          raceDate: _raceDate,
-                          raceDistCtrl: _raceDistCtrl,
-                          raceDistUnit: _raceDistUnit,
-                          onPickDate: _pickDate,
-                          onRaceUnitChanged: (v) => setState(() => _raceDistUnit = v),
-                          // Goal 1
-                          timeDistCtrl: _timeDistCtrl,
-                          timeDistUnit: _timeDistUnit,
-                          timeHours: _timeHours,
-                          timeMin: _timeMin,
-                          timeSec: _timeSec,
-                          timeTargetHours: _timeTargetHours,
-                          timeTargetMin: _timeTargetMin,
-                          timeTargetSec: _timeTargetSec,
-                          onTimeUnitChanged: (v) => setState(() => _timeDistUnit = v),
-                          onTimeChanged: (h, m, s) => setState(() {
-                            _timeHours = h; _timeMin = m; _timeSec = s;
-                          }),
-                          onTargetTimeChanged: (h, m, s) => setState(() {
-                            _timeTargetHours = h; _timeTargetMin = m; _timeTargetSec = s;
-                          }),
-                          targetExceedsActual: _targetExceedsActual,
-                          // Goal 2
-                          condicionCtrl: _condicionCtrl,
-                          condicionCategoria: _condicionCategoria,
-                          condicionSubcategoria: _condicionSubcategoria,
-                          onCondicionCategoriaChanged: (v) => setState(() {
-                            _condicionCategoria = v;
-                            _condicionSubcategoria = null;
-                          }),
-                          onCondicionSubcategoriaChanged: (v) => setState(() => _condicionSubcategoria = v),
-                        ),
-                      ],
-                    ]),
-                  );
-                }),
+                Builder(
+                  builder: (context) {
+                    final goals = _getGoals(context);
+                    return Column(
+                      children: List.generate(goals.length, (i) {
+                        // Ocultar "Prepararme para una competencia" si es Acondicionamiento
+                        if (i == 0 && _selectedSportIdx == 5) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Column(children: [
+                            _GoalCard(
+                              goal: goals[i],
+                              selected: i == _selectedGoalIdx,
+                              onTap: () => _selectGoal(i),
+                            ),
+                            if (i == _selectedGoalIdx) ...[
+                              const SizedBox(height: 4),
+                              _GoalForm(
+                                goalIdx: i,
+                                selectedSportIdx: _selectedSportIdx,
+                                competenciaOpciones: _competenciaOpciones[_selectedSportIdx] ?? [],
+                                selectedCompetencia: _selectedCompetencia,
+                                onCompetenciaChanged: (v) => setState(() {
+                                  _selectedCompetencia = v;
+                                  _riskAccepted = false;
+                                }),
+                                showRiskAlert: _showRiskAlert,
+                                requiredWeeks: _requiredWeeks,
+                                weeksAvailable: _weeksAvailableForRace,
+                                riskAccepted: _riskAccepted,
+                                onRiskAcceptedChanged: (v) => setState(() => _riskAccepted = v),
+                                // Goal 0
+                                raceNameCtrl: _raceNameCtrl,
+                                raceDate: _raceDate,
+                                raceDistCtrl: _raceDistCtrl,
+                                raceDistUnit: _raceDistUnit,
+                                onPickDate: _pickDate,
+                                onRaceUnitChanged: (v) => setState(() => _raceDistUnit = v),
+                                // Goal 1
+                                timeDistCtrl: _timeDistCtrl,
+                                timeDistUnit: _timeDistUnit,
+                                timeHours: _timeHours,
+                                timeMin: _timeMin,
+                                timeSec: _timeSec,
+                                timeTargetHours: _timeTargetHours,
+                                timeTargetMin: _timeTargetMin,
+                                timeTargetSec: _timeTargetSec,
+                                onTimeUnitChanged: (v) => setState(() => _timeDistUnit = v),
+                                onTimeChanged: (h, m, s) => setState(() {
+                                  _timeHours = h; _timeMin = m; _timeSec = s;
+                                }),
+                                onTargetTimeChanged: (h, m, s) => setState(() {
+                                  _timeTargetHours = h; _timeTargetMin = m; _timeTargetSec = s;
+                                }),
+                                targetExceedsActual: _targetExceedsActual,
+                                // Goal 2
+                                condicionCtrl: _condicionCtrl,
+                                condicionCategoria: _condicionCategoria,
+                                condicionSubcategoria: _condicionSubcategoria,
+                                onCondicionCategoriaChanged: (v) => setState(() {
+                                  _condicionCategoria = v;
+                                  _condicionSubcategoria = null;
+                                }),
+                                onCondicionSubcategoriaChanged: (v) => setState(() => _condicionSubcategoria = v),
+                              ),
+                            ],
+                          ]),
+                        );
+                      }),
+                    );
+                  }
+                ),
 
                 // ── Info banner ───────────────────────
 
