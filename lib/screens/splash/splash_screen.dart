@@ -159,7 +159,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '"Wellness completo, a tu ritmo."',
+                  'Wellness completo, a tu ritmo.',
                   style: TextStyle(
                       color: AppColors.grey, fontSize: 14),
                 ),

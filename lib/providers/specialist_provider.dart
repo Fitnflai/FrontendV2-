@@ -67,6 +67,9 @@ class SpecialistProvider with ChangeNotifier {
   bool get isDirectCharging => _isDirectCharging;
   String? get directChargeErrorMessage => _directChargeErrorMessage;
 
+  Map<String, dynamic>? _lastPaymentResponse;
+  Map<String, dynamic>? get lastPaymentResponse => _lastPaymentResponse;
+
 
   void _setLoading(bool value) {
     _isLoading = value;
@@ -156,13 +159,15 @@ class SpecialistProvider with ChangeNotifier {
     _setIsDirectCharging(true);
     _setDirectChargeErrorMessage(null);
     _setBookingStatus(BookingStatus.loading);
+    _lastPaymentResponse = null;
     try {
-      await _paymentsService.payMeetingSpecialistOneClick(
+      final response = await _paymentsService.payMeetingSpecialistOneClick(
         token,
         trackingId,
         cvc: cvc,
         extraData: extraData,
       );
+      _lastPaymentResponse = response is Map<String, dynamic> ? response : null;
       _setBookingStatus(BookingStatus.success);
       return true;
     } catch (e) {
@@ -170,6 +175,22 @@ class SpecialistProvider with ChangeNotifier {
       _setDirectChargeErrorMessage(e.toString());
       _setBookingStatus(BookingStatus.error);
       return false;
+    } finally {
+      _setIsDirectCharging(false);
+    }
+  }
+
+  Future<dynamic> validateOtp(String token, String transactionId, String otpCode) async {
+    _setIsDirectCharging(true);
+    _setDirectChargeErrorMessage(null);
+    notifyListeners();
+    try {
+      final result = await _paymentsService.validateOtp(token, transactionId, otpCode);
+      return result;
+    } catch (e) {
+      _setDirectChargeErrorMessage(e.toString());
+      debugPrint('Error validating Specialist meeting OTP: $e');
+      rethrow;
     } finally {
       _setIsDirectCharging(false);
     }

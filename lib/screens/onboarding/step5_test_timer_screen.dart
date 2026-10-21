@@ -128,6 +128,8 @@ class _TestTimerScreenState extends State<TestTimerScreen>
   bool _running  = false;
   bool _finished = false;
   bool _started  = false;
+  bool _isPrepping = false;
+  int _prepSeconds = 3;
 
   final _resultCtrl = TextEditingController();
   int _borgValue = 13;
@@ -250,10 +252,51 @@ class _TestTimerScreenState extends State<TestTimerScreen>
     super.dispose();
   }
 
+  Future<void> _vibrate() async {
+    try {
+      await HapticFeedback.vibrate();
+    } catch (_) {}
+  }
+
   // ── Timer control ───────────────────────────────────────────
   void _start() {
-    setState(() { _running = true; _started = true; });
+    _startPrep();
+  }
+
+  void _startPrep() {
+    setState(() {
+      _isPrepping = true;
+      _started = true;
+      _running = true;
+      _prepSeconds = 3;
+    });
+    _vibrate();
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      if (_prepSeconds > 1) {
+        setState(() {
+          _prepSeconds--;
+        });
+        _vibrate();
+      } else {
+        timer.cancel();
+        setState(() {
+          _isPrepping = false;
+        });
+        _vibrate();
+        _startRealTimer();
+      }
+    });
+  }
+
+  void _startRealTimer() {
+    setState(() {
+      _running = true;
+      _started = true;
+    });
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
       setState(() {
         _elapsed++;
         if (_cfg.mode == TimerMode.countdown) {
@@ -270,7 +313,29 @@ class _TestTimerScreenState extends State<TestTimerScreen>
   }
 
   void _resume() {
-    _start();
+    if (_isPrepping) {
+      setState(() {
+        _running = true;
+      });
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!mounted) return;
+        if (_prepSeconds > 1) {
+          setState(() {
+            _prepSeconds--;
+          });
+          _vibrate();
+        } else {
+          timer.cancel();
+          setState(() {
+            _isPrepping = false;
+          });
+          _vibrate();
+          _startRealTimer();
+        }
+      });
+    } else {
+      _startRealTimer();
+    }
   }
 
   void _reset() {
@@ -279,6 +344,8 @@ class _TestTimerScreenState extends State<TestTimerScreen>
       _running   = false;
       _started   = false;
       _finished  = false;
+      _isPrepping = false;
+      _prepSeconds = 3;
       _elapsed   = 0;
       _remaining = _cfg.durationSeconds;
     });
@@ -298,6 +365,7 @@ class _TestTimerScreenState extends State<TestTimerScreen>
 
   // ── Progress for ring (countdown only) ──────────────────────
   double get _progress {
+    if (_isPrepping) return _prepSeconds / 3.0;
     if (_cfg.mode == TimerMode.stopwatch) return _elapsed / 300.0;
     if (_cfg.durationSeconds == 0) return 0;
     return _elapsed / _cfg.durationSeconds;
@@ -305,6 +373,7 @@ class _TestTimerScreenState extends State<TestTimerScreen>
 
   // ── Display time ─────────────────────────────────────────────
   String get _displayTime {
+    if (_isPrepping) return _prepSeconds.toString();
     if (_cfg.mode == TimerMode.countdown) return _fmt(_remaining);
     return _fmt(_elapsed);
   }
@@ -333,6 +402,12 @@ class _TestTimerScreenState extends State<TestTimerScreen>
                 if (!_started) _buildPrepHint(),
                 if (!_started) const SizedBox(height: 24),
 
+                // ── Safety Warning (si no terminó) ──
+                if (!_finished) ...[
+                  _buildSafetyWarning(),
+                  const SizedBox(height: 24),
+                ],
+
                 // ── Timer ring ────────────────────
                 _buildTimerRing(),
                 const SizedBox(height: 32),
@@ -351,6 +426,32 @@ class _TestTimerScreenState extends State<TestTimerScreen>
       ),
     );
   }
+
+  Widget _buildSafetyWarning() => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: const Color(0xFF2E1515),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFF6B2020), width: 1),
+    ),
+    child: const Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.warning_amber_rounded, color: AppColors.redText, size: 20),
+        SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            'Detente inmediatamente si aparece dolor en el pecho, mareo, sensación de desmayo, dificultad respiratoria desproporcionada o dolor importante.',
+            style: TextStyle(
+              color: AppColors.greyLight,
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 
   // ── App bar ──────────────────────────────────────────────────
   Widget _buildAppBar(BuildContext context) => Padding(
@@ -498,13 +599,15 @@ class _TestTimerScreenState extends State<TestTimerScreen>
         Text(
           _finished
               ? AppLocalizations.of(context).onboardingTestTimerStatusCompleted
-              : _running
-                  ? (_cfg.mode == TimerMode.countdown
-                      ? AppLocalizations.of(context).onboardingTestTimerLabelRemaining
-                      : AppLocalizations.of(context).onboardingTestTimerLabelElapsed)
-                  : _started
-                      ? AppLocalizations.of(context).onboardingTestTimerStatusPaused
-                      : AppLocalizations.of(context).onboardingTestTimerStatusReady,
+              : _isPrepping
+                  ? '¡Prepárate!'
+                  : _running
+                      ? (_cfg.mode == TimerMode.countdown
+                          ? AppLocalizations.of(context).onboardingTestTimerLabelRemaining
+                          : AppLocalizations.of(context).onboardingTestTimerLabelElapsed)
+                      : _started
+                          ? AppLocalizations.of(context).onboardingTestTimerStatusPaused
+                          : AppLocalizations.of(context).onboardingTestTimerStatusReady,
           style: TextStyle(
             color: _finished ? AppColors.greenText : AppColors.grey,
             fontSize: 13,

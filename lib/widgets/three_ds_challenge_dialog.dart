@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:fitnflaifrontendv2/config/app_colors.dart';
+import 'package:fitnflaifrontendv2/config/app_constants.dart';
 
 class ThreeDsChallengeDialog extends StatefulWidget {
   final String challengeHtml;
@@ -26,6 +27,15 @@ class ThreeDsChallengeDialog extends StatefulWidget {
 class _ThreeDsChallengeDialogState extends State<ThreeDsChallengeDialog> {
   late final WebViewController _controller;
   bool _isLoading = true;
+  bool _hasNavigatedToExternalUrl = false;
+
+  String _getPaymentezBaseUrl() {
+    const baseUrl = AppConstants.baseUrl;
+    if (baseUrl.contains('staging') || baseUrl.contains('dev') || baseUrl.contains('localhost')) {
+      return 'https://ccapi-stg.paymentez.com';
+    }
+    return 'https://ccapi.paymentez.com';
+  }
 
   @override
   void initState() {
@@ -40,26 +50,76 @@ class _ThreeDsChallengeDialogState extends State<ThreeDsChallengeDialog> {
             setState(() {
               _isLoading = true;
             });
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+              _hasNavigatedToExternalUrl = true;
+            }
           },
           onPageFinished: (String url) async {
             setState(() {
               _isLoading = false;
             });
 
+            // Check if this is a transaction status page by URL
+            final lowerUrl = url.toLowerCase();
+            if (lowerUrl.contains('challenges/status') ||
+                lowerUrl.contains('challenges/result') ||
+                lowerUrl.contains('payments/status') ||
+                lowerUrl.contains('success.html') ||
+                lowerUrl.contains('failure.html') ||
+                lowerUrl.contains('complete') ||
+                lowerUrl.contains('success') ||
+                lowerUrl.contains('failure')) {
+              debugPrint('3DS: Status page finished loading ($url). Waiting 3 seconds for the user to read it, then auto-closing...');
+              await Future.delayed(const Duration(seconds: 3));
+              if (mounted) {
+                Navigator.pop(context, true);
+              }
+              return;
+            }
+
+            // Fallback: Check if this is a transaction status page by content text
+            try {
+              final Object resultObj = await _controller.runJavaScriptReturningResult("document.body.innerText");
+              final String pageText = resultObj.toString().toLowerCase();
+              if (pageText.contains('autenticación completada') || 
+                  pageText.contains('regresar a la aplicación') || 
+                  pageText.contains('completada con éxito') ||
+                  pageText.contains('pago exitoso')) {
+                debugPrint('3DS: Success text detected in page content! Waiting 3 seconds, then closing...');
+                await Future.delayed(const Duration(seconds: 3));
+                if (mounted) {
+                  Navigator.pop(context, true);
+                }
+                return;
+              }
+            } catch (e) {
+              debugPrint('Error evaluating page text in 3DS: $e');
+            }
+
             // Heuristic to detect silent fingerprinting (Frictionless Flow):
-            // If the URL is still 'about:blank' or a 'data:' URI, it means the WebView
-            // loaded our raw HTML string containing the silent 1x1 iframe but did not
-            // navigate to any external bank challenge portal.
+            // If we haven't navigated to any external HTTP/HTTPS page yet,
+            // and the page finished is still blank or data URI, wait 10 seconds and auto-close.
             try {
               final currentUrl = await _controller.currentUrl();
               debugPrint('3DS WebView current URL: $currentUrl');
-              if (currentUrl == null || 
+              if (!_hasNavigatedToExternalUrl && (currentUrl == null || 
                   currentUrl == 'about:blank' || 
-                  currentUrl.startsWith('data:')) {
-                debugPrint('3DS: Silent fingerprinting detected. Waiting 3 seconds for background scripts, then auto-closing...');
-                await Future.delayed(const Duration(seconds: 3));
+                  currentUrl.startsWith('data:'))) {
+                debugPrint('3DS: Posible flujo silencioso detectado. Esperando 10 segundos...');
+                await Future.delayed(const Duration(seconds: 10));
                 if (mounted) {
-                  Navigator.pop(context, true); // Auto-close with success to trigger profile reload!
+                  final finalUrl = await _controller.currentUrl();
+                  debugPrint('3DS Timer finalizado. URL final en el WebView: $finalUrl');
+                  if (!_hasNavigatedToExternalUrl && (finalUrl == null || 
+                      finalUrl == 'about:blank' || 
+                      finalUrl.startsWith('data:'))) {
+                    debugPrint('3DS: Confirmado flujo silencioso sin navegación externa. Auto-cerrando...');
+                    if (mounted) {
+                      Navigator.pop(context, true); // Auto-close with success to trigger profile reload!
+                    }
+                  } else {
+                    debugPrint('3DS: Se detectó redirección externa activa ($finalUrl). Cancelando auto-cierre.');
+                  }
                 }
               }
             } catch (e) {
@@ -72,14 +132,14 @@ class _ThreeDsChallengeDialogState extends State<ThreeDsChallengeDialog> {
           onNavigationRequest: (NavigationRequest request) {
             final url = request.url.toLowerCase();
             debugPrint('3DS WebView navigating to: $url');
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+              _hasNavigatedToExternalUrl = true;
+            }
             
             // If the redirect URL contains our app scheme or standard return URLs, close webview
             if (url.startsWith('fitnflai://') || 
                 url.contains('nuvei_redirect') || 
-                url.contains('payments/status') || 
-                url.contains('payment-methods/membership') ||
-                url.contains('success.html') ||
-                url.contains('failure.html')) {
+                url.contains('payment-methods/membership')) {
               Navigator.pop(context, true); // Pop with success indicator
               return NavigationDecision.prevent;
             }
@@ -94,8 +154,8 @@ class _ThreeDsChallengeDialogState extends State<ThreeDsChallengeDialog> {
       debugPrint('3DS: challenge is a URL. Loading via loadRequest.');
       _controller.loadRequest(Uri.parse(trimmedChallenge));
     } else {
-      debugPrint('3DS: challenge is raw HTML. Loading via loadHtmlString.');
-      _controller.loadHtmlString(trimmedChallenge);
+      debugPrint('3DS: challenge is raw HTML. Loading via loadHtmlString with same-origin baseUrl.');
+      _controller.loadHtmlString(trimmedChallenge, baseUrl: _getPaymentezBaseUrl());
     }
   }
 
@@ -151,37 +211,38 @@ class _ThreeDsChallengeDialogState extends State<ThreeDsChallengeDialog> {
                   child: Stack(
                     children: [
                       // Behind: Loader & helper messages
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const CircularProgressIndicator(color: AppColors.orange),
-                              const SizedBox(height: 24),
-                              const Text(
-                                'Verificando pago seguro...',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                      if (_isLoading)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const CircularProgressIndicator(color: AppColors.orange),
+                                const SizedBox(height: 24),
+                                const Text(
+                                  'Verificando pago seguro...',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Procesando validación con tu banco para tu seguridad. Por favor, no cierres esta pantalla.',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                  fontSize: 13,
-                                  height: 1.4,
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Procesando validación con tu banco para tu seguridad. Por favor, no cierres esta pantalla.',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    fontSize: 13,
+                                    height: 1.4,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
                       // In front: WebViewWidget
                       WebViewWidget(controller: _controller),
                     ],

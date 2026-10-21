@@ -17,9 +17,13 @@ class OnboardingRouter {
     final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
     debugPrint('🔍 [DEEP LINK onboarding_router] getOnboardingTargetRoute started. auth.status: ${auth.status}');
 
+    final prefs = await SharedPreferences.getInstance();
+    final hasSelectedLang = prefs.getString('selected_language') != null;
+    final String unauthenticatedRoute = hasSelectedLang ? AppRoutes.login : AppRoutes.welcome;
+
     if (auth.status != AuthStatus.authenticated) {
-      debugPrint('🔍 [DEEP LINK onboarding_router] User is not authenticated. Returning welcome.');
-      return AppRoutes.welcome;
+      debugPrint('🔍 [DEEP LINK onboarding_router] User is not authenticated. Returning $unauthenticatedRoute.');
+      return unauthenticatedRoute;
     }
 
     final String? token = auth.token;
@@ -27,15 +31,15 @@ class OnboardingRouter {
     debugPrint('🔍 [DEEP LINK onboarding_router] Authenticated. userId: "$userId", token present: ${token != null}');
 
     if (userId == null || token == null) {
-      debugPrint('🔍 [DEEP LINK onboarding_router] userId or token is null. Returning welcome.');
-      return AppRoutes.welcome;
+      debugPrint('🔍 [DEEP LINK onboarding_router] userId or token is null. Returning $unauthenticatedRoute.');
+      return unauthenticatedRoute;
     }
 
     // Force profile reload and user refresh in parallel to avoid startup race conditions
     try {
       debugPrint('🔍 [DEEP LINK onboarding_router] Attempting reload of profile and user in parallel...');
       await Future.wait([
-        Provider.of<ProfileProvider>(context, listen: false).loadAll(token),
+        profileProvider.loadAll(token),
         auth.refreshUser(),
       ]);
       debugPrint('🔍 [DEEP LINK onboarding_router] Reload completed successfully.');
@@ -157,7 +161,6 @@ class OnboardingRouter {
     }
 
     // Now reconcile with local storage to find the highest completed step
-    final prefs = await SharedPreferences.getInstance();
     final int? localCompletedStep = prefs.getInt('$_onboardingCompletedStepKey$userId');
 
     int finalStepIndex = backendDeducedStep;

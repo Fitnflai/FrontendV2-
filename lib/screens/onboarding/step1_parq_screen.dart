@@ -88,9 +88,10 @@ class _PARQScreenState extends State<PARQScreen> {
     final hasCritical = qs.any((q) => q.answer == true);
     final triggered   = qs.where((q) => q.answer == true)
                           .map((q) => q.shortLabel).toList();
+    final isBlocked   = qs[1].answer == true || qs[2].answer == true || qs[3].answer == true;
     Navigator.push(context, MaterialPageRoute(builder: (_) =>
       hasCritical
-        ? PARQResultWarningScreen(triggered: triggered)
+        ? PARQResultWarningScreen(triggered: triggered, isBlocked: isBlocked)
         : const PARQResultClearScreen()));
   }
 
@@ -182,14 +183,31 @@ class _PARQScreenState extends State<PARQScreen> {
         duration: const Duration(milliseconds: 200),
         height: 44,
         decoration: BoxDecoration(
-          color: selected ? (value ? AppColors.redMid : AppColors.greenMid) : Colors.transparent,
+          color: selected ? AppColors.orange.withValues(alpha: 0.15) : Colors.transparent,
           border: Border.all(
-              color: selected ? (value ? AppColors.redMid : AppColors.greenMid) : AppColors.border,
+              color: selected ? AppColors.orange : AppColors.border,
               width: 1.5),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Center(child: Text(value ? l10n.yes : l10n.no,
-            style: const TextStyle(color: AppColors.white, fontSize: 15, fontWeight: FontWeight.w600))),
+        child: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (selected) ...[
+                const Icon(Icons.check_circle_outline, color: AppColors.orange, size: 16),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                value ? l10n.yes : l10n.no,
+                style: TextStyle(
+                  color: selected ? AppColors.orange : AppColors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

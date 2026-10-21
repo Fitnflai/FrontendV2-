@@ -371,7 +371,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingProfileBirthdateHint => 'DD / MM / AAAA';
 
   @override
-  String get onboardingProfileGender => 'Género';
+  String get onboardingProfileGender => 'Sexo biológico';
 
   @override
   String get onboardingProfileGenderMale => 'Masculino';
@@ -669,29 +669,28 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String onboardingFeedbackReadyTitle(String name) {
-    return '¡Listo, $name!';
+    return '¡Tu plan de entrenamiento está listo!';
   }
 
   @override
   String get onboardingFeedbackReadySubtitle =>
-      'Tu plan está personalizado, inicia y\nalcanza tus objetivos.';
+      'Hemos preparado un plan basado en tu condición física, disponibilidad y objetivos.';
 
   @override
-  String get onboardingFeedbackDetailTitle => 'Tu plan en detalle';
+  String get onboardingFeedbackDetailTitle => 'Así diseñamos tu plan';
 
   @override
   String get onboardingFeedbackEcosystemTitle =>
-      'Lo que ves aquí es solo la superficie. Detrás de tu plan hay un ';
+      'Cada sesión está organizada para ayudarte a progresar de forma gradual hacia tu objetivo.';
 
   @override
-  String get onboardingFeedbackEcosystemHighlight => 'ecosistema de wellness';
+  String get onboardingFeedbackEcosystemHighlight => '';
 
   @override
-  String get onboardingFeedbackWorkingForYou =>
-      ' trabajando para ti — cada sesión, cada intensidad, cada descanso ';
+  String get onboardingFeedbackWorkingForYou => '';
 
   @override
-  String get onboardingFeedbackHasReason => 'tiene una razón.';
+  String get onboardingFeedbackHasReason => '';
 
   @override
   String get onboardingFeedbackStartFreeTrial => 'Empezar mis 21 días gratis';
@@ -703,7 +702,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingFeedbackStartLabel => 'Inicio';
 
   @override
-  String get onboardingFeedbackZonesTitle => 'Tus zonas de entrenamiento';
+  String get onboardingFeedbackZonesTitle => 'Tus zonas de frecuencia cardíaca';
 
   @override
   String get onboardingFeedbackZonesDesc =>
@@ -967,11 +966,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Opcional pero recomendado. Con tus datos de wearable Fitnflai adapta tu plan en tiempo real pasos, sueño, FC y más.';
 
   @override
-  String get homeDeviceConnectedTitle => 'Dispositivo conectado';
+  String get homeDeviceConnectedTitle => 'Dispositivo sincronizado';
 
   @override
-  String get homeDeviceConnectedDesc =>
-      'Fitnflai está recibiendo tus datos en tiempo real.';
+  String get homeDeviceConnectedDesc => 'Última sincronización: ';
 
   @override
   String get homeSleepLabel => 'Sueño\nanoche';
@@ -986,20 +984,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeWeatherLabel => 'Condición\nclimática';
 
   @override
-  String get homeDailyCheckinTitle => '¿Cómo estás hoy?';
+  String get homeDailyCheckinTitle => '¿Cómo te sientes hoy?';
 
   @override
   String get homeDailyCheckinDesc =>
-      'Responde 4 preguntas rápidas para que Fitnflai ajuste tu sesión.';
+      'Cuéntanos cómo te sientes para adaptar tu entrenamiento de hoy.';
 
   @override
-  String get homeSectionWeeklyDist => 'DISTRIBUCIÓN SEMANAL';
+  String get homeSectionWeeklyDist => 'TU SEMANA DE ENTRENAMIENTO';
 
   @override
-  String get homeSectionWeeklyIntensity => 'INTENSIDAD SEMANAL';
+  String get homeSectionWeeklyIntensity => 'INTENSIDAD DE TUS SESIONES';
 
   @override
-  String get homeSectionWeeklyAdherence => 'ADHERENCIA AL PLAN';
+  String get homeSectionWeeklyAdherence => 'CUMPLIMIENTO DE TU PLAN';
 
   @override
   String homeSessionCompleted(int completed, int total) {
@@ -1068,12 +1066,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String homeNoWorkoutTitle(String name) {
-    return 'Hoy no hay entrenamiento, $name';
+    return 'Hoy toca descansar';
   }
 
   @override
   String get homeNoWorkoutDesc =>
-      'Hoy es un día libre. Aprovecha para descansar o hacer actividad ligera.';
+      'La recuperación también es parte de tu preparación. Aprovecha este día para descansar y recuperar energía.';
 
   @override
   String get settingsRefundRequest => 'Solicitar reembolso';
@@ -2360,7 +2358,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyCheckinHeaderDesc =>
-      'Responde 4 preguntas rápidas para que la IA ajuste tu sesión de hoy.';
+      'Cuéntanos cómo te encuentras hoy. Usaremos tus respuestas para evaluar si necesitas ajustar tu entrenamiento.';
 
   @override
   String dailyCheckinQuestionLabel(int index, String label) {
@@ -2380,17 +2378,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyCheckinLabelTime => 'Tiempo disponible';
 
   @override
-  String get dailyCheckinQuestionSleep => '¿Cómo dormiste anoche?';
+  String get dailyCheckinQuestionSleep => '¿Qué tal descansaste anoche?';
 
   @override
-  String get dailyCheckinQuestionEnergy => '¿Cómo está tu energía ahora mismo?';
+  String get dailyCheckinQuestionEnergy =>
+      '¿Cómo está tu nivel de energía hoy?';
 
   @override
-  String get dailyCheckinQuestionPain => '¿Tienes algún dolor o molestia hoy?';
+  String get dailyCheckinQuestionPain =>
+      '¿Sientes algún dolor o molestia física?';
 
   @override
   String get dailyCheckinQuestionTime =>
-      '¿Cuánto tiempo tienes para entrenar hoy?';
+      '¿Cuánto tiempo puedes dedicar a tu entrenamiento?';
 
   @override
   String get dailyCheckinPainNo => '✓ No, estoy bien';
@@ -2405,14 +2405,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyCheckinPainDetailsHint => 'Detalles adicionales (opcional)';
 
   @override
-  String get dailyCheckinBtnResult => 'Ver mi sesión ajustada →';
+  String get dailyCheckinBtnResult => 'Analizar mi estado y ajustar sesión';
 
   @override
-  String get dailyCheckinBtnAnswerAll => 'Responde todas las preguntas';
+  String get dailyCheckinBtnAnswerAll => 'Completa tu evaluación diaria';
 
   @override
   String dailyCheckinProgressStatus(int answered, int total) {
-    return '$answered de $total respondidas';
+    return '$answered de $total respuestas completadas';
   }
 
   @override
@@ -2556,7 +2556,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String dailyCheckinSaveError(String error) {
-    return 'Error de conexión o al registrar estado: $error';
+    return 'No pudimos guardar tu evaluación. Tus respuestas siguen aquí. Inténtalo nuevamente.';
   }
 
   @override
@@ -3113,7 +3113,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get testSquatsDescLong =>
-      'Cuenta cuántas sentadillas puedes hacer en 1 minuto. Mide la fuerza funcional de tus piernas y tu resistencia muscular local — uno de los mejores predictores de rendimiento deportivo.';
+      'Esta prueba nos ayuda a estimar tu resistencia muscular del tren inferior y ajustar el punto de partida de tu entrenamiento.';
 
   @override
   String get testSquatsDurationLabel => '1 min';
@@ -3737,7 +3737,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyCheckinQuestionPulse =>
-      'Mídete las pulsaciones durante 15 segundos con el cronómetro e ingrésalas.';
+      'Siéntate y descansa unos minutos. Después, cuenta tus pulsaciones durante 15 segundos e introduce el resultado.';
 
   @override
   String get dailyCheckinPulseHint => 'Pulsaciones en 15 seg';

@@ -722,7 +722,7 @@ abstract class AppLocalizations {
   /// Label for gender selection
   ///
   /// In en, this message translates to:
-  /// **'Gender'**
+  /// **'Biological sex'**
   String get onboardingProfileGender;
 
   /// Male gender option label
@@ -1250,43 +1250,43 @@ abstract class AppLocalizations {
   /// Onboarding feedback welcome header
   ///
   /// In en, this message translates to:
-  /// **'Ready, {name}!'**
+  /// **'Your training plan is ready!'**
   String onboardingFeedbackReadyTitle(String name);
 
   /// Onboarding feedback subtitle
   ///
   /// In en, this message translates to:
-  /// **'Your plan is customized, start and\nachieve your goals.'**
+  /// **'We have prepared a plan based on your physical condition, availability, and goals.'**
   String get onboardingFeedbackReadySubtitle;
 
   /// Header for customized plan details list
   ///
   /// In en, this message translates to:
-  /// **'Your plan in detail'**
+  /// **'How we designed your plan'**
   String get onboardingFeedbackDetailTitle;
 
   /// General wellness ecosystem warning prefix
   ///
   /// In en, this message translates to:
-  /// **'What you see here is just the surface. Behind your plan is a '**
+  /// **'Each session is organized to help you progress gradually towards your goal.'**
   String get onboardingFeedbackEcosystemTitle;
 
   /// General wellness ecosystem warning highlight
   ///
   /// In en, this message translates to:
-  /// **'wellness ecosystem'**
+  /// **''**
   String get onboardingFeedbackEcosystemHighlight;
 
   /// General wellness ecosystem warning body text
   ///
   /// In en, this message translates to:
-  /// **' working for you — each session, each intensity, each rest '**
+  /// **''**
   String get onboardingFeedbackWorkingForYou;
 
   /// General wellness ecosystem warning suffix
   ///
   /// In en, this message translates to:
-  /// **'has a reason.'**
+  /// **''**
   String get onboardingFeedbackHasReason;
 
   /// Call-to-action button to start using the app
@@ -1310,7 +1310,7 @@ abstract class AppLocalizations {
   /// Training zones section title
   ///
   /// In en, this message translates to:
-  /// **'Your training zones'**
+  /// **'Your heart rate zones'**
   String get onboardingFeedbackZonesTitle;
 
   /// Training zones section explanation text
@@ -1808,13 +1808,13 @@ abstract class AppLocalizations {
   /// Title for connected device banner
   ///
   /// In en, this message translates to:
-  /// **'Device connected'**
+  /// **'Device synced'**
   String get homeDeviceConnectedTitle;
 
   /// Description for connected device banner
   ///
   /// In en, this message translates to:
-  /// **'Fitnflai is receiving your data in real-time.'**
+  /// **'Last sync: '**
   String get homeDeviceConnectedDesc;
 
   /// Sleep stat card label
@@ -1856,19 +1856,19 @@ abstract class AppLocalizations {
   /// Weekly distribution section label
   ///
   /// In en, this message translates to:
-  /// **'WEEKLY DISTRIBUTION'**
+  /// **'YOUR TRAINING WEEK'**
   String get homeSectionWeeklyDist;
 
   /// Weekly intensity section label
   ///
   /// In en, this message translates to:
-  /// **'WEEKLY INTENSITY'**
+  /// **'SESSION INTENSITY'**
   String get homeSectionWeeklyIntensity;
 
   /// Weekly adherence section label
   ///
   /// In en, this message translates to:
-  /// **'ADHERENCE TO PLAN'**
+  /// **'COMPLIANCE WITH YOUR PLAN'**
   String get homeSectionWeeklyAdherence;
 
   /// Number of completed sessions in a week
@@ -1988,13 +1988,13 @@ abstract class AppLocalizations {
   /// Title shown when there is no workout scheduled for today
   ///
   /// In en, this message translates to:
-  /// **'No workout today, {name}'**
+  /// **'Today is rest day'**
   String homeNoWorkoutTitle(String name);
 
   /// Description shown when there is no workout scheduled for today
   ///
   /// In en, this message translates to:
-  /// **'Today is a free day. Use it to rest or do light activity.'**
+  /// **'Recovery is also part of your training. Use this day to rest and recover energy.'**
   String get homeNoWorkoutDesc;
 
   /// Refund request link in settings
@@ -4676,7 +4676,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyCheckinSaveError.
   ///
   /// In en, this message translates to:
-  /// **'Connection error or error recording status: {error}'**
+  /// **'We couldn\'t save your assessment. Your answers are still here. Please try again.'**
   String dailyCheckinSaveError(String error);
 
   /// No description provided for @workoutDetailTitle.
@@ -5696,7 +5696,7 @@ abstract class AppLocalizations {
   /// Squats long desc
   ///
   /// In en, this message translates to:
-  /// **'Count how many squats you can do in 1 minute. It measures the functional strength of your legs and local muscular endurance — one of the best predictors of athletic performance.'**
+  /// **'This test helps us estimate your lower body muscular endurance and adjust your training starting point.'**
   String get testSquatsDescLong;
 
   /// Squats duration label

@@ -23,7 +23,6 @@ class _Step4BodyScreenState extends State<Step4BodyScreen> {
   bool _hasInjury  = false;
   bool _hasSurgery = false;
   bool _hasPain    = false;
-  bool _hasCardio  = false;
 
   // Campos detallados de lesión activa
   final _injuryDescCtrl       = TextEditingController(); // descripcion_molestia
@@ -34,7 +33,6 @@ class _Step4BodyScreenState extends State<Step4BodyScreen> {
   final _injuryCtrl  = TextEditingController();
   final _surgeryCtrl = TextEditingController();
   final _painCtrl    = TextEditingController();
-  final _cardioCtrl  = TextEditingController();
 
   // Medicación — lista del backend
 
@@ -402,7 +400,7 @@ class _Step4BodyScreenState extends State<Step4BodyScreen> {
       // 3. Guardar datos médicos — POST /onboarding/save-health-medical-data
       final body = {
         'cirugias_recientes':       _hasSurgery,
-        'condicion_cardiovascular': _hasCardio,
+        'condicion_cardiovascular': false,
         'lesiones_activas':         _hasInjury,
         'dolor_cronico':            _hasPain,
         'toma_medicacion_deporte':  false,
@@ -477,7 +475,6 @@ class _Step4BodyScreenState extends State<Step4BodyScreen> {
     _injuryCtrl.dispose();
     _surgeryCtrl.dispose();
     _painCtrl.dispose();
-    _cardioCtrl.dispose();
     super.dispose();
   }
 
@@ -624,20 +621,6 @@ class _Step4BodyScreenState extends State<Step4BodyScreen> {
                         _ConditionalInput(
                           controller: _painCtrl,
                           hint: l10n.onboardingBodyPainChronicHint,
-                        ),
-                      ],
-
-                      const Divider(color: AppColors.border, height: 20),
-                      _ToggleRow(
-                        label: l10n.onboardingBodyCardio,
-                        value: _hasCardio,
-                        onChanged: (v) => setState(() => _hasCardio = v),
-                      ),
-                      if (_hasCardio) ...[
-                        const SizedBox(height: 8),
-                        _ConditionalInput(
-                          controller: _cardioCtrl,
-                          hint: l10n.onboardingBodyCardioHint,
                         ),
                       ],
                     ]),

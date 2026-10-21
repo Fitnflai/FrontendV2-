@@ -437,9 +437,28 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
+  Future<dynamic> validateOtpAction(String token, String transactionId, String otpCode) async {
+    _isProcessingOneClick = true;
+    _subscriptionError = null;
+    notifyListeners();
+    try {
+      final result = await _paymentsService.validateOtp(token, transactionId, otpCode);
+      await loadAll(token, force: true); // Reload profile and plan info after validation succeeds!
+      return result;
+    } catch (e) {
+      _subscriptionError = e.toString();
+      debugPrint('Error validating OTP: $e');
+      rethrow;
+    } finally {
+      _isProcessingOneClick = false;
+      notifyListeners();
+    }
+  }
+
   Future<Map<String, dynamic>?> subscribeNuveiAction(
     String token,
     String priceId, {
+    String? cardId,
     String cvc = '123',
     int screenHeight = 1080,
     int screenWidth = 1920,
@@ -452,6 +471,7 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
       final response = await _paymentsService.subscribeNuvei(
         token,
         priceId,
+        cardId: cardId,
         cvc: cvc,
         screenHeight: screenHeight,
         screenWidth: screenWidth,
@@ -462,9 +482,9 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
         final status = response['status'] as String?;
         final requires3ds = response['requires_3ds'] as bool? ?? false;
 
-        if (status == 'success' || status == 'completed') {
+        if (status == 'success' || status == 'completed' || status == '' || status == null) {
           await loadAll(token, force: true); // Reload all data to reflect new subscription
-        } else if (requires3ds) {
+        } else if (requires3ds || (response['requires_otp'] as bool? ?? false)) {
           // Keep _isProcessingOneClick = true or false?
           // Since we are showing the dialog inside the app, the app is not paused/resumed,
           // so we don't rely on app lifecycle to reload. The dialog completion callback itself

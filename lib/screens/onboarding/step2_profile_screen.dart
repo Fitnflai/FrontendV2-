@@ -81,6 +81,8 @@ class _Step2ProfileScreenState extends State<Step2ProfileScreen> {
       initialDate: DateTime(1990, 1, 1),
       firstDate: DateTime(1940),
       lastDate: DateTime.now(),
+      confirmText: 'Aceptar',
+      cancelText: 'Cancelar',
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
           colorScheme: const ColorScheme.dark(
@@ -103,6 +105,8 @@ class _Step2ProfileScreenState extends State<Step2ProfileScreen> {
           : (_cycleEnd ?? (_cycleStart?.add(const Duration(days: 5)) ?? now)),
       firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 1),
+      confirmText: 'Aceptar',
+      cancelText: 'Cancelar',
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
           colorScheme: const ColorScheme.dark(

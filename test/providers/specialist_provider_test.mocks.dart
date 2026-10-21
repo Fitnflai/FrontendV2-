@@ -133,6 +133,7 @@ class MockPaymentsService extends _i1.Mock implements _i3.PaymentsService {
   _i4.Future<dynamic> subscribeNuvei(
     String? token,
     String? priceId, {
+    String? cardId,
     String? cvc = '123',
     String? deviceType = 'browser',
     String? referenceId,
@@ -141,18 +142,19 @@ class MockPaymentsService extends _i1.Mock implements _i3.PaymentsService {
     bool? javaEnabled = true,
     bool? jsEnabled = true,
     int? colorDepth = 24,
-    int? screenHeight = 1080,
-    int? screenWidth = 1920,
+    int? screenHeight = 814,
+    int? screenWidth = 366,
     int? timezoneOffset = 0,
-    String? userAgent =
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
-    String? acceptHeader = 'application/json',
+    String? userAgent,
+    String? acceptHeader =
+        'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
   }) =>
       (super.noSuchMethod(
             Invocation.method(
               #subscribeNuvei,
               [token, priceId],
               {
+                #cardId: cardId,
                 #cvc: cvc,
                 #deviceType: deviceType,
                 #referenceId: referenceId,
@@ -197,6 +199,18 @@ class MockPaymentsService extends _i1.Mock implements _i3.PaymentsService {
               [token, trackingId],
               {#cvc: cvc, #extraData: extraData},
             ),
+            returnValue: _i4.Future<dynamic>.value(),
+          )
+          as _i4.Future<dynamic>);
+
+  @override
+  _i4.Future<dynamic> validateOtp(
+    String? token,
+    String? transactionId,
+    String? otpCode,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#validateOtp, [token, transactionId, otpCode]),
             returnValue: _i4.Future<dynamic>.value(),
           )
           as _i4.Future<dynamic>);

@@ -139,6 +139,7 @@ class PaymentsService {
   Future<dynamic> subscribeNuvei(
     String token,
     String priceId, {
+    String? cardId,
     String cvc = '123',
     String deviceType = 'browser',
     String? referenceId,
@@ -166,6 +167,7 @@ class PaymentsService {
       headers: _buildHeaders(token),
       body: json.encode({
         'id_plan_precio': priceId,
+        if (cardId != null) 'id_tarjeta_usuario': cardId,
         'cvc': cvc,
         'device_type': 'browser', // Hardcoded/fixed
         'reference_id': referenceId ?? DateTime.now().millisecondsSinceEpoch.toString(),
@@ -240,6 +242,20 @@ class PaymentsService {
       body: json.encode(body),
     );
     _handleError(response, '$_baseUrl/nuvei/pay-meeting-specialist');
+    return _parseResponse(response);
+  }
+
+  Future<dynamic> validateOtp(String token, String transactionId, String otpCode) async {
+    final uri = Uri.parse('$_baseUrl/nuvei/validate-otp');
+    final response = await CachedHttp.post(
+      uri,
+      headers: _buildHeaders(token),
+      body: json.encode({
+        'transaction_id': transactionId,
+        'otp_code': otpCode,
+      }),
+    );
+    _handleError(response, '$_baseUrl/nuvei/validate-otp');
     return _parseResponse(response);
   }
 
