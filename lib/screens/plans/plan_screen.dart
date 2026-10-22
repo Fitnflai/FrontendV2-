@@ -26,33 +26,33 @@ class PlanScreen extends StatefulWidget {
 class _PlanScreenState extends State<PlanScreen> {
   // Semana actual como punto de referencia
   late DateTime _weekStart;
-  int  _weekOffset = 0;
-  bool _loading    = true;
+  int _weekOffset = 0;
+  bool _loading = true;
   String? _error;
   DateTime? _createdAt; // fecha de registro del usuario
   bool _hasFetched = false;
+  DateTime? _selectedDate;
 
-  final GlobalKey _todayKey = GlobalKey();
+  final Map<String, GlobalKey> _dayKeys = {};
 
-  bool _isToday(String? fecha) {
-    if (fecha == null || fecha.isEmpty) return false;
-    try {
-      final d   = DateTime.parse(fecha.split('T')[0]);
-      final now = DateTime.now();
-      return d.year == now.year && d.month == now.month && d.day == now.day;
-    } catch (_) { return false; }
-  }
-
-  void _scrollToToday() {
-    if (_todayKey.currentContext != null && mounted) {
+  void _scrollToDate(String dateKey) {
+    final key = _dayKeys[dateKey];
+    if (key != null && key.currentContext != null && mounted) {
       Scrollable.ensureVisible(
-        _todayKey.currentContext!,
-        duration: const Duration(milliseconds: 500),
+        key.currentContext!,
+        duration: const Duration(milliseconds: 450),
         curve: Curves.easeInOut,
+        alignment: 0.05,
       );
     }
   }
 
+  void _scrollToToday() {
+    final now = DateTime.now();
+    final todayKey =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    _scrollToDate(todayKey);
+  }
 
   // Cache por semana (key = 'YYYY-MM-DD' del lunes)
   final Map<String, List<Map<String, dynamic>>> _cache = {};
@@ -76,8 +76,9 @@ class _PlanScreenState extends State<PlanScreen> {
   @override
   void initState() {
     super.initState();
-    _weekStart = _mondayOf(DateTime.now());
-
+    final now = DateTime.now();
+    _weekStart = _mondayOf(now);
+    _selectedDate = now;
   }
 
   @override
@@ -104,7 +105,6 @@ class _PlanScreenState extends State<PlanScreen> {
         if (raw != null) {
           final dt = DateTime.tryParse(raw);
           if (dt != null) {
-            // Usar fecha exacta sin hora para comparar solo por día
             _createdAt = DateTime(dt.year, dt.month, dt.day);
             debugPrint('CREATED_AT: $_createdAt');
           }
@@ -114,7 +114,6 @@ class _PlanScreenState extends State<PlanScreen> {
       debugPrint('USER LOAD ERROR: $e');
     }
     if (!mounted) return;
-    // Limpiar cache para que el filtro aplique con _createdAt ya asignado
     _cache.clear();
     _loadWeek(_weekStart);
   }
@@ -123,8 +122,16 @@ class _PlanScreenState extends State<PlanScreen> {
     final midnight = DateTime(d.year, d.month, d.day);
     return midnight.subtract(Duration(days: midnight.weekday - 1));
   }
+
   String _weekKey(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}';
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  bool _isCurrentWeek(DateTime monday) {
+    final nowMonday = _mondayOf(DateTime.now());
+    return monday.year == nowMonday.year &&
+        monday.month == nowMonday.month &&
+        monday.day == nowMonday.day;
+  }
 
   Future<void> _loadWeek(DateTime monday) async {
     final key = _weekKey(monday);
@@ -132,7 +139,9 @@ class _PlanScreenState extends State<PlanScreen> {
       if (mounted) {
         setState(() => _loading = false);
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToToday();
+          if (_isCurrentWeek(monday)) {
+            _scrollToToday();
+          }
         });
       }
       return;
@@ -140,7 +149,7 @@ class _PlanScreenState extends State<PlanScreen> {
     if (mounted) setState(() { _loading = true; _error = null; });
     try {
       final token = context.read<AuthProvider>().token ?? '';
-      final res   = await CachedHttp.get(
+      final res = await CachedHttp.get(
         Uri.parse('https://apifitnflai.com/entrenamientos/semana?start_date=$key'),
         headers: {'Authorization': 'Bearer $token'},
       );
@@ -149,7 +158,6 @@ class _PlanScreenState extends State<PlanScreen> {
         final body = jsonDecode(res.body) as Map<String, dynamic>;
         final plan = (body['plan'] as List<dynamic>? ?? [])
             .whereType<Map<String, dynamic>>()
-
             .toList();
         _cache[key] = plan;
       } else {
@@ -163,7 +171,9 @@ class _PlanScreenState extends State<PlanScreen> {
       if (mounted) {
         setState(() => _loading = false);
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToToday();
+          if (_isCurrentWeek(monday)) {
+            _scrollToToday();
+          }
         });
       }
     }
@@ -171,14 +181,23 @@ class _PlanScreenState extends State<PlanScreen> {
 
   void _prevWeek() {
     final prev = _weekStart.subtract(const Duration(days: 7));
-
-    setState(() { _weekStart = prev; _weekOffset--; });
+    setState(() {
+      _weekStart = prev;
+      _weekOffset--;
+      _selectedDate = _isCurrentWeek(prev) ? DateTime.now() : prev;
+      _dayKeys.clear();
+    });
     _loadWeek(prev);
   }
 
   void _nextWeek() {
     final next = _weekStart.add(const Duration(days: 7));
-    setState(() { _weekStart = next; _weekOffset++; });
+    setState(() {
+      _weekStart = next;
+      _weekOffset++;
+      _selectedDate = _isCurrentWeek(next) ? DateTime.now() : next;
+      _dayKeys.clear();
+    });
     _loadWeek(next);
   }
 
@@ -248,6 +267,7 @@ class _PlanScreenState extends State<PlanScreen> {
               backgroundColor: theme.card,
               onRefresh: () async {
                 _cache.remove(_weekKey(_weekStart));
+                _dayKeys.clear();
                 await _loadWeek(_weekStart);
               },
               child: SingleChildScrollView(
@@ -260,19 +280,35 @@ class _PlanScreenState extends State<PlanScreen> {
 
                     // ── Week navigator ───────────────
                     _WeekNavigatorBar(
-                      label:      _weekLabel(),
+                      label:       _weekLabel(),
                       weekContext: _weekContext,
-                      onPrev:     _prevWeek,
-                      onNext:     _nextWeek,
-                      canGoPrev:  true,
+                      onPrev:      _prevWeek,
+                      onNext:      _nextWeek,
+                      canGoPrev:   true,
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
 
-                    // ── Stats row ─────────────────────
+                    // ── 7-Day Week Strip ──────────────
+                    if (!_loading)
+                      _WeekDaysStrip(
+                        weekStart: _weekStart,
+                        selectedDate: _selectedDate,
+                        sessions: _sessions,
+                        onSelectDay: (dayDate) {
+                          setState(() => _selectedDate = dayDate);
+                          final dayKey =
+                              '${dayDate.year}-${dayDate.month.toString().padLeft(2, '0')}-${dayDate.day.toString().padLeft(2, '0')}';
+                          _scrollToDate(dayKey);
+                        },
+                      ),
+                    if (!_loading)
+                      const SizedBox(height: 12),
+
+                    // ── Compact Metrics Row ───────────
                     if (!_loading && _sessions.isNotEmpty)
-                      _StatsRow(completed: completed, total: total),
+                      _CompactMetricsBar(completed: completed, total: total),
                     if (!_loading && _sessions.isNotEmpty)
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
 
                     // ── Progress bar ──────────────────
                     if (!_loading && total > 0) ...[
@@ -280,12 +316,12 @@ class _PlanScreenState extends State<PlanScreen> {
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: total == 0 ? 0 : completed / total,
-                          minHeight: 6,
+                          minHeight: 5,
                           backgroundColor: theme.border,
                           valueColor: AlwaysStoppedAnimation<Color>(theme.primary),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                     ],
 
                     // ── Context label ─────────────────
@@ -308,16 +344,17 @@ class _PlanScreenState extends State<PlanScreen> {
                     else
                       ..._sessions
                         .where((s) {
-                          final tipo   = s['tipo'] as String? ?? '';
-                          final titulo = s['titulo_entrenamiento'] as String? ?? '';
-                          // Mostrar si tiene entrenamiento o si es descanso activo
-                          return titulo.isNotEmpty || tipo == 'descanso_activo';
+                          final tipo   = (s['tipo'] as String? ?? '').toLowerCase();
+                          final titulo = (s['titulo_entrenamiento'] as String? ?? '').trim();
+                          return titulo.isNotEmpty ||
+                              tipo.contains('descanso') ||
+                              tipo.contains('rest');
                         })
                         .map((s) {
-                          final fecha = s['fecha_programada'] as String? ?? '';
-                          final isToday = _isToday(fecha) && _weekContext == _WeekContext.current;
+                          final fecha = (s['fecha_programada'] as String? ?? '').split('T')[0];
+                          final itemKey = _dayKeys.putIfAbsent(fecha, () => GlobalKey());
                           return Padding(
-                            key: isToday ? _todayKey : null,
+                            key: itemKey,
                             padding: const EdgeInsets.only(bottom: 10),
                             child: _SessionCard(
                               data: s,
@@ -325,6 +362,7 @@ class _PlanScreenState extends State<PlanScreen> {
                               onAdjusted: () {
                                 CachedHttp.clearCache();
                                 _cache.clear();
+                                _dayKeys.clear();
                                 _loadWeek(_weekStart);
                               },
                             ),
@@ -379,16 +417,26 @@ class _WeekNavigatorBar extends StatelessWidget {
   final _WeekContext weekContext;
   final VoidCallback onPrev, onNext;
   final bool canGoPrev;
-  const _WeekNavigatorBar({required this.label, required this.weekContext,
-      required this.onPrev, required this.onNext, this.canGoPrev = true});
+  const _WeekNavigatorBar({
+    required this.label,
+    required this.weekContext,
+    required this.onPrev,
+    required this.onNext,
+    this.canGoPrev = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
+    final l10n  = AppLocalizations.of(context);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-          color: theme.card, borderRadius: BorderRadius.circular(14)),
+        color: theme.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.border.withValues(alpha: 0.5)),
+      ),
       child: Row(children: [
         GestureDetector(
           onTap: canGoPrev ? onPrev : null,
@@ -405,10 +453,30 @@ class _WeekNavigatorBar extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Text(label,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: theme.white, fontSize: 14,
-                  fontWeight: FontWeight.w700)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                l10n.planWeekNavTitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: theme.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: theme.grey,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
         GestureDetector(
           onTap: onNext,
@@ -429,48 +497,239 @@ class _WeekNavigatorBar extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// STATS ROW
+// 7-DAY WEEK STRIP
 // ═══════════════════════════════════════════════════════════════
-class _StatsRow extends StatelessWidget {
-  final int completed, total;
-  const _StatsRow({required this.completed, required this.total});
+class _WeekDaysStrip extends StatelessWidget {
+  final DateTime weekStart;
+  final DateTime? selectedDate;
+  final List<Map<String, dynamic>> sessions;
+  final ValueChanged<DateTime> onSelectDay;
+
+  const _WeekDaysStrip({
+    required this.weekStart,
+    required this.selectedDate,
+    required this.sessions,
+    required this.onSelectDay,
+  });
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  bool _isToday(DateTime d) {
+    final now = DateTime.now();
+    return d.year == now.year && d.month == now.month && d.day == now.day;
+  }
+
+  bool _isWorkout(Map<String, dynamic> s) {
+    final tipo = (s['tipo'] as String? ?? '').toLowerCase().trim();
+    final titulo = (s['titulo_entrenamiento'] as String? ?? '').trim();
+    if (tipo == 'descanso_activo' ||
+        tipo == 'descanso' ||
+        tipo.contains('descanso') ||
+        tipo.contains('rest')) {
+      return false;
+    }
+    return titulo.isNotEmpty;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
+    const dayLetters = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+
+    final Map<String, Map<String, dynamic>> sessionByDay = {};
+    for (final s in sessions) {
+      final f = (s['fecha_programada'] as String? ?? '').split('T')[0];
+      if (f.isNotEmpty) {
+        sessionByDay[f] = s;
+      }
+    }
+
+    return Row(
+      children: List.generate(7, (index) {
+        final dayDate = weekStart.add(Duration(days: index));
+        final dateKey =
+            '${dayDate.year}-${dayDate.month.toString().padLeft(2, '0')}-${dayDate.day.toString().padLeft(2, '0')}';
+        final session = sessionByDay[dateKey];
+
+        final bool isToday = _isToday(dayDate);
+        final bool isSelected = selectedDate != null && _isSameDay(selectedDate!, dayDate);
+
+        String emoji = '🌙';
+        bool isDone = false;
+
+        if (session != null) {
+          if (_isWorkout(session)) {
+            final tipo = session['tipo'] as String? ?? '';
+            emoji = WorkoutTypes.fromTipo(tipo).emoji;
+            final estado = (session['estado'] as String? ?? '').toLowerCase();
+            isDone = estado == 'completado' || estado == 'completo' || estado == 'done';
+          } else {
+            emoji = '🌙';
+          }
+        }
+
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: GestureDetector(
+              onTap: () => onSelectDay(dayDate),
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? theme.primary.withValues(alpha: 0.16)
+                      : (isToday ? theme.cardDark : theme.card),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected
+                        ? theme.primary
+                        : (isToday
+                            ? theme.primary.withValues(alpha: 0.5)
+                            : theme.border.withValues(alpha: 0.6)),
+                    width: isSelected ? 1.5 : 1.0,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      dayLetters[index],
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected
+                            ? theme.primary
+                            : (isToday ? theme.primary : theme.grey),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${dayDate.day}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: isSelected || isToday ? theme.white : theme.greyLight,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        Text(
+                          emoji,
+                          style: const TextStyle(fontSize: 15),
+                        ),
+                        if (isDone)
+                          Positioned(
+                            right: -5,
+                            bottom: -2,
+                            child: Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: theme.greenText,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: theme.cardDark, width: 1),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMPACT METRICS BAR
+// ═══════════════════════════════════════════════════════════════
+class _CompactMetricsBar extends StatelessWidget {
+  final int completed;
+  final int total;
+
+  const _CompactMetricsBar({required this.completed, required this.total});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
     final l10n  = AppLocalizations.of(context);
-    return Row(children: [
-      Expanded(child: _StatBox(
-        value: total == 0 ? '0' : '$completed de $total',
-        label: total == 1 ? l10n.planSingleTrainingCompletedLabel : l10n.planTrainingsCompletedLabel,
-        valueColor: theme.primary,
-      )),
-      const SizedBox(width: 10),
-      Expanded(child: _StatBox(
-        value: total == 0 ? '0%' : '${(completed / total * 100).round()}%',
-        label: l10n.planCompletedLabel,
-        valueColor: theme.greenText,
-      )),
-    ]);
-  }
-}
 
-class _StatBox extends StatelessWidget {
-  final String value, label;
-  final Color valueColor;
-  const _StatBox({required this.value, required this.label, required this.valueColor});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(color: theme.card, borderRadius: BorderRadius.circular(12)),
-      child: Column(children: [
-        Text(value, style: TextStyle(color: valueColor, fontSize: 20, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 2),
-        Text(label, style: TextStyle(color: theme.grey, fontSize: 11)),
-      ]),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.border.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Icon(Icons.fitness_center, size: 14, color: theme.primary),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: RichText(
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      style: TextStyle(fontSize: 12, color: theme.greyLight),
+                      children: [
+                        TextSpan(text: '${l10n.planScheduledTrainings}: '),
+                        TextSpan(
+                          text: '$total',
+                          style: TextStyle(fontWeight: FontWeight.w700, color: theme.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(width: 1, height: 16, color: theme.border, margin: const EdgeInsets.symmetric(horizontal: 8)),
+          Expanded(
+            child: Row(
+              children: [
+                Icon(Icons.check_circle_outline, size: 14, color: theme.greenText),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: RichText(
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      style: TextStyle(fontSize: 12, color: theme.greyLight),
+                      children: [
+                        TextSpan(text: '${l10n.planCompletedSummary}: '),
+                        TextSpan(
+                          text: '$completed',
+                          style: TextStyle(fontWeight: FontWeight.w700, color: theme.greenText),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (total > 0) ...[
+            Container(width: 1, height: 16, color: theme.border, margin: const EdgeInsets.symmetric(horizontal: 8)),
+            Text(
+              '${(completed / total * 100).round()}%',
+              style: TextStyle(color: theme.primary, fontSize: 13, fontWeight: FontWeight.w800),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -504,16 +763,19 @@ class _SessionCard extends StatelessWidget {
     return d.isBefore(DateTime(now.year, now.month, now.day));
   }
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
     final l10n  = AppLocalizations.of(context);
     final tipo   = data['tipo'] as String? ?? '';
     final fecha  = data['fecha_programada'] as String? ?? '';
+    final tipoLower = tipo.toLowerCase().trim();
 
-    // ── Día de descanso activo ──────────────────────────────────
-    if (tipo == 'descanso_activo') {
+    // ── Día de descanso activo / total ──────────────────────────
+    if (tipoLower == 'descanso_activo' ||
+        tipoLower == 'descanso' ||
+        tipoLower.contains('descanso') ||
+        tipoLower.contains('rest')) {
       return _RestDayCard(data: data, fecha: fecha);
     }
 
@@ -531,7 +793,6 @@ class _SessionCard extends StatelessWidget {
     if (isCompleted) borderColor = theme.greenMid;
     if (isMissed)    borderColor = theme.redMid;
 
-    // Color de fondo basado en el tipo
     final bgBase = cfg.bgColor.withValues(alpha: isToday ? 0.18 : 0.10);
 
     return AnimatedContainer(
@@ -547,7 +808,6 @@ class _SessionCard extends StatelessWidget {
 
           // ── Top row ───────────────────────────
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Icono del tipo
             Container(
               width: 40, height: 40,
               margin: const EdgeInsets.only(right: 10),
@@ -690,7 +950,7 @@ class _SessionCard extends StatelessWidget {
                   );
                   onAdjusted?.call();
                 },
-                icon: Icon(Icons.info_outline, size: 16),
+                icon: const Icon(Icons.info_outline, size: 16),
                 label: Text(l10n.planSessionCardDetailBtn, style: TextStyle(fontSize: 13)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: theme.greyLight,
@@ -773,13 +1033,21 @@ class _ErrorCard extends StatelessWidget {
     );
   }
 }
+
 // ═══════════════════════════════════════════════════════════════
-// REST DAY CARD
+// REST DAY CARD (Compact ~55px, Expandable & Methodologically Sound)
 // ═══════════════════════════════════════════════════════════════
-class _RestDayCard extends StatelessWidget {
+class _RestDayCard extends StatefulWidget {
   final Map<String, dynamic> data;
   final String fecha;
   const _RestDayCard({required this.data, required this.fecha});
+
+  @override
+  State<_RestDayCard> createState() => _RestDayCardState();
+}
+
+class _RestDayCardState extends State<_RestDayCard> {
+  bool _expanded = false;
 
   bool _isToday(String f) {
     final d = DateTime.tryParse(f.split('T')[0]);
@@ -788,129 +1056,233 @@ class _RestDayCard extends StatelessWidget {
     return d.year == now.year && d.month == now.month && d.day == now.day;
   }
 
-  static const _tips = [
-    (Icons.directions_walk_outlined, 'Caminata'),
-    (Icons.self_improvement_outlined, 'Movilidad'),
-    (Icons.water_drop_outlined,       'Hidratación'),
-    (Icons.bedtime_outlined,          'Sueño'),
-  ];
-  static const _keys = ['caminata', 'movilidad', 'hidratacion', 'sueno'];
+  String _formatDateHeader(String f) {
+    final d = DateTime.tryParse(f.split('T')[0]);
+    if (d == null) return f;
+    const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    final diaNombre = dias[d.weekday - 1];
+    return '$diaNombre ${d.day}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
     final l10n  = AppLocalizations.of(context);
-    final isToday = _isToday(fecha);
+    final isToday = _isToday(widget.fecha);
     final cfg     = WorkoutTypes.fromTipo('Descanso');
-    final tipoStr = (data['tipo'] as String? ?? '').toLowerCase();
-    final isRecovery = tipoStr.contains('activo') || tipoStr.contains('recuperaci');
-    final restTitle = isRecovery ? l10n.planActiveRecoveryLabel : l10n.planRestLabel;
-    final mensaje = data['mensaje'] as String?
-        ?? l10n.planActiveRestDefaultMsg;
 
-    final recTitles = [
-      l10n.planActiveRestTipWalk,
-      l10n.planActiveRestTipMobility,
-      l10n.planActiveRestTipHydration,
-      l10n.planActiveRestTipSleep
+    final tipoStr = (widget.data['tipo'] as String? ?? '').toLowerCase();
+    final mensajeStr = (widget.data['mensaje'] as String? ?? '').toLowerCase();
+
+    // Detección rigurosa de descanso total vs recuperación activa
+    final isExplicitTotalRest = tipoStr == 'descanso' ||
+        tipoStr == 'descanso_total' ||
+        tipoStr == 'descanso_pasivo' ||
+        mensajeStr.contains('descanso total') ||
+        mensajeStr.contains('no entrenar');
+
+    final isRecovery = !isExplicitTotalRest &&
+        (tipoStr.contains('activo') ||
+         tipoStr.contains('recuperaci') ||
+         mensajeStr.contains('recuperación activa') ||
+         mensajeStr.contains('caminata suave'));
+
+    final restTitle = isRecovery ? l10n.planActiveRecoveryLabel : l10n.planRestLabel;
+    final subtitle  = isRecovery ? l10n.planRestActiveSubtitle : l10n.planRestPassiveSubtitle;
+    final mensaje   = widget.data['mensaje'] as String? ?? l10n.planActiveRestDefaultMsg;
+    final dayHeader = _formatDateHeader(widget.fecha);
+
+    final allTips = [
+      (key: 'caminata', icon: Icons.directions_walk_outlined, title: l10n.planActiveRestTipWalk, isActive: true),
+      (key: 'movilidad', icon: Icons.self_improvement_outlined, title: l10n.planActiveRestTipMobility, isActive: true),
+      (key: 'hidratacion', icon: Icons.water_drop_outlined, title: l10n.planActiveRestTipHydration, isActive: false),
+      (key: 'sueno', icon: Icons.bedtime_outlined, title: l10n.planActiveRestTipSleep, isActive: false),
     ];
 
-    return Container(
+    // Regla metodológica: Si es descanso total, se suprimen tips activos (caminata, movilidad)
+    final filteredTips = allTips.where((t) {
+      if (!isRecovery && t.isActive) return false;
+      final val = widget.data[t.key] as String?;
+      return val != null && val.isNotEmpty;
+    }).toList();
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: cfg.bgColor.withValues(alpha: isToday ? 0.18 : 0.10),
+        color: cfg.bgColor.withValues(alpha: isToday ? 0.16 : 0.08),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isToday ? theme.primary : cfg.bgColor.withValues(alpha: 0.6),
-          width: isToday ? 1.5 : 1.2,
+          color: isToday ? theme.primary : cfg.bgColor.withValues(alpha: 0.5),
+          width: isToday ? 1.5 : 1.0,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-
-          // ── Header ──────────────────────────────
-          Row(children: [
-            Container(
-              width: 40, height: 40,
-              decoration: BoxDecoration(
-                color: cfg.bgColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                  child: Text('😴', style: TextStyle(fontSize: 22))),
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Column(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(restTitle.toUpperCase(),
-                    style: TextStyle(color: cfg.bgColor, fontSize: 11,
-                        fontWeight: FontWeight.w800, letterSpacing: 0.8)),
-                const SizedBox(height: 2),
-                Text(fecha, style: TextStyle(
-                    color: theme.grey, fontSize: 11)),
-              ],
-            )),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: cfg.bgColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: cfg.bgColor.withValues(alpha: 0.6)),
-              ),
-              child: Text(
-                isToday ? l10n.planActiveRestToday : l10n.planActiveRestActive,
-                style: TextStyle(
-                    color: cfg.bgColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600)),
-            ),
-          ]),
-          const SizedBox(height: 12),
-
-          // ── Mensaje ──────────────────────────────
-          InteractiveGlossaryText(text: mensaje,
-              style: TextStyle(color: theme.greyLight,
-                  fontSize: 13, height: 1.5)),
-          const SizedBox(height: 14),
-          Divider(color: cfg.bgColor.withValues(alpha: 0.2), height: 1),
-          const SizedBox(height: 12),
-
-          // ── Tips ─────────────────────────────────
-          Text(l10n.planActiveRestRecs,
-              style: TextStyle(color: cfg.bgColor, fontSize: 10,
-                  fontWeight: FontWeight.w700, letterSpacing: 0.8)),
-          const SizedBox(height: 10),
-          ...List.generate(_tips.length, (i) {
-            final val = data[_keys[i]] as String?;
-            if (val == null || val.isEmpty) return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(children: [
-                Container(
-                  width: 32, height: 32,
-                  decoration: BoxDecoration(
-                    color: cfg.bgColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: cfg.bgColor.withValues(alpha: 0.3)),
-                  ),
-                  child: Icon(_tips[i].$1, color: cfg.bgColor, size: 16),
-                ),
-                const SizedBox(width: 10),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // ── Compact Header (~55px height collapsed) ─────────
+                Row(
                   children: [
-                    Text(recTitles[i],
-                        style: TextStyle(color: theme.white,
-                            fontSize: 12, fontWeight: FontWeight.w600)),
-                    Text(val, style: TextStyle(
-                        color: theme.grey, fontSize: 11, height: 1.3)),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: cfg.bgColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Center(
+                        child: Text('🌙', style: TextStyle(fontSize: 18)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                '$dayHeader · ',
+                                style: TextStyle(
+                                  color: theme.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                restTitle,
+                                style: TextStyle(
+                                  color: cfg.bgColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              color: theme.grey,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isToday) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: theme.primary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: theme.primary),
+                        ),
+                        child: Text(
+                          l10n.planSessionCardTodayBadge,
+                          style: TextStyle(
+                            color: theme.primary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    AnimatedRotation(
+                      turns: _expanded ? 0.5 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        Icons.keyboard_arrow_down,
+                        color: theme.grey,
+                        size: 20,
+                      ),
+                    ),
                   ],
-                )),
-              ]),
-            );
-          }),
-        ]),
+                ),
+
+                // ── Expandable Details ─────────────────────────────
+                if (_expanded) ...[
+                  const SizedBox(height: 12),
+                  Divider(color: cfg.bgColor.withValues(alpha: 0.2), height: 1),
+                  const SizedBox(height: 12),
+                  InteractiveGlossaryText(
+                    text: mensaje,
+                    style: TextStyle(
+                      color: theme.greyLight,
+                      fontSize: 12,
+                      height: 1.45,
+                    ),
+                  ),
+                  if (filteredTips.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.planActiveRestRecs,
+                      style: TextStyle(
+                        color: cfg.bgColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...filteredTips.map((tip) {
+                      final val = widget.data[tip.key] as String? ?? '';
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: cfg.bgColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: cfg.bgColor.withValues(alpha: 0.3)),
+                              ),
+                              child: Icon(tip.icon, color: cfg.bgColor, size: 14),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    tip.title,
+                                    style: TextStyle(
+                                      color: theme.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    val,
+                                    style: TextStyle(
+                                      color: theme.grey,
+                                      fontSize: 11,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

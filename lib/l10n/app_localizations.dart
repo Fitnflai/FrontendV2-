@@ -2507,6 +2507,36 @@ abstract class AppLocalizations {
   /// **'training plan'**
   String get planHeaderSection;
 
+  /// No description provided for @planWeekNavTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Training week'**
+  String get planWeekNavTitle;
+
+  /// No description provided for @planScheduledTrainings.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled workouts'**
+  String get planScheduledTrainings;
+
+  /// No description provided for @planCompletedSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get planCompletedSummary;
+
+  /// No description provided for @planRestPassiveSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery and rest'**
+  String get planRestPassiveSubtitle;
+
+  /// No description provided for @planRestActiveSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Light activity and mobility'**
+  String get planRestActiveSubtitle;
+
   /// No description provided for @planContextPast.
   ///
   /// In en, this message translates to:

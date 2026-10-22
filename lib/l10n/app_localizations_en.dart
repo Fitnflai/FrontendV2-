@@ -1340,6 +1340,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planHeaderSection => 'training plan';
 
   @override
+  String get planWeekNavTitle => 'Training week';
+
+  @override
+  String get planScheduledTrainings => 'Scheduled workouts';
+
+  @override
+  String get planCompletedSummary => 'Completed';
+
+  @override
+  String get planRestPassiveSubtitle => 'Recovery and rest';
+
+  @override
+  String get planRestActiveSubtitle => 'Light activity and mobility';
+
+  @override
   String get planContextPast => 'Last week';
 
   @override

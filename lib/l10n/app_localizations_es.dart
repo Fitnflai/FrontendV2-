@@ -1345,6 +1345,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get planHeaderSection => 'plan de entrenamiento';
 
   @override
+  String get planWeekNavTitle => 'Semana de entrenamiento';
+
+  @override
+  String get planScheduledTrainings => 'Entrenamientos programados';
+
+  @override
+  String get planCompletedSummary => 'Completados';
+
+  @override
+  String get planRestPassiveSubtitle => 'Recuperación y descanso';
+
+  @override
+  String get planRestActiveSubtitle => 'Actividad ligera y movilidad';
+
+  @override
   String get planContextPast => 'Semana pasada';
 
   @override
