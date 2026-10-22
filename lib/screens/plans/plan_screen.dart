@@ -886,28 +886,29 @@ class _SessionCardState extends State<_SessionCard> {
                               Text(
                                 dayHeader,
                                 style: TextStyle(
-                                  color: theme.grey,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
+                                  color: isToday ? theme.white : theme.greyLight,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
+                              if (tipo.isNotEmpty) ...[
+                                Text(
+                                  ' · $tipo',
+                                  style: TextStyle(
+                                    color: cfg.bgColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
-                          const SizedBox(height: 3),
-                          InteractiveGlossaryText(
-                            text: titulo,
-                            style: TextStyle(
-                              color: theme.white,
-                              fontSize: isToday ? 17 : 15,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
                           if (!_expanded && ejercicios.isNotEmpty) ...[
-                            const SizedBox(height: 3),
+                            const SizedBox(height: 2),
                             Text(
-                              '${ejercicios.length} ejercicios · $tipo',
+                              '${ejercicios.length} ejercicios',
                               style: TextStyle(
-                                color: theme.greyLight.withValues(alpha: 0.8),
+                                color: theme.grey,
                                 fontSize: 11,
                               ),
                             ),
@@ -978,8 +979,17 @@ class _SessionCardState extends State<_SessionCard> {
                   ],
                 ),
 
-                // ── Contenido Expandible (Ejercicios y Acciones) ──────────────────────
+                // ── Contenido Expandible (Título, Ejercicios y Acciones) ──────────────
                 if (_expanded) ...[
+                  const SizedBox(height: 10),
+                  InteractiveGlossaryText(
+                    text: titulo,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   if (ejercicios.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Divider(color: theme.border, height: 1),
