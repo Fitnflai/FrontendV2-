@@ -735,9 +735,9 @@ class _CompactMetricsBar extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SESSION CARD
+// SESSION CARD (Collapsible & Compact)
 // ═══════════════════════════════════════════════════════════════
-class _SessionCard extends StatelessWidget {
+class _SessionCard extends StatefulWidget {
   final Map<String, dynamic> data;
   final _WeekContext weekContext;
   final VoidCallback? onAdjusted;
@@ -746,6 +746,13 @@ class _SessionCard extends StatelessWidget {
     required this.weekContext,
     this.onAdjusted,
   });
+
+  @override
+  State<_SessionCard> createState() => _SessionCardState();
+}
+
+class _SessionCardState extends State<_SessionCard> {
+  late bool _expanded;
 
   bool _isToday(String? fecha) {
     if (fecha == null || fecha.isEmpty) return false;
@@ -763,12 +770,33 @@ class _SessionCard extends StatelessWidget {
     return d.isBefore(DateTime(now.year, now.month, now.day));
   }
 
+  String _formatDateHeader(String f) {
+    final d = DateTime.tryParse(f.split('T')[0]);
+    if (d == null) return f;
+    const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    final diaNombre = dias[d.weekday - 1];
+    return '$diaNombre ${d.day} ${meses[d.month - 1]}';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final fecha = widget.data['fecha_programada'] as String? ?? '';
+    final isToday = _isToday(fecha) && widget.weekContext == _WeekContext.current;
+    final estado = (widget.data['estado'] as String? ?? '').toLowerCase();
+    final isCompleted = estado == 'completado' || estado == 'completo' || estado == 'done';
+    // Por defecto, si es la sesión de hoy y no está completada, se muestra abierta.
+    // El resto de días comienzan contraídas para optimizar el espacio vertical.
+    _expanded = isToday && !isCompleted;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
     final l10n  = AppLocalizations.of(context);
-    final tipo   = data['tipo'] as String? ?? '';
-    final fecha  = data['fecha_programada'] as String? ?? '';
+    final tipo   = widget.data['tipo'] as String? ?? '';
+    final fecha  = widget.data['fecha_programada'] as String? ?? '';
     final tipoLower = tipo.toLowerCase().trim();
 
     // ── Día de descanso activo / total ──────────────────────────
@@ -776,15 +804,15 @@ class _SessionCard extends StatelessWidget {
         tipoLower == 'descanso' ||
         tipoLower.contains('descanso') ||
         tipoLower.contains('rest')) {
-      return _RestDayCard(data: data, fecha: fecha);
+      return _RestDayCard(data: widget.data, fecha: fecha);
     }
 
-    final titulo     = data['titulo_entrenamiento'] as String? ?? '';
-    final estado     = (data['estado']              as String? ?? '').toLowerCase();
-    final ejercicios = data['ejercicios_asociados'] as List<dynamic>? ?? [];
+    final titulo     = widget.data['titulo_entrenamiento'] as String? ?? '';
+    final estado     = (widget.data['estado']              as String? ?? '').toLowerCase();
+    final ejercicios = widget.data['ejercicios_asociados'] as List<dynamic>? ?? [];
     final cfg        = WorkoutTypes.fromTipo(tipo);
 
-    final isToday     = _isToday(fecha) && weekContext == _WeekContext.current;
+    final isToday     = _isToday(fecha) && widget.weekContext == _WeekContext.current;
     final isCompleted = estado == 'completado' || estado == 'completo' || estado == 'done';
     final isMissed    = !isCompleted && _isPast(fecha) && !_isToday(fecha);
 
@@ -794,6 +822,7 @@ class _SessionCard extends StatelessWidget {
     if (isMissed)    borderColor = theme.redMid;
 
     final bgBase = cfg.bgColor.withValues(alpha: isToday ? 0.18 : 0.10);
+    final dayHeader = _formatDateHeader(fecha);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -802,175 +831,281 @@ class _SessionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: borderColor, width: isToday ? 1.5 : 1),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Top Header Row (Siempre visible y limpio) ─────────────────────────
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      margin: const EdgeInsets.only(right: 12),
+                      decoration: BoxDecoration(
+                        color: cfg.bgColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
+                        child: Text(cfg.emoji, style: const TextStyle(fontSize: 22)),
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              if (isToday) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  margin: const EdgeInsets.only(right: 6),
+                                  decoration: BoxDecoration(
+                                    color: theme.primary.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: theme.primary.withValues(alpha: 0.5)),
+                                  ),
+                                  child: Text(
+                                    l10n.planSessionCardTodayBadge.toUpperCase(),
+                                    style: TextStyle(
+                                      color: theme.primary,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              Text(
+                                dayHeader,
+                                style: TextStyle(
+                                  color: theme.grey,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          InteractiveGlossaryText(
+                            text: titulo,
+                            style: TextStyle(
+                              color: theme.white,
+                              fontSize: isToday ? 17 : 15,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (!_expanded && ejercicios.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              '${ejercicios.length} ejercicios · $tipo',
+                              style: TextStyle(
+                                color: theme.greyLight.withValues(alpha: 0.8),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (isCompleted)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: theme.greenMid.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: theme.greenMid),
+                            ),
+                            child: Text(
+                              'Completado',
+                              style: TextStyle(
+                                color: theme.greenText,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          )
+                        else if (isMissed)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: theme.redMid.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: theme.redMid),
+                            ),
+                            child: Text(
+                              l10n.planSessionCardMissedBadge,
+                              style: TextStyle(
+                                color: theme.redText,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          )
+                        else if (tipo.isNotEmpty && _expanded) ...[
+                          Text(
+                            tipo,
+                            style: TextStyle(
+                              color: cfg.bgColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 4),
+                        AnimatedRotation(
+                          turns: _expanded ? 0.5 : 0.0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Icon(
+                            Icons.keyboard_arrow_down,
+                            color: theme.grey,
+                            size: 20,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
 
-          // ── Top row ───────────────────────────
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              width: 40, height: 40,
-              margin: const EdgeInsets.only(right: 10),
-              decoration: BoxDecoration(
-                color: cfg.bgColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Center(child: Text(cfg.emoji,
-                  style: const TextStyle(fontSize: 24))),
-            ),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                if (isToday)
-                  Text(l10n.planSessionCardTodayHeader,
-                      style: TextStyle(color: theme.primary, fontSize: 11,
-                          fontWeight: FontWeight.w800, letterSpacing: 0.5))
-                else
-                  Text(fecha, style: TextStyle(color: theme.grey, fontSize: 11)),
-                const SizedBox(height: 4),
-                InteractiveGlossaryText(text: titulo, style: TextStyle(
-                    color: theme.white,
-                    fontSize: isToday ? 19 : 16,
-                    fontWeight: FontWeight.w800)),
-              ]),
-            ),
-            const SizedBox(width: 8),
-            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              if (isCompleted)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: theme.greenMid.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: theme.greenMid),
-                  ),
-                  child: Text('Completado',
-                      style: TextStyle(color: theme.greenText, fontSize: 10, fontWeight: FontWeight.w600)),
-                ),
-              if (isMissed)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: theme.redMid.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: theme.redMid),
-                  ),
-                  child: Text(l10n.planSessionCardMissedBadge,
-                      style: TextStyle(color: theme.redText, fontSize: 10, fontWeight: FontWeight.w600)),
-                ),
-              if (tipo.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(tipo, style: TextStyle(color: cfg.bgColor, fontSize: 11,
-                    fontWeight: FontWeight.w600)),
+                // ── Contenido Expandible (Ejercicios y Acciones) ──────────────────────
+                if (_expanded) ...[
+                  if (ejercicios.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Divider(color: theme.border, height: 1),
+                    const SizedBox(height: 10),
+                    ...ejercicios.take(4).map((e) {
+                      final ej     = (e is Map) ? e['ejercicio'] as Map<String, dynamic>? : null;
+                      final nombre = ej?['nombre'] as String? ?? '';
+                      if (nombre.isEmpty) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: InteractiveGlossaryText(
+                          text: '· $nombre',
+                          style: TextStyle(color: theme.greyLight, fontSize: 12, height: 1.3),
+                        ),
+                      );
+                    }),
+                    if (ejercicios.length > 4)
+                      Text(
+                        '+ ${ejercicios.length - 4} más',
+                        style: TextStyle(color: theme.grey, fontSize: 11),
+                      ),
+                  ],
+
+                  // ── Botón Iniciar entrenamiento (solo hoy y no completado) ───────────
+                  if (isToday && !isCompleted) ...[
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => WorkoutDetailScreen(entrenamiento: widget.data),
+                            ),
+                          );
+                          widget.onAdjusted?.call();
+                        },
+                        icon: const Icon(Icons.play_arrow, size: 18),
+                        label: Text(
+                          l10n.planSessionCardStartBtn,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.primary,
+                          foregroundColor: theme.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
+                  // ── Botón Ajustar (solo si es hoy y no completado) ─────────────────────
+                  if (isToday && !isCompleted)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 40,
+                      child: OutlinedButton(
+                        onPressed: () async {
+                          final id = widget.data['id_entrenamiento'] ?? widget.data['id'];
+                          if (id == null) return;
+                          final result = await showModalBottomSheet<bool>(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => WorkoutAdjustmentBottomSheet(workoutId: id),
+                          );
+                          if (result == true) {
+                            widget.onAdjusted?.call();
+                          }
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: theme.greyLight,
+                          side: BorderSide(color: theme.border),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: Text(l10n.planSessionCardAdjustBtn, style: const TextStyle(fontSize: 13)),
+                      ),
+                    )
+                  // ── Botón Ver detalle (si NO es hoy, o si es hoy pero YA está completado) ───
+                  else if (!isToday || isCompleted) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 40,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => WorkoutDetailScreen(entrenamiento: widget.data),
+                            ),
+                          );
+                          widget.onAdjusted?.call();
+                        },
+                        icon: const Icon(Icons.info_outline, size: 16),
+                        label: Text(l10n.planSessionCardDetailBtn, style: const TextStyle(fontSize: 13)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: theme.greyLight,
+                          side: BorderSide(color: theme.border),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  // ── Semana futura aviso ───────────────────────────────────────────────
+                  if (widget.weekContext == _WeekContext.future) ...[
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      Icon(Icons.lock_outline, color: theme.grey, size: 13),
+                      const SizedBox(width: 4),
+                      Text(
+                        l10n.planSessionCardLockDesc,
+                        style: TextStyle(color: theme.grey, fontSize: 11),
+                      ),
+                    ]),
+                  ],
+                ],
               ],
-            ]),
-          ]),
-
-          // ── Ejercicios ────────────────────────
-          if (ejercicios.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Divider(color: theme.border, height: 1),
-            const SizedBox(height: 8),
-            ...ejercicios.take(4).map((e) {
-              final ej     = (e is Map) ? e['ejercicio'] as Map<String, dynamic>? : null;
-              final nombre = ej?['nombre'] as String? ?? '';
-              if (nombre.isEmpty) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 3),
-                child: InteractiveGlossaryText(text: '· $nombre',
-                    style: TextStyle(color: theme.greyLight, fontSize: 12, height: 1.3)),
-              );
-            }),
-            if (ejercicios.length > 4)
-              Text('+ ${ejercicios.length - 4} más',
-                  style: TextStyle(color: theme.grey, fontSize: 11)),
-          ],
-
-          // ── Botones hoy y no completado ───────────────────────
-          if (isToday && !isCompleted) ...[
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity, height: 44,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  await Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => WorkoutDetailScreen(entrenamiento: data)));
-                  onAdjusted?.call();
-                },
-                icon: const Icon(Icons.play_arrow, size: 18),
-                label: Text(l10n.planSessionCardStartBtn,
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.primary, foregroundColor: theme.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  elevation: 0,
-                ),
-              ),
             ),
-            const SizedBox(height: 8),
-          ],
-
-          // ── Botón Ajustar (solo si es hoy y no completado) ─────────────
-          const SizedBox(height: 4),
-          if (isToday && !isCompleted)
-            SizedBox(
-              width: double.infinity,
-              height: 40,
-              child: OutlinedButton(
-                onPressed: () async {
-                  final id = data['id_entrenamiento'] ?? data['id'];
-                  if (id == null) return;
-                  final result = await showModalBottomSheet<bool>(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => WorkoutAdjustmentBottomSheet(workoutId: id),
-                  );
-                  if (result == true) {
-                    onAdjusted?.call();
-                  }
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: theme.greyLight,
-                  side: BorderSide(color: theme.border),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: Text(l10n.planSessionCardAdjustBtn, style: TextStyle(fontSize: 13)),
-              ),
-            )
-          // ── Botón Ver detalle (si NO es hoy, o si es hoy pero YA está completado) ─────────────
-          else if (!isToday || isCompleted)
-            SizedBox(
-              width: double.infinity,
-              height: 40,
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => WorkoutDetailScreen(entrenamiento: data)),
-                  );
-                  onAdjusted?.call();
-                },
-                icon: const Icon(Icons.info_outline, size: 16),
-                label: Text(l10n.planSessionCardDetailBtn, style: TextStyle(fontSize: 13)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: theme.greyLight,
-                  side: BorderSide(color: theme.border),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ),
-
-          // ── Semana futura ─────────────────────
-          if (weekContext == _WeekContext.future) ...[
-            const SizedBox(height: 8),
-            Row(children: [
-              Icon(Icons.lock_outline, color: theme.grey, size: 13),
-              const SizedBox(width: 4),
-              Text(l10n.planSessionCardLockDesc,
-                  style: TextStyle(color: theme.grey, fontSize: 11)),
-            ]),
-          ],
-        ]),
+          ),
+        ),
       ),
     );
   }
