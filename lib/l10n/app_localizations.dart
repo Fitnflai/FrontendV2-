@@ -1850,7 +1850,7 @@ abstract class AppLocalizations {
   /// Daily check-in banner description
   ///
   /// In en, this message translates to:
-  /// **'Answer 4 quick questions so Fitnflai can adjust your session.'**
+  /// **'Answer 5 quick questions so Fitnflai can adjust your session.'**
   String get homeDailyCheckinDesc;
 
   /// Weekly distribution section label
@@ -2504,7 +2504,7 @@ abstract class AppLocalizations {
   /// No description provided for @planHeaderSection.
   ///
   /// In en, this message translates to:
-  /// **'Plan'**
+  /// **'training plan'**
   String get planHeaderSection;
 
   /// No description provided for @planContextPast.
@@ -2530,6 +2530,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'sessions'**
   String get planSessionsLabel;
+
+  /// No description provided for @planTrainingsCompletedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'workouts completed'**
+  String get planTrainingsCompletedLabel;
+
+  /// No description provided for @planSingleTrainingCompletedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'workout completed'**
+  String get planSingleTrainingCompletedLabel;
+
+  /// No description provided for @planRestLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest'**
+  String get planRestLabel;
+
+  /// No description provided for @planActiveRecoveryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active recovery'**
+  String get planActiveRecoveryLabel;
 
   /// No description provided for @planCompletedLabel.
   ///
@@ -2582,7 +2606,7 @@ abstract class AppLocalizations {
   /// No description provided for @planActiveRestLabel.
   ///
   /// In en, this message translates to:
-  /// **'REST DAY'**
+  /// **'Rest'**
   String get planActiveRestLabel;
 
   /// No description provided for @planActiveRestToday.
@@ -2594,13 +2618,13 @@ abstract class AppLocalizations {
   /// No description provided for @planActiveRestActive.
   ///
   /// In en, this message translates to:
-  /// **'Active rest'**
+  /// **'Active recovery'**
   String get planActiveRestActive;
 
   /// No description provided for @planActiveRestDefaultMsg.
   ///
   /// In en, this message translates to:
-  /// **'Recovery is part of training.\nEnjoy this rest day!'**
+  /// **'Today is for restoring energy. Rest is also an essential part of your progress.'**
   String get planActiveRestDefaultMsg;
 
   /// No description provided for @planActiveRestRecs.
@@ -2648,13 +2672,13 @@ abstract class AppLocalizations {
   /// No description provided for @planActiveRestTipHydrationDesc.
   ///
   /// In en, this message translates to:
-  /// **'Stay hydrated'**
+  /// **'Stay properly hydrated throughout the day'**
   String get planActiveRestTipHydrationDesc;
 
   /// No description provided for @planActiveRestTipSleepDesc.
   ///
   /// In en, this message translates to:
-  /// **'Sleep well'**
+  /// **'Prioritize a good night\'s sleep to support your recovery'**
   String get planActiveRestTipSleepDesc;
 
   /// No description provided for @planSessionCardTodayHeader.
@@ -2696,7 +2720,7 @@ abstract class AppLocalizations {
   /// No description provided for @planSessionCardDetailBtn.
   ///
   /// In en, this message translates to:
-  /// **'See detail'**
+  /// **'View workout'**
   String get planSessionCardDetailBtn;
 
   /// No description provided for @planSessionCardLockDesc.
@@ -4334,7 +4358,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyCheckinHeaderDesc.
   ///
   /// In en, this message translates to:
-  /// **'Answer 4 quick questions so the AI can adjust your session today.'**
+  /// **'Answer these 5 questions to evaluate whether your workout needs adjustment today.'**
   String get dailyCheckinHeaderDesc;
 
   /// No description provided for @dailyCheckinQuestionLabel.
@@ -4418,8 +4442,14 @@ abstract class AppLocalizations {
   /// No description provided for @dailyCheckinBtnResult.
   ///
   /// In en, this message translates to:
-  /// **'See my adjusted session →'**
+  /// **'Save and analyze my status'**
   String get dailyCheckinBtnResult;
+
+  /// No description provided for @dailyCheckinProgressReady.
+  ///
+  /// In en, this message translates to:
+  /// **'5 of 5 questions answered · Ready to save'**
+  String get dailyCheckinProgressReady;
 
   /// No description provided for @dailyCheckinBtnAnswerAll.
   ///
@@ -4673,11 +4703,11 @@ abstract class AppLocalizations {
   /// **'Daily status successfully recorded.'**
   String get dailyCheckinSaveSuccess;
 
-  /// No description provided for @dailyCheckinSaveError.
+  /// Error message when saving daily checkin fails
   ///
   /// In en, this message translates to:
   /// **'We couldn\'t save your assessment. Your answers are still here. Please try again.'**
-  String dailyCheckinSaveError(String error);
+  String get dailyCheckinSaveError;
 
   /// No description provided for @workoutDetailTitle.
   ///

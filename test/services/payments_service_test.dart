@@ -93,5 +93,56 @@ void main() {
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('Failed to load data from https://apifitnflai.com/payments/nuvei/pay-meeting-specialist: 500 - {status: error, message: Internal server error}'))),
       );
     });
+
+    test('getEstadoTransaccion - success', () async {
+      const token = 'test_token';
+      const gatewayPaymentId = 'DF-2159885';
+
+      final responseBody = json.encode({
+        'id_transaccion': '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+        'estado': 'Aprobada',
+        'tipo': 'subscripcion',
+        'gateway_payment_id': gatewayPaymentId,
+        'monto': 29.99,
+      });
+
+      when(mockClient.get(
+        Uri.parse('https://apifitnflai.com/payments/estado-transaccion?gateway_payment_id=$gatewayPaymentId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      )).thenAnswer((_) async => http.Response(responseBody, 200));
+
+      final result = await paymentsService.getEstadoTransaccion(token, gatewayPaymentId);
+
+      expect(result['estado'], 'Aprobada');
+      expect(result['gateway_payment_id'], gatewayPaymentId);
+      verify(mockClient.get(
+        Uri.parse('https://apifitnflai.com/payments/estado-transaccion?gateway_payment_id=$gatewayPaymentId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      )).called(1);
+    });
+
+    test('getEstadoTransaccion - 404 returns pending status gracefully for polling', () async {
+      const token = 'test_token';
+      const gatewayPaymentId = 'DF-2159885';
+
+      when(mockClient.get(
+        Uri.parse('https://apifitnflai.com/payments/estado-transaccion?gateway_payment_id=$gatewayPaymentId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      )).thenAnswer((_) async => http.Response('{"detail": "Not found"}', 404));
+
+      final result = await paymentsService.getEstadoTransaccion(token, gatewayPaymentId);
+
+      expect(result['estado'], 'pendiente');
+      expect(result['gateway_payment_id'], gatewayPaymentId);
+    });
   });
 }

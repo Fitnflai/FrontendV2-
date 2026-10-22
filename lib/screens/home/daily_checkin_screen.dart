@@ -110,7 +110,7 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
       debugPrint('DAILY CHECKIN ERROR: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar( // No const here
-          content: Text(AppLocalizations.of(context).dailyCheckinSaveError(e.toString())),
+          content: Text(AppLocalizations.of(context).dailyCheckinSaveError),
           backgroundColor: themeColors.redMid,
         ));
       }
@@ -163,18 +163,19 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
                         nombreUsuario = 'Campeón';
                       }
 
-                      final greetingText = AppLocalizations.of(context).dailyCheckinGreeting(nombreUsuario);
                       final now = DateTime.now();
-                      String saludo = 'Buenos días';
+                      final isEs = Localizations.localeOf(context).languageCode == 'es';
+                      String saludo;
                       if (now.hour >= 12 && now.hour < 19) {
-                        saludo = 'Buenas tardes';
+                        saludo = isEs ? 'Buenas tardes' : 'Good afternoon';
                       } else if (now.hour >= 19 || now.hour < 6) {
-                        saludo = 'Buenas noches';
+                        saludo = isEs ? 'Buenas noches' : 'Good evening';
+                      } else {
+                        saludo = isEs ? 'Buenos días' : 'Good morning';
                       }
-                      final finalGreeting = greetingText.replaceFirst('Buenos días', saludo);
+                      final finalGreeting = '$saludo, $nombreUsuario 👋';
 
                       final date = widget.selectedDate ?? DateTime.now();
-                      final isEs = Localizations.localeOf(context).languageCode == 'es';
                       final diasEs = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
                       final diasEn = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
                       final diaSemanaName = isEs ? diasEs[date.weekday - 1] : diasEn[date.weekday - 1];
@@ -218,6 +219,7 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
     final energyOpts = L10nHelpers.getEnergyOptions(context);
     final timeOpts = L10nHelpers.getTimeOptions(context);
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.all(16),
       child: Column(children: [
         // Subtítulo
@@ -432,6 +434,7 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
           child: ElevatedButton(
             onPressed: (_allAnswered && !_submitting)
                 ? () async {
+                    FocusScope.of(context).unfocus();
                     final success = await _registerDailyState();
                     if (success) {
                       _compute();
@@ -462,16 +465,16 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
           ),
         ),
-        if (!_allAnswered) ...[
-          const SizedBox(height: 8),
-          Text(
-            AppLocalizations.of(context).dailyCheckinProgressStatus(
-              [_sleep, _energy, _hasPain, _timeIdx, _fcReposo].where((v) => v != null).length,
-              5,
-            ),
-            style: TextStyle(color: theme.grey, fontSize: 12),
-          ),
-        ],
+        const SizedBox(height: 8),
+        Text(
+          _allAnswered
+              ? AppLocalizations.of(context).dailyCheckinProgressReady
+              : AppLocalizations.of(context).dailyCheckinProgressStatus(
+                  [_sleep, _energy, _hasPain, _timeIdx, _fcReposo].where((v) => v != null).length,
+                  5,
+                ),
+          style: TextStyle(color: theme.grey, fontSize: 12),
+        ),
         const SizedBox(height: 24),
       ]),
     );
@@ -488,6 +491,7 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
     final String? tipoAjuste = _apiResponse?['tipo_ajuste'] as String?;
 
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.all(16),
       child: Column(children: [
         // Score row

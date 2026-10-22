@@ -507,5 +507,10 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
       notifyListeners();
     }
   }
+
+  /// Consulta el estado de una transacción 3DS en curso por gateway_payment_id
+  Future<dynamic> getEstadoTransaccionAction(String token, String gatewayPaymentId) async {
+    return await _paymentsService.getEstadoTransaccion(token, gatewayPaymentId);
+  }
 }
 

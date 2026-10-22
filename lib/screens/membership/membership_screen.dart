@@ -449,14 +449,21 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                                         response?['redirect_url'] as String? ??
                                                         response?['checkout_url'] as String? ??
                                                         response?['url'] as String? ?? '';
-                                  final transactionId = response?['transaction_id'] as String?;
+                                  final transactionId = (response?['transaction_id'] ?? 
+                                                         response?['gateway_payment_id'] ?? 
+                                                         response?['id_transaccion']) as String?;
 
                                   if (requires3ds && challengeHtml.isNotEmpty) {
                                     setModalState(() {
                                       showCvvPrompt = false;
                                     });
                                     if (dialogContext.mounted) {
-                                      final completed = await ThreeDsChallengeDialog.show(dialogContext, challengeHtml);
+                                      final completed = await ThreeDsChallengeDialog.show(
+                                        dialogContext,
+                                        challengeHtml,
+                                        transactionId: transactionId,
+                                        token: token,
+                                      );
                                       if (completed == true) {
                                         if (dialogContext.mounted) {
                                           setModalState(() {
@@ -763,11 +770,18 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                                         response?['redirect_url'] as String? ??
                                                         response?['checkout_url'] as String? ??
                                                         response?['url'] as String? ?? '';
-                                  final transactionId = response?['transaction_id'] as String?;
+                                  final transactionId = (response?['transaction_id'] ?? 
+                                                         response?['gateway_payment_id'] ?? 
+                                                         response?['id_transaccion']) as String?;
 
                                   if (requires3ds && challengeHtml.isNotEmpty) {
                                     if (dialogContext.mounted) {
-                                      final completed = await ThreeDsChallengeDialog.show(dialogContext, challengeHtml);
+                                      final completed = await ThreeDsChallengeDialog.show(
+                                        dialogContext,
+                                        challengeHtml,
+                                        transactionId: transactionId,
+                                        token: token,
+                                      );
                                       if (completed == true) {
                                         if (dialogContext.mounted) {
                                           setModalState(() {

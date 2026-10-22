@@ -1265,7 +1265,7 @@
   "@homeDailyCheckinTitle": {
     "description": "Daily check-in banner title"
   },
-  "homeDailyCheckinDesc": "Answer 4 quick questions so Fitnflai can adjust your session.",
+  "homeDailyCheckinDesc": "Answer 5 quick questions so Fitnflai can adjust your session.",
   "@homeDailyCheckinDesc": {
     "description": "Daily check-in banner description"
   },
@@ -1701,11 +1701,15 @@
   "weatherSnow": "Snow",
   "weatherShowers": "Showers",
   "weatherThunderstorm": "Thunderstorm",
-  "planHeaderSection": "Plan",
+  "planHeaderSection": "training plan",
   "planContextPast": "Last week",
   "planContextFuture": "Next week",
   "planContextCurrent": "Current week",
   "planSessionsLabel": "sessions",
+  "planTrainingsCompletedLabel": "workouts completed",
+  "planSingleTrainingCompletedLabel": "workout completed",
+  "planRestLabel": "Rest",
+  "planActiveRecoveryLabel": "Active recovery",
   "planCompletedLabel": "completed",
   "planEmptyFutureTitle": "Your plan for this week is not ready yet",
   "planEmptyFutureDesc": "The AI will generate your plan when the time comes.",
@@ -1714,10 +1718,10 @@
   "planLoadError": "Error loading plan",
   "planConnError": "Connection error",
   "planRetry": "Retry",
-  "planActiveRestLabel": "REST DAY",
+  "planActiveRestLabel": "Rest",
   "planActiveRestToday": "Today · Rest",
-  "planActiveRestActive": "Active rest",
-  "planActiveRestDefaultMsg": "Recovery is part of training.\nEnjoy this rest day!",
+  "planActiveRestActive": "Active recovery",
+  "planActiveRestDefaultMsg": "Today is for restoring energy. Rest is also an essential part of your progress.",
   "planActiveRestRecs": "RECOMMENDATIONS",
   "planActiveRestTipWalk": "Walk",
   "planActiveRestTipMobility": "Mobility",
@@ -1725,15 +1729,15 @@
   "planActiveRestTipSleep": "Sleep",
   "planActiveRestTipWalkDesc": "Easy walk",
   "planActiveRestTipMobilityDesc": "Dynamic stretches",
-  "planActiveRestTipHydrationDesc": "Stay hydrated",
-  "planActiveRestTipSleepDesc": "Sleep well",
+  "planActiveRestTipHydrationDesc": "Stay properly hydrated throughout the day",
+  "planActiveRestTipSleepDesc": "Prioritize a good night's sleep to support your recovery",
   "planSessionCardTodayHeader": "TODAY'S WORKOUT",
   "planSessionCardTodayBadge": "Today",
   "planSessionCardCompletedBadge": "Completed",
   "planSessionCardMissedBadge": "Missed",
   "planSessionCardStartBtn": "Start workout",
   "planSessionCardAdjustBtn": "Tired or bad weather? Adjust",
-  "planSessionCardDetailBtn": "See detail",
+  "planSessionCardDetailBtn": "View workout",
   "planSessionCardLockDesc": "Available when the week arrives",
   "progressHeaderSection": "Progress",
   "progressSummaryTitle": "In these {months} months you achieved:",
@@ -2217,7 +2221,7 @@
     }
   },
   "dailyCheckinSubtitle": "Tuesday · Today's session: Zone 2 Run",
-  "dailyCheckinHeaderDesc": "Answer 4 quick questions so the AI can adjust your session today.",
+  "dailyCheckinHeaderDesc": "Answer these 5 questions to evaluate whether your workout needs adjustment today.",
   "dailyCheckinQuestionLabel": "Question {index} · {label}",
   "@dailyCheckinQuestionLabel": {
     "placeholders": {
@@ -2241,7 +2245,8 @@
   "dailyCheckinPainYes": "Yes, a little",
   "dailyCheckinPainWhere": "Where?",
   "dailyCheckinPainDetailsHint": "Additional details (optional)",
-  "dailyCheckinBtnResult": "See my adjusted session →",
+  "dailyCheckinBtnResult": "Save and analyze my status",
+  "dailyCheckinProgressReady": "5 of 5 questions answered · Ready to save",
   "dailyCheckinBtnAnswerAll": "Answer all questions",
   "dailyCheckinProgressStatus": "{answered} of {total} answered",
   "@dailyCheckinProgressStatus": {
@@ -2303,11 +2308,7 @@
   "dailyCheckinSaveSuccess": "Daily status successfully recorded.",
   "dailyCheckinSaveError": "We couldn't save your assessment. Your answers are still here. Please try again.",
   "@dailyCheckinSaveError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
+    "description": "Error message when saving daily checkin fails"
   },
   "workoutDetailTitle": "Workout detail",
   "workoutDetailObj": "Objective",

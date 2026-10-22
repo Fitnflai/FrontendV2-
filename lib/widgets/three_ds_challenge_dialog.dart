@@ -1,22 +1,41 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:fitnflaifrontendv2/config/app_colors.dart';
 import 'package:fitnflaifrontendv2/config/app_constants.dart';
+import 'package:fitnflaifrontendv2/services/payments_service.dart';
 
 class ThreeDsChallengeDialog extends StatefulWidget {
   final String challengeHtml;
+  final String? transactionId;
+  final String? token;
+  final PaymentsService? paymentsService;
 
   const ThreeDsChallengeDialog({
     super.key,
     required this.challengeHtml,
+    this.transactionId,
+    this.token,
+    this.paymentsService,
   });
 
   /// Displays the dialog and returns `true` if the transaction completed/redirected.
-  static Future<bool?> show(BuildContext context, String challengeHtml) {
+  static Future<bool?> show(
+    BuildContext context,
+    String challengeHtml, {
+    String? transactionId,
+    String? token,
+    PaymentsService? paymentsService,
+  }) {
     return showDialog<bool>(
       context: context,
       barrierDismissible: false, // Force them to complete or manually cancel via the 'X'
-      builder: (context) => ThreeDsChallengeDialog(challengeHtml: challengeHtml),
+      builder: (context) => ThreeDsChallengeDialog(
+        challengeHtml: challengeHtml,
+        transactionId: transactionId,
+        token: token,
+        paymentsService: paymentsService,
+      ),
     );
   }
 
@@ -26,8 +45,21 @@ class ThreeDsChallengeDialog extends StatefulWidget {
 
 class _ThreeDsChallengeDialogState extends State<ThreeDsChallengeDialog> {
   late final WebViewController _controller;
+  late final PaymentsService _paymentsService;
+  Timer? _pollTimer;
+  bool _isPolling = false;
+  int _pollAttempts = 0;
+  static const int _maxPollAttempts = 20; // 20 attempts * 2s = 40s
   bool _isLoading = true;
   bool _hasNavigatedToExternalUrl = false;
+
+  bool get _isSilentFingerprint {
+    final html = widget.challengeHtml.toLowerCase();
+    return html.contains('tdsmmethodform') ||
+           html.contains('rendermethodurl') ||
+           html.contains('visibility: hidden') ||
+           html.contains('visibility:hidden');
+  }
 
   String _getPaymentezBaseUrl() {
     const baseUrl = AppConstants.baseUrl;
@@ -38,19 +70,96 @@ class _ThreeDsChallengeDialogState extends State<ThreeDsChallengeDialog> {
   }
 
   @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startStatusPolling() {
+    final txId = widget.transactionId;
+    final token = widget.token;
+    if (txId == null || token == null || txId.isEmpty || token.isEmpty) return;
+
+    debugPrint('3DS: Starting status polling for gateway_payment_id: $txId');
+    // Give the iframe 2 seconds to auto-submit the fingerprint form to CardinalCommerce
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      _pollTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        if (_isPolling) return;
+
+        _pollAttempts++;
+        if (_pollAttempts > _maxPollAttempts) {
+          debugPrint('3DS: Polling max attempts reached ($_maxPollAttempts). Stopping poll.');
+          timer.cancel();
+          if (mounted) {
+            Navigator.pop(context, false);
+          }
+          return;
+        }
+
+        _isPolling = true;
+        try {
+          final res = await _paymentsService.getEstadoTransaccion(token, txId);
+          debugPrint('3DS: Polling attempt $_pollAttempts response: $res');
+          if (res is Map<String, dynamic>) {
+            final estado = ((res['estado'] ?? res['status'] ?? res['state']) as String?)?.toLowerCase().trim() ?? '';
+            if (estado == 'aprobada' ||
+                estado == 'exitosa' ||
+                estado == 'success' ||
+                estado == 'completed' ||
+                estado == 'pagada' ||
+                estado == 'approved') {
+              timer.cancel();
+              debugPrint('3DS: Transaction approved ($estado)! Closing dialog with success.');
+              if (mounted) {
+                Navigator.pop(context, true);
+              }
+              return;
+            } else if (estado == 'rechazada' ||
+                       estado == 'fallida' ||
+                       estado == 'failed' ||
+                       estado == 'denied' ||
+                       estado == 'cancelada' ||
+                       estado == 'rejected') {
+              timer.cancel();
+              debugPrint('3DS: Transaction failed/rejected ($estado). Closing dialog with failure.');
+              if (mounted) {
+                Navigator.pop(context, false);
+              }
+              return;
+            }
+            // If 'pendiente' or 'en_proceso', continue polling
+          }
+        } catch (e) {
+          debugPrint('3DS: Polling error on attempt $_pollAttempts: $e (treating as pending)');
+        } finally {
+          _isPolling = false;
+        }
+      });
+    });
+  }
+
+  @override
   void initState() {
     super.initState();
+    _paymentsService = widget.paymentsService ?? PaymentsService();
+    _startStatusPolling();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
-      ..setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1')
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
             setState(() {
               _isLoading = true;
             });
-            if (url.startsWith('http://') || url.startsWith('https://')) {
+            final lower = url.toLowerCase();
+            if ((lower.startsWith('http://') || lower.startsWith('https://')) &&
+                !lower.startsWith(_getPaymentezBaseUrl().toLowerCase())) {
               _hasNavigatedToExternalUrl = true;
             }
           },
@@ -96,34 +205,34 @@ class _ThreeDsChallengeDialogState extends State<ThreeDsChallengeDialog> {
               debugPrint('Error evaluating page text in 3DS: $e');
             }
 
-            // Heuristic to detect silent fingerprinting (Frictionless Flow):
-            // If we haven't navigated to any external HTTP/HTTPS page yet,
-            // and the page finished is still blank or data URI, wait 10 seconds and auto-close.
-            try {
-              final currentUrl = await _controller.currentUrl();
-              debugPrint('3DS WebView current URL: $currentUrl');
-              if (!_hasNavigatedToExternalUrl && (currentUrl == null || 
-                  currentUrl == 'about:blank' || 
-                  currentUrl.startsWith('data:'))) {
-                debugPrint('3DS: Posible flujo silencioso detectado. Esperando 10 segundos...');
-                await Future.delayed(const Duration(seconds: 10));
-                if (mounted) {
-                  final finalUrl = await _controller.currentUrl();
-                  debugPrint('3DS Timer finalizado. URL final en el WebView: $finalUrl');
-                  if (!_hasNavigatedToExternalUrl && (finalUrl == null || 
-                      finalUrl == 'about:blank' || 
-                      finalUrl.startsWith('data:'))) {
-                    debugPrint('3DS: Confirmado flujo silencioso sin navegación externa. Auto-cerrando...');
-                    if (mounted) {
-                      Navigator.pop(context, true); // Auto-close with success to trigger profile reload!
+            // Heuristic fallback for silent fingerprinting only if polling is not configured
+            if (widget.transactionId == null || widget.token == null) {
+              try {
+                final currentUrl = await _controller.currentUrl();
+                debugPrint('3DS WebView current URL: $currentUrl');
+                if (!_hasNavigatedToExternalUrl && (currentUrl == null || 
+                    currentUrl == 'about:blank' || 
+                    currentUrl.startsWith('data:'))) {
+                  debugPrint('3DS: Posible flujo silencioso detectado. Esperando 10 segundos...');
+                  await Future.delayed(const Duration(seconds: 10));
+                  if (mounted) {
+                    final finalUrl = await _controller.currentUrl();
+                    debugPrint('3DS Timer finalizado. URL final en el WebView: $finalUrl');
+                    if (!_hasNavigatedToExternalUrl && (finalUrl == null || 
+                        finalUrl == 'about:blank' || 
+                        finalUrl.startsWith('data:'))) {
+                      debugPrint('3DS: Confirmado flujo silencioso sin navegación externa. Auto-cerrando...');
+                      if (mounted) {
+                        Navigator.pop(context, true); // Auto-close with success to trigger profile reload!
+                      }
+                    } else {
+                      debugPrint('3DS: Se detectó redirección externa activa ($finalUrl). Cancelando auto-cierre.');
                     }
-                  } else {
-                    debugPrint('3DS: Se detectó redirección externa activa ($finalUrl). Cancelando auto-cierre.');
                   }
                 }
+              } catch (e) {
+                debugPrint('Error checking current URL in 3DS: $e');
               }
-            } catch (e) {
-              debugPrint('Error checking current URL in 3DS: $e');
             }
           },
           onWebResourceError: (WebResourceError error) {
@@ -198,20 +307,20 @@ class _ThreeDsChallengeDialogState extends State<ThreeDsChallengeDialog> {
               ),
               
               // Progress bar
-              if (_isLoading)
+              if (_isLoading || (_isSilentFingerprint && !_hasNavigatedToExternalUrl))
                 const LinearProgressIndicator(
                   color: AppColors.orange,
                   backgroundColor: Color(0xFF2A2A2A),
                 ),
                 
-              // WebView
+              // WebView and Status Layer
               Expanded(
                 child: Container(
                   color: Colors.transparent,
                   child: Stack(
                     children: [
-                      // Behind: Loader & helper messages
-                      if (_isLoading)
+                      // Loader & helper messages
+                      if (_isLoading || (_isSilentFingerprint && !_hasNavigatedToExternalUrl))
                         Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -231,9 +340,9 @@ class _ThreeDsChallengeDialogState extends State<ThreeDsChallengeDialog> {
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
-                                  'Procesando validación con tu banco para tu seguridad. Por favor, no cierres esta pantalla.',
+                                  'Procesando validación 3D Secure con tu banco. Por favor, no cierres esta pantalla.',
                                   style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.6),
+                                    color: Colors.white.withValues(alpha: 0.7),
                                     fontSize: 13,
                                     height: 1.4,
                                   ),
@@ -243,8 +352,12 @@ class _ThreeDsChallengeDialogState extends State<ThreeDsChallengeDialog> {
                             ),
                           ),
                         ),
-                      // In front: WebViewWidget
-                      WebViewWidget(controller: _controller),
+                      // WebView: rendered with 0.01 opacity if silent fingerprint without external navigation
+                      // so it can execute background form POST/iframe without hiding the loader with a blank rectangle!
+                      Opacity(
+                        opacity: (_isSilentFingerprint && !_hasNavigatedToExternalUrl) ? 0.01 : 1.0,
+                        child: WebViewWidget(controller: _controller),
+                      ),
                     ],
                   ),
                 ),

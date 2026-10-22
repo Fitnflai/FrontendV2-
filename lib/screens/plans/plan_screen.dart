@@ -195,8 +195,23 @@ class _PlanScreenState extends State<PlanScreen> {
     return '${_weekStart.day} ${m[_weekStart.month-1]} – ${end.day} ${m[end.month-1]} ${end.year}';
   }
 
+  bool _isWorkout(Map<String, dynamic> s) {
+    final tipo = (s['tipo'] as String? ?? '').toLowerCase().trim();
+    final titulo = (s['titulo_entrenamiento'] as String? ?? '').trim();
+    if (tipo == 'descanso_activo' ||
+        tipo == 'descanso' ||
+        tipo.contains('descanso') ||
+        tipo.contains('rest')) {
+      return false;
+    }
+    return titulo.isNotEmpty;
+  }
+
+  List<Map<String, dynamic>> get _workoutSessions =>
+      _sessions.where(_isWorkout).toList();
+
   int get _completedCount =>
-      _sessions.where((s) {
+      _workoutSessions.where((s) {
         final e = (s['estado'] as String? ?? '').toLowerCase();
         return e == 'completado' || e == 'completo' || e == 'done';
       }).length;
@@ -219,7 +234,7 @@ class _PlanScreenState extends State<PlanScreen> {
     }
 
     final completed = _completedCount;
-    final total     = _sessions.length;
+    final total     = _workoutSessions.length;
 
     return Scaffold(
       backgroundColor: theme.bg,
@@ -425,7 +440,11 @@ class _StatsRow extends StatelessWidget {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
     final l10n  = AppLocalizations.of(context);
     return Row(children: [
-      Expanded(child: _StatBox(value: '$completed/$total', label: l10n.planSessionsLabel, valueColor: theme.primary)),
+      Expanded(child: _StatBox(
+        value: total == 0 ? '0' : '$completed de $total',
+        label: total == 1 ? l10n.planSingleTrainingCompletedLabel : l10n.planTrainingsCompletedLabel,
+        valueColor: theme.primary,
+      )),
       const SizedBox(width: 10),
       Expanded(child: _StatBox(
         value: total == 0 ? '0%' : '${(completed / total * 100).round()}%',
@@ -783,6 +802,9 @@ class _RestDayCard extends StatelessWidget {
     final l10n  = AppLocalizations.of(context);
     final isToday = _isToday(fecha);
     final cfg     = WorkoutTypes.fromTipo('Descanso');
+    final tipoStr = (data['tipo'] as String? ?? '').toLowerCase();
+    final isRecovery = tipoStr.contains('activo') || tipoStr.contains('recuperaci');
+    final restTitle = isRecovery ? l10n.planActiveRecoveryLabel : l10n.planRestLabel;
     final mensaje = data['mensaje'] as String?
         ?? l10n.planActiveRestDefaultMsg;
 
@@ -821,7 +843,7 @@ class _RestDayCard extends StatelessWidget {
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.planActiveRestLabel,
+                Text(restTitle.toUpperCase(),
                     style: TextStyle(color: cfg.bgColor, fontSize: 11,
                         fontWeight: FontWeight.w800, letterSpacing: 0.8)),
                 const SizedBox(height: 2),

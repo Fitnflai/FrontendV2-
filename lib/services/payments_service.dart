@@ -336,4 +336,16 @@ class PaymentsService {
     _handleError(response, '$_baseUrl/start-free-trial');
     return _parseResponse(response);
   }
+
+  /// Consultar estado de transacción por ID de Nuvei (3DS).
+  Future<dynamic> getEstadoTransaccion(String token, String gatewayPaymentId) async {
+    final uri = Uri.parse('$_baseUrl/estado-transaccion?gateway_payment_id=$gatewayPaymentId');
+    final response = await CachedHttp.get(uri, headers: _buildHeaders(token));
+    if (response.statusCode == 404) {
+      // 404 indicates the transaction is still pending indexing by the gateway/backend
+      return {'estado': 'pendiente', 'gateway_payment_id': gatewayPaymentId};
+    }
+    _handleError(response, '$_baseUrl/estado-transaccion');
+    return _parseResponse(response);
+  }
 }

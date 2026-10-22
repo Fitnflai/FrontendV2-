@@ -983,7 +983,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeDailyCheckinDesc =>
-      'Answer 4 quick questions so Fitnflai can adjust your session.';
+      'Answer 5 quick questions so Fitnflai can adjust your session.';
 
   @override
   String get homeSectionWeeklyDist => 'YOUR TRAINING WEEK';
@@ -1337,7 +1337,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherThunderstorm => 'Thunderstorm';
 
   @override
-  String get planHeaderSection => 'Plan';
+  String get planHeaderSection => 'training plan';
 
   @override
   String get planContextPast => 'Last week';
@@ -1350,6 +1350,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get planSessionsLabel => 'sessions';
+
+  @override
+  String get planTrainingsCompletedLabel => 'workouts completed';
+
+  @override
+  String get planSingleTrainingCompletedLabel => 'workout completed';
+
+  @override
+  String get planRestLabel => 'Rest';
+
+  @override
+  String get planActiveRecoveryLabel => 'Active recovery';
 
   @override
   String get planCompletedLabel => 'completed';
@@ -1378,17 +1390,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planRetry => 'Retry';
 
   @override
-  String get planActiveRestLabel => 'REST DAY';
+  String get planActiveRestLabel => 'Rest';
 
   @override
   String get planActiveRestToday => 'Today · Rest';
 
   @override
-  String get planActiveRestActive => 'Active rest';
+  String get planActiveRestActive => 'Active recovery';
 
   @override
   String get planActiveRestDefaultMsg =>
-      'Recovery is part of training.\nEnjoy this rest day!';
+      'Today is for restoring energy. Rest is also an essential part of your progress.';
 
   @override
   String get planActiveRestRecs => 'RECOMMENDATIONS';
@@ -1412,10 +1424,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planActiveRestTipMobilityDesc => 'Dynamic stretches';
 
   @override
-  String get planActiveRestTipHydrationDesc => 'Stay hydrated';
+  String get planActiveRestTipHydrationDesc =>
+      'Stay properly hydrated throughout the day';
 
   @override
-  String get planActiveRestTipSleepDesc => 'Sleep well';
+  String get planActiveRestTipSleepDesc =>
+      'Prioritize a good night\'s sleep to support your recovery';
 
   @override
   String get planSessionCardTodayHeader => 'TODAY\'S WORKOUT';
@@ -1436,7 +1450,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planSessionCardAdjustBtn => 'Tired or bad weather? Adjust';
 
   @override
-  String get planSessionCardDetailBtn => 'See detail';
+  String get planSessionCardDetailBtn => 'View workout';
 
   @override
   String get planSessionCardLockDesc => 'Available when the week arrives';
@@ -2344,7 +2358,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyCheckinHeaderDesc =>
-      'Answer 4 quick questions so the AI can adjust your session today.';
+      'Answer these 5 questions to evaluate whether your workout needs adjustment today.';
 
   @override
   String dailyCheckinQuestionLabel(int index, String label) {
@@ -2390,7 +2404,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyCheckinPainDetailsHint => 'Additional details (optional)';
 
   @override
-  String get dailyCheckinBtnResult => 'See my adjusted session →';
+  String get dailyCheckinBtnResult => 'Save and analyze my status';
+
+  @override
+  String get dailyCheckinProgressReady =>
+      '5 of 5 questions answered · Ready to save';
 
   @override
   String get dailyCheckinBtnAnswerAll => 'Answer all questions';
@@ -2537,9 +2555,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyCheckinSaveSuccess => 'Daily status successfully recorded.';
 
   @override
-  String dailyCheckinSaveError(String error) {
-    return 'We couldn\'t save your assessment. Your answers are still here. Please try again.';
-  }
+  String get dailyCheckinSaveError =>
+      'We couldn\'t save your assessment. Your answers are still here. Please try again.';
 
   @override
   String get workoutDetailTitle => 'Workout detail';

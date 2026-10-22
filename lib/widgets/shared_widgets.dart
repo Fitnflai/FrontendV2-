@@ -814,11 +814,11 @@ class _AppHeaderState extends State<AppHeader> {
           final faltan = diff.abs();
           activo = faltan == 1 ? 'Empieza mañana' : 'Empieza en $faltan días';
         } else if (diff == 0) {
-          activo = 'Tu preparación está lista';
+          activo = 'Semana 1';
         } else if (diff < 7) {
-          activo = 'Día ${diff + 1}';
+          activo = 'Semana 1';
         } else {
-          final sem = (diff / 7).floor();
+          final sem = (diff / 7).floor() + 1;
           activo = 'Semana $sem';
         }
       } catch (_) {}

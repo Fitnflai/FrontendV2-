@@ -24,10 +24,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tabProfile => 'Perfil';
 
   @override
-  String get onboardingParqTitle => 'Cuestionario PAR-Q';
+  String get onboardingParqTitle => 'Cuestionario de salud PAR-Q+';
 
   @override
-  String get onboardingParqSubtitle => 'Aptitud física cardiovascular';
+  String get onboardingParqSubtitle => 'Evaluación de salud antes de entrenar';
 
   @override
   String get onboardingParqDesc =>
@@ -988,7 +988,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get homeDailyCheckinDesc =>
-      'Cuéntanos cómo te sientes para adaptar tu entrenamiento de hoy.';
+      'Responde 5 breves preguntas para adaptar tu entrenamiento de hoy.';
 
   @override
   String get homeSectionWeeklyDist => 'TU SEMANA DE ENTRENAMIENTO';
@@ -1342,7 +1342,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get weatherThunderstorm => 'Tormenta';
 
   @override
-  String get planHeaderSection => 'Plan';
+  String get planHeaderSection => 'plan de entrenamiento';
 
   @override
   String get planContextPast => 'Semana pasada';
@@ -1355,6 +1355,18 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get planSessionsLabel => 'sesiones';
+
+  @override
+  String get planTrainingsCompletedLabel => 'entrenamientos completados';
+
+  @override
+  String get planSingleTrainingCompletedLabel => 'entrenamiento completado';
+
+  @override
+  String get planRestLabel => 'Descanso';
+
+  @override
+  String get planActiveRecoveryLabel => 'Recuperación activa';
 
   @override
   String get planCompletedLabel => 'completado';
@@ -1384,17 +1396,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get planRetry => 'Reintentar';
 
   @override
-  String get planActiveRestLabel => 'DÍA DE DESCANSO';
+  String get planActiveRestLabel => 'Descanso';
 
   @override
   String get planActiveRestToday => 'Hoy · Descanso';
 
   @override
-  String get planActiveRestActive => 'Descanso activo';
+  String get planActiveRestActive => 'Recuperación activa';
 
   @override
   String get planActiveRestDefaultMsg =>
-      'La recuperación es parte del entrenamiento. ¡Disfruta este día de descanso!';
+      'Hoy toca recuperar energía. El descanso también forma parte de tu progreso.';
 
   @override
   String get planActiveRestRecs => 'RECOMENDACIONES';
@@ -1418,10 +1430,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get planActiveRestTipMobilityDesc => 'Estiramientos dinámicos';
 
   @override
-  String get planActiveRestTipHydrationDesc => 'Mantén tu hidratación';
+  String get planActiveRestTipHydrationDesc =>
+      'Mantén una hidratación adecuada durante el día';
 
   @override
-  String get planActiveRestTipSleepDesc => 'Duerme bien';
+  String get planActiveRestTipSleepDesc =>
+      'Prioriza una buena noche de sueño para favorecer tu recuperación';
 
   @override
   String get planSessionCardTodayHeader => 'ENTRENAMIENTO DE HOY';
@@ -1442,7 +1456,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get planSessionCardAdjustBtn => '¿Cansado o mal clima? Ajustar';
 
   @override
-  String get planSessionCardDetailBtn => 'Ver detalle';
+  String get planSessionCardDetailBtn => 'Ver entrenamiento';
 
   @override
   String get planSessionCardLockDesc => 'Disponible cuando llegue la semana';
@@ -2358,7 +2372,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyCheckinHeaderDesc =>
-      'Cuéntanos cómo te encuentras hoy. Usaremos tus respuestas para evaluar si necesitas ajustar tu entrenamiento.';
+      'Responde estas 5 preguntas para evaluar si necesitas ajustar tu entrenamiento de hoy.';
 
   @override
   String dailyCheckinQuestionLabel(int index, String label) {
@@ -2405,7 +2419,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyCheckinPainDetailsHint => 'Detalles adicionales (opcional)';
 
   @override
-  String get dailyCheckinBtnResult => 'Analizar mi estado y ajustar sesión';
+  String get dailyCheckinBtnResult => 'Guardar y analizar mi estado';
+
+  @override
+  String get dailyCheckinProgressReady =>
+      '5 de 5 preguntas respondidas · Listo para guardar';
 
   @override
   String get dailyCheckinBtnAnswerAll => 'Completa tu evaluación diaria';
@@ -2555,9 +2573,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyCheckinSaveSuccess => 'Estado diario registrado con éxito.';
 
   @override
-  String dailyCheckinSaveError(String error) {
-    return 'No pudimos guardar tu evaluación. Tus respuestas siguen aquí. Inténtalo nuevamente.';
-  }
+  String get dailyCheckinSaveError =>
+      'No pudimos guardar tu evaluación. Tus respuestas siguen aquí. Inténtalo nuevamente.';
 
   @override
   String get workoutDetailTitle => 'Detalle del entrenamiento';
@@ -2969,56 +2986,57 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get parqQuestion1 =>
-      '¿Alguna vez un médico te ha dicho que tienes una condición cardíaca y que solo debes hacer actividad física bajo supervisión médica?';
+      '¿Alguna vez un médico te ha dicho que tienes una afección cardíaca o presión arterial alta?';
 
   @override
   String get parqShortLabel1 =>
-      'Pregunta 1 — Condición cardíaca diagnosticada.';
+      'Pregunta 1 — Afección cardíaca o presión arterial alta.';
 
   @override
   String get parqQuestion2 =>
-      '¿Sientes dolor en el pecho cuando realizas actividad física?';
+      '¿Sientes dolor en el pecho en reposo, durante tus actividades diarias o cuando haces actividad física?';
 
   @override
   String get parqShortLabel2 =>
-      'Pregunta 2 — Dolor en el pecho durante actividad física.';
+      'Pregunta 2 — Dolor en el pecho en reposo o actividad física.';
 
   @override
   String get parqQuestion3 =>
-      'En el último mes, ¿has sentido dolor en el pecho en reposo?';
+      '¿Pierdes el equilibrio por mareos o has perdido el conocimiento en los últimos 12 meses? (Responde No si el mareo fue por respirar muy rápido, incluido el ejercicio intenso.)';
 
   @override
-  String get parqShortLabel3 => 'Pregunta 3 — Dolor en el pecho en reposo.';
+  String get parqShortLabel3 => 'Pregunta 3 — Pérdida de equilibrio o mareos.';
 
   @override
   String get parqQuestion4 =>
-      '¿Pierdes el equilibrio por mareos o has perdido el conocimiento durante o después de ejercicio?';
+      '¿Alguna vez te diagnosticaron otra enfermedad crónica (distinta de enfermedad cardíaca o presión alta)?';
 
   @override
-  String get parqShortLabel4 =>
-      'Pregunta 4 — Mareos o pérdida de conocimiento.';
+  String get parqShortLabel4 => 'Pregunta 4 — Otra enfermedad crónica.';
 
   @override
   String get parqQuestion5 =>
-      '¿Tienes algún problema óseo o articular que pueda empeorar con la actividad física?';
+      '¿Tomas actualmente medicamentos recetados para una enfermedad crónica?';
 
   @override
-  String get parqShortLabel5 => 'Pregunta 5 — Problema óseo o articular.';
+  String get parqShortLabel5 =>
+      'Pregunta 5 — Medicamentos para enfermedad crónica.';
 
   @override
   String get parqQuestion6 =>
-      '¿Un médico te receta medicamentos para la presión arterial o condición cardíaca?';
+      '¿Tienes actualmente (o tuviste en los últimos 12 meses) un problema de huesos, articulaciones o tejidos blandos (músculo, ligamento o tendón) que podría empeorar si te vuelves más activo? (Responde No si fue en el pasado y hoy no te limita.)';
 
   @override
   String get parqShortLabel6 =>
-      'Pregunta 6 — Medicación para presión o corazón.';
+      'Pregunta 6 — Problema óseo, articular o muscular.';
 
   @override
   String get parqQuestion7 =>
-      '¿Conoces alguna otra razón por la que no deberías realizar actividad física ahora?';
+      '¿Alguna vez un médico te dijo que solo debes hacer actividad física con supervisión médica?';
 
   @override
-  String get parqShortLabel7 => 'Pregunta 7 — Otra razón médica.';
+  String get parqShortLabel7 =>
+      'Pregunta 7 — Actividad física solo con supervisión médica.';
 
   @override
   String onboardingStepLabel(int current, int total) {

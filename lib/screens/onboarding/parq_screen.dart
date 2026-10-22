@@ -88,9 +88,10 @@ class _PARQScreenState extends State<PARQScreen> {
     final hasCritical = qs.any((q) => q.answer == true);
     final triggered   = qs.where((q) => q.answer == true)
                           .map((q) => q.shortLabel).toList();
+    final isBlocked   = qs[1].answer == true || qs[2].answer == true;
     Navigator.push(context, MaterialPageRoute(builder: (_) =>
       hasCritical
-        ? PARQResultWarningScreen(triggered: triggered)
+        ? PARQResultWarningScreen(triggered: triggered, isBlocked: isBlocked)
         : const PARQResultClearScreen()));
   }
 

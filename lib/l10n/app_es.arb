@@ -5,8 +5,8 @@
   "tabProgress": "Progreso",
   "tabNutrition": "Nutrición",
   "tabProfile": "Perfil",
-  "onboardingParqTitle": "Cuestionario PAR-Q",
-  "onboardingParqSubtitle": "Aptitud física cardiovascular",
+  "onboardingParqTitle": "Cuestionario de salud PAR-Q+",
+  "onboardingParqSubtitle": "Evaluación de salud antes de entrenar",
   "onboardingParqDesc": "Responde con honestidad. Estas 7 preguntas determinan si es seguro que empieces a entrenar sin supervisión médica.",
   "onboardingParqValidated": "Validado internacionalmente · Obligatorio",
   "onboardingParqQuestionLabel": "Pregunta {index} de {total}",
@@ -300,7 +300,7 @@
   "homeTemperatureLabel": "Temperatura\nahora",
   "homeWeatherLabel": "Condición\nclimática",
   "homeDailyCheckinTitle": "¿Cómo te sientes hoy?",
-  "homeDailyCheckinDesc": "Cuéntanos cómo te sientes para adaptar tu entrenamiento de hoy.",
+  "homeDailyCheckinDesc": "Responde 5 breves preguntas para adaptar tu entrenamiento de hoy.",
   "homeSectionWeeklyDist": "TU SEMANA DE ENTRENAMIENTO",
   "homeSectionWeeklyIntensity": "INTENSIDAD DE TUS SESIONES",
   "homeSectionWeeklyAdherence": "CUMPLIMIENTO DE TU PLAN",
@@ -570,11 +570,15 @@
   "weatherSnow": "Nieve",
   "weatherShowers": "Chubascos",
   "weatherThunderstorm": "Tormenta",
-  "planHeaderSection": "Plan",
+  "planHeaderSection": "plan de entrenamiento",
   "planContextPast": "Semana pasada",
   "planContextFuture": "Semana próxima",
   "planContextCurrent": "Semana actual",
   "planSessionsLabel": "sesiones",
+  "planTrainingsCompletedLabel": "entrenamientos completados",
+  "planSingleTrainingCompletedLabel": "entrenamiento completado",
+  "planRestLabel": "Descanso",
+  "planActiveRecoveryLabel": "Recuperación activa",
   "planCompletedLabel": "completado",
   "planEmptyFutureTitle": "Tu plan para esta semana aún no está listo",
   "planEmptyFutureDesc": "La IA generará tu plan cuando llegue el momento.",
@@ -583,10 +587,10 @@
   "planLoadError": "Error al cargar el plan",
   "planConnError": "Error de conexión",
   "planRetry": "Reintentar",
-  "planActiveRestLabel": "DÍA DE DESCANSO",
+  "planActiveRestLabel": "Descanso",
   "planActiveRestToday": "Hoy · Descanso",
-  "planActiveRestActive": "Descanso activo",
-  "planActiveRestDefaultMsg": "La recuperación es parte del entrenamiento. ¡Disfruta este día de descanso!",
+  "planActiveRestActive": "Recuperación activa",
+  "planActiveRestDefaultMsg": "Hoy toca recuperar energía. El descanso también forma parte de tu progreso.",
   "planActiveRestRecs": "RECOMENDACIONES",
   "planActiveRestTipWalk": "Caminata",
   "planActiveRestTipMobility": "Movilidad",
@@ -594,15 +598,15 @@
   "planActiveRestTipSleep": "Sueño",
   "planActiveRestTipWalkDesc": "Caminata suave",
   "planActiveRestTipMobilityDesc": "Estiramientos dinámicos",
-  "planActiveRestTipHydrationDesc": "Mantén tu hidratación",
-  "planActiveRestTipSleepDesc": "Duerme bien",
+  "planActiveRestTipHydrationDesc": "Mantén una hidratación adecuada durante el día",
+  "planActiveRestTipSleepDesc": "Prioriza una buena noche de sueño para favorecer tu recuperación",
   "planSessionCardTodayHeader": "ENTRENAMIENTO DE HOY",
   "planSessionCardTodayBadge": "Hoy",
   "planSessionCardCompletedBadge": "Completado",
   "planSessionCardMissedBadge": "No completada",
   "planSessionCardStartBtn": "Iniciar entrenamiento",
   "planSessionCardAdjustBtn": "¿Cansado o mal clima? Ajustar",
-  "planSessionCardDetailBtn": "Ver detalle",
+  "planSessionCardDetailBtn": "Ver entrenamiento",
   "planSessionCardLockDesc": "Disponible cuando llegue la semana",
   "progressHeaderSection": "Progreso",
   "progressSummaryTitle": "En estos {months} meses lograste:",
@@ -909,7 +913,7 @@
   "timeAgoDaysPlural": "Hace {days} días",
   "dailyCheckinGreeting": "Buenos días, {name} 👋",
   "dailyCheckinSubtitle": "Martes · Sesión de hoy: Carrera Zona 2",
-  "dailyCheckinHeaderDesc": "Cuéntanos cómo te encuentras hoy. Usaremos tus respuestas para evaluar si necesitas ajustar tu entrenamiento.",
+  "dailyCheckinHeaderDesc": "Responde estas 5 preguntas para evaluar si necesitas ajustar tu entrenamiento de hoy.",
   "dailyCheckinQuestionLabel": "Pregunta {index} · {label}",
   "dailyCheckinLabelSleep": "Sueño",
   "dailyCheckinLabelEnergy": "Energía",
@@ -923,7 +927,8 @@
   "dailyCheckinPainYes": "Sí, algo",
   "dailyCheckinPainWhere": "¿Dónde?",
   "dailyCheckinPainDetailsHint": "Detalles adicionales (opcional)",
-  "dailyCheckinBtnResult": "Analizar mi estado y ajustar sesión",
+  "dailyCheckinBtnResult": "Guardar y analizar mi estado",
+  "dailyCheckinProgressReady": "5 de 5 preguntas respondidas · Listo para guardar",
   "dailyCheckinBtnAnswerAll": "Completa tu evaluación diaria",
   "dailyCheckinProgressStatus": "{answered} de {total} respuestas completadas",
   "dailyCheckinScoreSleep": "Sueño",
@@ -1099,59 +1104,59 @@
   "workoutFeedbackSaveFinish": "Guardar y terminar",
   "workoutFeedbackAnswerAll": "Responde todas las preguntas para continuar",
 
-  "parqQuestion1": "¿Alguna vez un médico te ha dicho que tienes una condición cardíaca y que solo debes hacer actividad física bajo supervisión médica?",
+  "parqQuestion1": "¿Alguna vez un médico te ha dicho que tienes una afección cardíaca o presión arterial alta?",
   "@parqQuestion1": {
     "description": "PARQ question 1"
   },
-  "parqShortLabel1": "Pregunta 1 — Condición cardíaca diagnosticada.",
+  "parqShortLabel1": "Pregunta 1 — Afección cardíaca o presión arterial alta.",
   "@parqShortLabel1": {
     "description": "Short label for PARQ question 1"
   },
-  "parqQuestion2": "¿Sientes dolor en el pecho cuando realizas actividad física?",
+  "parqQuestion2": "¿Sientes dolor en el pecho en reposo, durante tus actividades diarias o cuando haces actividad física?",
   "@parqQuestion2": {
     "description": "PARQ question 2"
   },
-  "parqShortLabel2": "Pregunta 2 — Dolor en el pecho durante actividad física.",
+  "parqShortLabel2": "Pregunta 2 — Dolor en el pecho en reposo o actividad física.",
   "@parqShortLabel2": {
     "description": "Short label for PARQ question 2"
   },
-  "parqQuestion3": "En el último mes, ¿has sentido dolor en el pecho en reposo?",
+  "parqQuestion3": "¿Pierdes el equilibrio por mareos o has perdido el conocimiento en los últimos 12 meses? (Responde No si el mareo fue por respirar muy rápido, incluido el ejercicio intenso.)",
   "@parqQuestion3": {
     "description": "PARQ question 3"
   },
-  "parqShortLabel3": "Pregunta 3 — Dolor en el pecho en reposo.",
+  "parqShortLabel3": "Pregunta 3 — Pérdida de equilibrio o mareos.",
   "@parqShortLabel3": {
     "description": "Short label for PARQ question 3"
   },
-  "parqQuestion4": "¿Pierdes el equilibrio por mareos o has perdido el conocimiento durante o después de ejercicio?",
+  "parqQuestion4": "¿Alguna vez te diagnosticaron otra enfermedad crónica (distinta de enfermedad cardíaca o presión alta)?",
   "@parqQuestion4": {
     "description": "PARQ question 4"
   },
-  "parqShortLabel4": "Pregunta 4 — Mareos o pérdida de conocimiento.",
+  "parqShortLabel4": "Pregunta 4 — Otra enfermedad crónica.",
   "@parqShortLabel4": {
     "description": "Short label for PARQ question 4"
   },
-  "parqQuestion5": "¿Tienes algún problema óseo o articular que pueda empeorar con la actividad física?",
+  "parqQuestion5": "¿Tomas actualmente medicamentos recetados para una enfermedad crónica?",
   "@parqQuestion5": {
     "description": "PARQ question 5"
   },
-  "parqShortLabel5": "Pregunta 5 — Problema óseo o articular.",
+  "parqShortLabel5": "Pregunta 5 — Medicamentos para enfermedad crónica.",
   "@parqShortLabel5": {
     "description": "Short label for PARQ question 5"
   },
-  "parqQuestion6": "¿Un médico te receta medicamentos para la presión arterial o condición cardíaca?",
+  "parqQuestion6": "¿Tienes actualmente (o tuviste en los últimos 12 meses) un problema de huesos, articulaciones o tejidos blandos (músculo, ligamento o tendón) que podría empeorar si te vuelves más activo? (Responde No si fue en el pasado y hoy no te limita.)",
   "@parqQuestion6": {
     "description": "PARQ question 6"
   },
-  "parqShortLabel6": "Pregunta 6 — Medicación para presión o corazón.",
+  "parqShortLabel6": "Pregunta 6 — Problema óseo, articular o muscular.",
   "@parqShortLabel6": {
     "description": "Short label for PARQ question 6"
   },
-  "parqQuestion7": "¿Conoces alguna otra razón por la que no deberías realizar actividad física ahora?",
+  "parqQuestion7": "¿Alguna vez un médico te dijo que solo debes hacer actividad física con supervisión médica?",
   "@parqQuestion7": {
     "description": "PARQ question 7"
   },
-  "parqShortLabel7": "Pregunta 7 — Otra razón médica.",
+  "parqShortLabel7": "Pregunta 7 — Actividad física solo con supervisión médica.",
   "@parqShortLabel7": {
     "description": "Short label for PARQ question 7"
   },
