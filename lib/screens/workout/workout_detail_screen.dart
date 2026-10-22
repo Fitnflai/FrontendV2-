@@ -229,18 +229,99 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     return secciones;
   }
 
-  // Agrupa ejercicios por bloque
+  String _classifyBloque(String nombre, String? rawBloque) {
+    final b = (rawBloque ?? '').trim();
+    if (b.isNotEmpty &&
+        b.toLowerCase() != 'principal' &&
+        b.toLowerCase() != 'bloque principal' &&
+        b.toLowerCase() != 'general' &&
+        b.toLowerCase() != 'default') {
+      return b;
+    }
+
+    final n = nombre.toLowerCase();
+
+    // 1. Recuperación
+    if (n.contains('foam roller') ||
+        n.contains('foam') ||
+        n.contains('roller') ||
+        n.contains('torácic') ||
+        n.contains('toracic') ||
+        n.contains('enfriamiento') ||
+        n.contains('vuelta a la calma') ||
+        n.contains('recuperaci') ||
+        n.contains('cooldown') ||
+        n.contains('cool down')) {
+      return 'Recuperación';
+    }
+
+    // 2. Movilidad y prevención
+    if (n.contains('rotación') ||
+        n.contains('rotacion') ||
+        n.contains('manguito') ||
+        n.contains('banda') ||
+        n.contains('clamshell') ||
+        n.contains('estiramiento') ||
+        n.contains('movilidad') ||
+        n.contains('prevención') ||
+        n.contains('prevencion') ||
+        n.contains('glúteo') ||
+        n.contains('gluteo') ||
+        n.contains('lumbar') ||
+        n.contains('isquio') ||
+        n.contains('core') ||
+        n.contains('plancha')) {
+      return 'Movilidad y prevención';
+    }
+
+    // 3. Técnica
+    if (n.contains('drill') ||
+        n.contains('catch-up') ||
+        n.contains('catch up') ||
+        n.contains('técnica') ||
+        n.contains('tecnica') ||
+        n.contains('brazada') ||
+        n.contains('remada') ||
+        n.contains('un brazo') ||
+        n.contains('skipping') ||
+        n.contains('talones') ||
+        n.contains('coordinación') ||
+        n.contains('coordinacion')) {
+      return 'Técnica';
+    }
+
+    // 4. Calentamiento
+    if (n.contains('calentamiento') ||
+        n.contains('nado suave') ||
+        n.contains('patada con tabla') ||
+        n.contains('trote suave') ||
+        n.contains('activación') ||
+        n.contains('activacion') ||
+        n.contains('warmup') ||
+        n.contains('warm up') ||
+        (n.contains('suave') && !n.contains('continuo'))) {
+      return 'Calentamiento';
+    }
+
+    // 5. Trabajo principal
+    return 'Trabajo principal';
+  }
+
+  // Agrupa ejercicios por bloque funcional
   List<Map<String, dynamic>> get _bloques {
     final Map<String, List<Map<String, dynamic>>> grouped = {};
     for (final e in _ejercicios) {
       final ej     = e['ejercicio'] as Map<String, dynamic>? ?? e as Map<String, dynamic>? ?? {};
-      final bloque = ej['bloque'] as String? ?? e['bloque'] as String? ?? 'Principal';
       final nombre = ej['nombre'] as String? ?? ej['descripcion'] as String? ?? '';
+      if (nombre.isEmpty) continue;
+
+      final rawBloque = ej['bloque'] as String? ?? e['bloque'] as String?;
+      final bloque = _classifyBloque(nombre, rawBloque);
       final tipo   = ej['tipo_movimiento'] as String? ?? ej['tipo'] as String? ?? '';
       final series = ej['series']?.toString() ?? '';
       final reps   = ej['repeticiones']?.toString() ?? ej['reps']?.toString() ?? '';
       final durMin = ej['duracion_minutos']?.toString() ?? '';
-      if (nombre.isEmpty) continue;
+
       grouped.putIfAbsent(bloque, () => []);
       grouped[bloque]!.add({
         'nombre': nombre,
@@ -251,7 +332,26 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         'estado': (e['estado'] as String? ?? '').toLowerCase(),
       });
     }
-    return grouped.entries
+
+    const order = [
+      'Calentamiento',
+      'Técnica',
+      'Trabajo principal',
+      'Movilidad y prevención',
+      'Recuperación',
+    ];
+
+    final entries = grouped.entries.toList();
+    entries.sort((a, b) {
+      final idxA = order.indexOf(a.key);
+      final idxB = order.indexOf(b.key);
+      if (idxA != -1 && idxB != -1) return idxA.compareTo(idxB);
+      if (idxA != -1) return -1;
+      if (idxB != -1) return 1;
+      return a.key.compareTo(b.key);
+    });
+
+    return entries
         .map((e) => {'bloque': e.key, 'ejercicios': e.value})
         .toList();
   }
@@ -339,7 +439,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.w800)),
                 const SizedBox(height: 12),
-                ..._bloques.map((b) => _BloqueCard(bloque: b)),
+                ..._bloques.map((b) => _BloqueCard(bloque: b, workoutSport: _tipo)),
               ] else if (_ejercicios.isEmpty && _descripcion.isEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 40),
@@ -561,7 +661,59 @@ class _Header extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 class _BloqueCard extends StatelessWidget {
   final Map<String, dynamic> bloque;
-  const _BloqueCard({required this.bloque});
+  final String workoutSport;
+  const _BloqueCard({required this.bloque, this.workoutSport = ''});
+
+  String _bloqueIcon(String name) {
+    final n = name.toLowerCase();
+    if (n.contains('calentamiento') || n.contains('warm')) return '⚡';
+    if (n.contains('técnica') || n.contains('tecnica') || n.contains('drill')) return '🎯';
+    if (n.contains('movilidad') || n.contains('prevenci')) return '🧘';
+    if (n.contains('recuperaci') || n.contains('foam')) return '🧊';
+    return '🔥';
+  }
+
+  String _badgeForExercise(Map<String, dynamic> ej, String bloqueName, String sportName) {
+    final rawTipo = (ej['tipo'] as String? ?? '').trim();
+    final isGeneric = rawTipo.isEmpty ||
+        rawTipo.toLowerCase() == 'básico' ||
+        rawTipo.toLowerCase() == 'basico' ||
+        rawTipo.toLowerCase() == 'basic' ||
+        rawTipo.toLowerCase() == 'normal' ||
+        rawTipo.toLowerCase() == 'general';
+
+    if (!isGeneric) {
+      return rawTipo;
+    }
+
+    final nombre = (ej['nombre'] as String? ?? '').toLowerCase();
+    final sport = sportName.toLowerCase();
+
+    if (sport.contains('nataci') || sport.contains('swim')) {
+      final isDryland = nombre.contains('banda') ||
+          nombre.contains('rotaci') ||
+          nombre.contains('manguito') ||
+          nombre.contains('clamshell') ||
+          nombre.contains('estiramiento') ||
+          nombre.contains('foam') ||
+          nombre.contains('suelo') ||
+          nombre.contains('colchoneta');
+      if (isDryland) return 'En seco';
+
+      final isWater = nombre.contains('nado') ||
+          nombre.contains('crol') ||
+          nombre.contains('brazada') ||
+          nombre.contains('patada') ||
+          nombre.contains('tabla') ||
+          nombre.contains('drill') ||
+          nombre.contains('piscina') ||
+          nombre.contains('pull') ||
+          nombre.contains('aletas');
+      if (isWater) return 'En agua';
+    }
+
+    return '';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -585,12 +737,23 @@ class _BloqueCard extends StatelessWidget {
             color: theme.cardDark,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
           ),
-          child: Text(nombre.toUpperCase(),
-              style: TextStyle(
-                  color: theme.greyLight,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8)),
+          child: Row(
+            children: [
+              Text(
+                _bloqueIcon(nombre),
+                style: const TextStyle(fontSize: 13),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(nombre.toUpperCase(),
+                    style: TextStyle(
+                        color: theme.greyLight,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8)),
+              ),
+            ],
+          ),
         ),
 
         // Ejercicios
@@ -600,6 +763,7 @@ class _BloqueCard extends StatelessWidget {
           final esUltimo  = i == ejercicios.length - 1;
           final estado    = ej['estado'] as String? ?? '';
           final isHecho   = estado == 'completado' || estado == 'completo' || estado == 'done';
+          final badgeText = _badgeForExercise(ej, nombre, workoutSport);
           return Column(children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -656,20 +820,30 @@ class _BloqueCard extends StatelessWidget {
                   ]),
                 ),
 
-                // Tipo badge
-                if ((ej['tipo'] as String? ?? '').isNotEmpty)
+                // Tipo badge funcional / medio
+                if (badgeText.isNotEmpty) ...[
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: theme.primary.withValues(alpha: 0.15),
+                      color: badgeText == 'En agua'
+                          ? Colors.blue.withValues(alpha: 0.15)
+                          : badgeText == 'En seco'
+                              ? const Color(0xFFFF6B35).withValues(alpha: 0.15)
+                              : theme.primary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text((ej['tipo'] as String).toUpperCase(),
+                    child: Text(badgeText.toUpperCase(),
                         style: TextStyle(
-                            color: theme.primary,
+                            color: badgeText == 'En agua'
+                                ? Colors.blue
+                                : badgeText == 'En seco'
+                                    ? const Color(0xFFFF6B35)
+                                    : theme.primary,
                             fontSize: 10,
                             fontWeight: FontWeight.w700)),
                   ),
+                ],
               ]),
             ),
             if (!esUltimo)
