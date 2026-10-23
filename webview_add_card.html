@@ -215,8 +215,12 @@
       // 4. Callback de respuesta exitosa de tokenización
       const responseCallback = response => {
         if (response.card && response.card.token) {
+          // Ocultar formulario y botones de inmediato ya que la redirección a la app es automática
+          const formContainer = document.querySelector('#tokenize_example');
+          if (formContainer) formContainer.style.display = 'none';
+          submitButton.style.display = 'none';
+
           showMsg("¡Tarjeta tokenizada con éxito! Redirigiéndote de vuelta a Fitnflai...", true);
-          submitButton.textContent = "Redirigiendo...";
           
           // Construir URL de retorno con la información del token para que la app lo lea
           const token = response.card.token;
