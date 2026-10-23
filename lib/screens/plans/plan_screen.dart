@@ -883,30 +883,28 @@ class _SessionCardState extends State<_SessionCard> {
                                   ),
                                 ),
                               ],
-                              Text(
-                                dayHeader,
-                                style: TextStyle(
-                                  color: isToday ? theme.white : theme.greyLight,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              if (tipo.isNotEmpty) ...[
-                                Text(
-                                  ' · $tipo',
+                              Expanded(
+                                child: Text(
+                                  dayHeader,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: cfg.bgColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                                    color: isToday ? theme.white : theme.greyLight,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                              ],
+                              ),
                             ],
                           ),
-                          if (!_expanded && ejercicios.isNotEmpty) ...[
+                          if (!_expanded) ...[
                             const SizedBox(height: 2),
                             Text(
-                              '${ejercicios.length} ejercicios',
+                              ejercicios.isNotEmpty
+                                  ? (tipo.isNotEmpty
+                                      ? '${ejercicios.length} ejercicios · $tipo'
+                                      : '${ejercicios.length} ejercicios')
+                                  : tipo,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: theme.grey,
                                 fontSize: 11,
