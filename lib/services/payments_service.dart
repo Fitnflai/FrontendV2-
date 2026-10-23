@@ -105,7 +105,10 @@ class PaymentsService {
     if (checkoutUrl == null) {
       throw Exception('Checkout URL not found in Nuvei response');
     }
-    return checkoutUrl;
+    final checkoutUri = Uri.parse(checkoutUrl);
+    final queryParams = Map<String, String>.from(checkoutUri.queryParameters);
+    queryParams['_cb'] = DateTime.now().millisecondsSinceEpoch.toString();
+    return checkoutUri.replace(queryParameters: queryParams).toString();
   }
 
   Future<void> saveCard(String token, String userId, Map<String, dynamic> cardData) async {
