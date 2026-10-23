@@ -893,6 +893,66 @@ abstract class AppLocalizations {
   /// **'Current activity level'**
   String get onboardingFitnessActivityTitle;
 
+  /// No description provided for @onboardingFitnessCurrentActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your current activity'**
+  String get onboardingFitnessCurrentActivityTitle;
+
+  /// No description provided for @onboardingFitnessDaysPerWeekQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How many days per week do you do physical activity?'**
+  String get onboardingFitnessDaysPerWeekQuestion;
+
+  /// No description provided for @onboardingFitnessSessionDurationQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How long does each session usually last?'**
+  String get onboardingFitnessSessionDurationQuestion;
+
+  /// No description provided for @onboardingFitnessDaysOptNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Currently not training'**
+  String get onboardingFitnessDaysOptNone;
+
+  /// No description provided for @onboardingFitnessDaysOpt1_2.
+  ///
+  /// In en, this message translates to:
+  /// **'1–2 days'**
+  String get onboardingFitnessDaysOpt1_2;
+
+  /// No description provided for @onboardingFitnessDaysOpt3_4.
+  ///
+  /// In en, this message translates to:
+  /// **'3–4 days'**
+  String get onboardingFitnessDaysOpt3_4;
+
+  /// No description provided for @onboardingFitnessDaysOpt5Plus.
+  ///
+  /// In en, this message translates to:
+  /// **'5 or more days'**
+  String get onboardingFitnessDaysOpt5Plus;
+
+  /// No description provided for @onboardingFitnessDurationOptUnder30.
+  ///
+  /// In en, this message translates to:
+  /// **'Under 30 minutes'**
+  String get onboardingFitnessDurationOptUnder30;
+
+  /// No description provided for @onboardingFitnessDurationOpt30_60.
+  ///
+  /// In en, this message translates to:
+  /// **'30–60 minutes'**
+  String get onboardingFitnessDurationOpt30_60;
+
+  /// No description provided for @onboardingFitnessDurationOptOver60.
+  ///
+  /// In en, this message translates to:
+  /// **'Over 60 minutes'**
+  String get onboardingFitnessDurationOptOver60;
+
   /// Title of session time selection section
   ///
   /// In en, this message translates to:

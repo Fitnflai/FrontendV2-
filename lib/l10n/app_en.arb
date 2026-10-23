@@ -603,6 +603,16 @@
   },
 
   "onboardingFitnessActivityTitle": "Current activity level",
+  "onboardingFitnessCurrentActivityTitle": "Your current activity",
+  "onboardingFitnessDaysPerWeekQuestion": "How many days per week do you do physical activity?",
+  "onboardingFitnessSessionDurationQuestion": "How long does each session usually last?",
+  "onboardingFitnessDaysOptNone": "Currently not training",
+  "onboardingFitnessDaysOpt1_2": "1–2 days",
+  "onboardingFitnessDaysOpt3_4": "3–4 days",
+  "onboardingFitnessDaysOpt5Plus": "5 or more days",
+  "onboardingFitnessDurationOptUnder30": "Under 30 minutes",
+  "onboardingFitnessDurationOpt30_60": "30–60 minutes",
+  "onboardingFitnessDurationOptOver60": "Over 60 minutes",
   "@onboardingFitnessActivityTitle": {
     "description": "Title of current activity level section"
   },

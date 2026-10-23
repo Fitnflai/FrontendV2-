@@ -464,6 +464,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingFitnessActivityTitle => 'Current activity level';
 
   @override
+  String get onboardingFitnessCurrentActivityTitle => 'Your current activity';
+
+  @override
+  String get onboardingFitnessDaysPerWeekQuestion =>
+      'How many days per week do you do physical activity?';
+
+  @override
+  String get onboardingFitnessSessionDurationQuestion =>
+      'How long does each session usually last?';
+
+  @override
+  String get onboardingFitnessDaysOptNone => 'Currently not training';
+
+  @override
+  String get onboardingFitnessDaysOpt1_2 => '1–2 days';
+
+  @override
+  String get onboardingFitnessDaysOpt3_4 => '3–4 days';
+
+  @override
+  String get onboardingFitnessDaysOpt5Plus => '5 or more days';
+
+  @override
+  String get onboardingFitnessDurationOptUnder30 => 'Under 30 minutes';
+
+  @override
+  String get onboardingFitnessDurationOpt30_60 => '30–60 minutes';
+
+  @override
+  String get onboardingFitnessDurationOptOver60 => 'Over 60 minutes';
+
+  @override
   String get onboardingFitnessSessionTitle => 'Time available to train';
 
   @override

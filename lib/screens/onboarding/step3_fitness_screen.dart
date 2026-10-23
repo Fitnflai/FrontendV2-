@@ -17,8 +17,23 @@ class Step3FitnessScreen extends StatefulWidget {
 }
 
 class _Step3FitnessScreenState extends State<Step3FitnessScreen> {
+  String _formatEquipmentName(String nombre) {
+    final lower = nombre.toLowerCase().trim();
+    if (lower == 'bici' || lower == 'bicicleta') return 'Bicicleta';
+    if (lower == 'cinta' || lower == 'cinta de correr') return 'Cinta de correr';
+    if (lower == 'reloj' || lower.contains('reloj')) return 'Reloj deportivo (FC)';
+    return nombre;
+  }
+
   // Nivel de actividad — -1 = ninguno
   int _actLevel = -1;
+
+  // Tu actividad actual (nuevas variables de auditoría y backend)
+  int _diasActividadSemana = -1;
+  final _diasActividadBackend = ['Actualmente no entreno', '1-2 días', '3-4 días', '5 o más días'];
+
+  int _duracionSesionPromedio = -1;
+  final _duracionPromedioBackend = ['Menos de 30 minutos', '30-60 minutos', 'Más de 60 minutos'];
 
   // Tiempo por sesión — -1 = ninguno
   int _sessionTime = -1;
@@ -57,6 +72,7 @@ class _Step3FitnessScreenState extends State<Step3FitnessScreen> {
   // Validación — todos los obligatorios llenos
   bool get _isValid {
     if (_actLevel < 0 || _sessionTime < 0 || _daysSelected == 0) return false;
+    if (_diasActividadSemana < 0 || _duracionSesionPromedio < 0) return false;
     if (_fechaInicio == null) return false;
     if (_ejercitaActualmente == null) return false;
     if (_ejercitaActualmente == true  && _yearsIdx < 0) return false;
@@ -196,6 +212,10 @@ class _Step3FitnessScreenState extends State<Step3FitnessScreen> {
         }(),
         'tiempo_sin_entrenar':  _ejercitaActualmente == false && _inactivityIdx >= 0
             ? _inactivityOptions[_inactivityIdx] : '0',
+        'dias_actividad_semana': _diasActividadSemana >= 0
+            ? _diasActividadBackend[_diasActividadSemana] : '3-4 días',
+        'duracion_sesion_promedio': _duracionSesionPromedio >= 0
+            ? _duracionPromedioBackend[_duracionSesionPromedio] : '30-60 minutos',
       };
 
       final res = await http.post(
@@ -302,6 +322,84 @@ class _Step3FitnessScreenState extends State<Step3FitnessScreen> {
                   ),
                 ),
 
+                // ── Tu actividad actual ────────────
+                _SectionCard(
+                  title: l10n.onboardingFitnessCurrentActivityTitle,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.onboardingFitnessDaysPerWeekQuestion,
+                        style: const TextStyle(
+                          color: AppColors.greyLight,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _Chip(
+                            label: l10n.onboardingFitnessDaysOptNone,
+                            selected: _diasActividadSemana == 0,
+                            onTap: () => setState(() => _diasActividadSemana = 0),
+                          ),
+                          _Chip(
+                            label: l10n.onboardingFitnessDaysOpt1_2,
+                            selected: _diasActividadSemana == 1,
+                            onTap: () => setState(() => _diasActividadSemana = 1),
+                          ),
+                          _Chip(
+                            label: l10n.onboardingFitnessDaysOpt3_4,
+                            selected: _diasActividadSemana == 2,
+                            onTap: () => setState(() => _diasActividadSemana = 2),
+                          ),
+                          _Chip(
+                            label: l10n.onboardingFitnessDaysOpt5Plus,
+                            selected: _diasActividadSemana == 3,
+                            onTap: () => setState(() => _diasActividadSemana = 3),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Divider(color: AppColors.border, height: 1),
+                      const SizedBox(height: 14),
+                      Text(
+                        l10n.onboardingFitnessSessionDurationQuestion,
+                        style: const TextStyle(
+                          color: AppColors.greyLight,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _Chip(
+                            label: l10n.onboardingFitnessDurationOptUnder30,
+                            selected: _duracionSesionPromedio == 0,
+                            onTap: () => setState(() => _duracionSesionPromedio = 0),
+                          ),
+                          _Chip(
+                            label: l10n.onboardingFitnessDurationOpt30_60,
+                            selected: _duracionSesionPromedio == 1,
+                            onTap: () => setState(() => _duracionSesionPromedio = 1),
+                          ),
+                          _Chip(
+                            label: l10n.onboardingFitnessDurationOptOver60,
+                            selected: _duracionSesionPromedio == 2,
+                            onTap: () => setState(() => _duracionSesionPromedio = 2),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
                 // ── Tiempo por sesión ─────────────
                 _SectionCard(
                   title: l10n.onboardingFitnessSessionTitle,
@@ -334,7 +432,7 @@ class _Step3FitnessScreenState extends State<Step3FitnessScreen> {
                             final id = e['id_implemento'] as int;
                             final nombre = e['nombre'] as String;
                             return _Chip(
-                              label: nombre,
+                              label: _formatEquipmentName(nombre),
                               selected: _equipment.contains(id),
                               onTap: () => setState(() {
                                 _equipment.contains(id)
