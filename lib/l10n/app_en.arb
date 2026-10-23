@@ -48,6 +48,18 @@
       }
     }
   },
+  "onboardingParqConditionTitle": "Additional details or conditions (optional)",
+  "@onboardingParqConditionTitle": {
+    "description": "Title for optional condition details field in PAR-Q screen"
+  },
+  "onboardingParqConditionDesc": "If you answered Yes to any question or have a specific medical observation, please describe it here.",
+  "@onboardingParqConditionDesc": {
+    "description": "Description explaining the condition details input"
+  },
+  "onboardingParqConditionHint": "e.g., Scheduled surgery next month, lower back pain, etc.",
+  "@onboardingParqConditionHint": {
+    "description": "Hint text for condition details input field"
+  },
   "yes": "Yes",
   "@yes": {
     "description": "Yes confirmation"

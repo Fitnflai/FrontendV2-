@@ -23,7 +23,14 @@ class PARQScreen extends StatefulWidget {
 }
 
 class _PARQScreenState extends State<PARQScreen> {
+  final TextEditingController _conditionCtrl = TextEditingController();
   List<PARQQuestion>? _qs;
+
+  @override
+  void dispose() {
+    _conditionCtrl.dispose();
+    super.dispose();
+  }
 
   List<PARQQuestion> get qs {
     if (_qs == null) {
@@ -74,7 +81,7 @@ class _PARQScreenState extends State<PARQScreen> {
           'p5': qs[4].answer ?? false,
           'p6': qs[5].answer ?? false,
           'p7': qs[6].answer ?? false,
-          'p7_detalles': '',
+          'detalles_condicion': _conditionCtrl.text.trim(),
           'acepto_declaracion_jurada': true,
         }),
       );
@@ -107,7 +114,8 @@ class _PARQScreenState extends State<PARQScreen> {
           ...List.generate(qs.length, (i) => Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: _buildQuestionCard(i))),
-          const SizedBox(height: 8),
+          _buildConditionCard(),
+          const SizedBox(height: 14),
           _loading
               ? const Center(child: CircularProgressIndicator(color: AppColors.orange))
               : ContinueButton(enabled: _allAnswered, onTap: _onContinue),
@@ -153,6 +161,85 @@ class _PARQScreenState extends State<PARQScreen> {
     );
   }
 
+  Widget _buildConditionCard() {
+    final l10n = AppLocalizations.of(context);
+    final hasAnyYes = qs.any((q) => q.answer == true);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: hasAnyYes ? AppColors.orange.withValues(alpha: 0.5) : AppColors.border,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.medical_information_outlined,
+                color: hasAnyYes ? AppColors.orange : AppColors.greyLight,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n.onboardingParqConditionTitle,
+                  style: TextStyle(
+                    color: hasAnyYes ? AppColors.orange : AppColors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.onboardingParqConditionDesc,
+            style: const TextStyle(
+              color: AppColors.grey,
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _conditionCtrl,
+            style: const TextStyle(color: AppColors.white, fontSize: 14),
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: l10n.onboardingParqConditionHint,
+              hintStyle: const TextStyle(color: AppColors.grey, fontSize: 13),
+              filled: true,
+              fillColor: AppColors.cardDark,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: hasAnyYes ? AppColors.orange.withValues(alpha: 0.5) : AppColors.border,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.orange, width: 1.5),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuestionCard(int i) {
     final l10n = AppLocalizations.of(context);
     return Container(
@@ -183,14 +270,31 @@ class _PARQScreenState extends State<PARQScreen> {
         duration: const Duration(milliseconds: 200),
         height: 44,
         decoration: BoxDecoration(
-          color: selected ? (value ? AppColors.redMid : AppColors.greenMid) : Colors.transparent,
+          color: selected ? AppColors.orange.withValues(alpha: 0.15) : Colors.transparent,
           border: Border.all(
-              color: selected ? (value ? AppColors.redMid : AppColors.greenMid) : AppColors.border,
+              color: selected ? AppColors.orange : AppColors.border,
               width: 1.5),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Center(child: Text(value ? l10n.yes : l10n.no,
-            style: const TextStyle(color: AppColors.white, fontSize: 15, fontWeight: FontWeight.w600))),
+        child: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (selected) ...[
+                const Icon(Icons.check_circle_outline, color: AppColors.orange, size: 16),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                value ? l10n.yes : l10n.no,
+                style: TextStyle(
+                  color: selected ? AppColors.orange : AppColors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

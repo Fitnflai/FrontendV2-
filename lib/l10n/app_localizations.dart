@@ -158,6 +158,24 @@ abstract class AppLocalizations {
   /// **'Question {index} of {total}'**
   String onboardingParqQuestionLabel(int index, int total);
 
+  /// Title for optional condition details field in PAR-Q screen
+  ///
+  /// In en, this message translates to:
+  /// **'Additional details or conditions (optional)'**
+  String get onboardingParqConditionTitle;
+
+  /// Description explaining the condition details input
+  ///
+  /// In en, this message translates to:
+  /// **'If you answered Yes to any question or have a specific medical observation, please describe it here.'**
+  String get onboardingParqConditionDesc;
+
+  /// Hint text for condition details input field
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., Scheduled surgery next month, lower back pain, etc.'**
+  String get onboardingParqConditionHint;
+
   /// Yes confirmation
   ///
   /// In en, this message translates to:

@@ -43,6 +43,18 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get onboardingParqConditionTitle =>
+      'Detalles o condiciones adicionales (opcional)';
+
+  @override
+  String get onboardingParqConditionDesc =>
+      'Si respondiste \'Sí\' a alguna pregunta o tienes alguna observación médica relevante, descríbela aquí.';
+
+  @override
+  String get onboardingParqConditionHint =>
+      'Ej: Tengo una cirugía programada para el próximo mes, dolor lumbar, etc.';
+
+  @override
   String get yes => 'Sí';
 
   @override
