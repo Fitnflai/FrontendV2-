@@ -1343,10 +1343,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planWeekNavTitle => 'Training week';
 
   @override
-  String get planScheduledTrainings => 'Scheduled workouts';
+  String get planScheduledTrainings => 'Scheduled';
 
   @override
   String get planCompletedSummary => 'Completed';
+
+  @override
+  String get planProgressSummary => 'Progress';
 
   @override
   String get planRestPassiveSubtitle => 'Recovery and rest';

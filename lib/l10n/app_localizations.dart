@@ -2516,7 +2516,7 @@ abstract class AppLocalizations {
   /// No description provided for @planScheduledTrainings.
   ///
   /// In en, this message translates to:
-  /// **'Scheduled workouts'**
+  /// **'Scheduled'**
   String get planScheduledTrainings;
 
   /// No description provided for @planCompletedSummary.
@@ -2524,6 +2524,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Completed'**
   String get planCompletedSummary;
+
+  /// No description provided for @planProgressSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get planProgressSummary;
 
   /// No description provided for @planRestPassiveSubtitle.
   ///

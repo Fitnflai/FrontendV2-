@@ -652,7 +652,7 @@ class _WeekDaysStrip extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// COMPACT METRICS BAR
+// COMPACT METRICS BAR (Glanceable 3-Column Layout)
 // ═══════════════════════════════════════════════════════════════
 class _CompactMetricsBar extends StatelessWidget {
   final int completed;
@@ -664,6 +664,7 @@ class _CompactMetricsBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
     final l10n  = AppLocalizations.of(context);
+    final percent = total == 0 ? 0 : (completed / total * 100).round();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -674,60 +675,96 @@ class _CompactMetricsBar extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // ── Programados ───────────────────────
           Expanded(
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.fitness_center, size: 14, color: theme.primary),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: RichText(
-                    overflow: TextOverflow.ellipsis,
-                    text: TextSpan(
-                      style: TextStyle(fontSize: 12, color: theme.greyLight),
-                      children: [
-                        TextSpan(text: '${l10n.planScheduledTrainings}: '),
-                        TextSpan(
-                          text: '$total',
-                          style: TextStyle(fontWeight: FontWeight.w700, color: theme.white),
-                        ),
-                      ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.fitness_center, size: 14, color: theme.primary),
+                    const SizedBox(width: 6),
+                    Text(
+                      '$total',
+                      style: TextStyle(
+                        color: theme.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.planScheduledTrainings,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: theme.grey, fontSize: 11),
                 ),
               ],
             ),
           ),
-          Container(width: 1, height: 16, color: theme.border, margin: const EdgeInsets.symmetric(horizontal: 8)),
+          Container(width: 1, height: 26, color: theme.border.withValues(alpha: 0.6)),
+
+          // ── Completados ───────────────────────
           Expanded(
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle_outline, size: 14, color: theme.greenText),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: RichText(
-                    overflow: TextOverflow.ellipsis,
-                    text: TextSpan(
-                      style: TextStyle(fontSize: 12, color: theme.greyLight),
-                      children: [
-                        TextSpan(text: '${l10n.planCompletedSummary}: '),
-                        TextSpan(
-                          text: '$completed',
-                          style: TextStyle(fontWeight: FontWeight.w700, color: theme.greenText),
-                        ),
-                      ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle_outline, size: 14, color: theme.greenText),
+                    const SizedBox(width: 6),
+                    Text(
+                      '$completed',
+                      style: TextStyle(
+                        color: theme.greenText,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.planCompletedSummary,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: theme.grey, fontSize: 11),
                 ),
               ],
             ),
           ),
-          if (total > 0) ...[
-            Container(width: 1, height: 16, color: theme.border, margin: const EdgeInsets.symmetric(horizontal: 8)),
-            Text(
-              '${(completed / total * 100).round()}%',
-              style: TextStyle(color: theme.primary, fontSize: 13, fontWeight: FontWeight.w800),
+          Container(width: 1, height: 26, color: theme.border.withValues(alpha: 0.6)),
+
+          // ── Progreso ──────────────────────────
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$percent%',
+                  style: TextStyle(
+                    color: theme.primary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.planProgressSummary,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: theme.grey, fontSize: 11),
+                ),
+              ],
             ),
-          ],
+          ),
         ],
       ),
     );
