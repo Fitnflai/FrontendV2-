@@ -789,7 +789,7 @@ class _SessionCard extends StatefulWidget {
 }
 
 class _SessionCardState extends State<_SessionCard> {
-  late bool _expanded;
+  bool _expanded = false;
 
   bool _isToday(String? fecha) {
     if (fecha == null || fecha.isEmpty) return false;
@@ -816,17 +816,6 @@ class _SessionCardState extends State<_SessionCard> {
     return '$diaNombre ${d.day} ${meses[d.month - 1]}';
   }
 
-  @override
-  void initState() {
-    super.initState();
-    final fecha = widget.data['fecha_programada'] as String? ?? '';
-    final isToday = _isToday(fecha) && widget.weekContext == _WeekContext.current;
-    final estado = (widget.data['estado'] as String? ?? '').toLowerCase();
-    final isCompleted = estado == 'completado' || estado == 'completo' || estado == 'done';
-    // Por defecto, si es la sesión de hoy y no está completada, se muestra abierta.
-    // El resto de días comienzan contraídas para optimizar el espacio vertical.
-    _expanded = isToday && !isCompleted;
-  }
 
   @override
   Widget build(BuildContext context) {
