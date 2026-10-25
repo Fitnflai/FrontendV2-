@@ -90,7 +90,7 @@ class _TestSelectionScreenState extends State<TestSelectionScreen> {
         if (raw is List) {
           final completados = <int>[];
           for (final r in raw) {
-            final nombre = (r['nombre_test'] as String?)?.toLowerCase() ?? '';
+            final nombre = ((r['nombre_test'] ?? r['nombreTest']) as String?)?.toLowerCase() ?? '';
             final idx = _testKeys.indexOf(nombre);
             if (idx != -1 && !completados.contains(idx)) completados.add(idx);
           }

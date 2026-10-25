@@ -43,7 +43,7 @@ class _ProfileTestTimerScreenState extends State<ProfileTestTimerScreen>
   bool    _submitting     = false;
 
   static const _testNames = [
-    'sentadillas', 'cooper', 'flexiones', 'plancha', 'inclinacion',
+    'Sentadillas', 'Cooper', 'Flexiones', 'Plancha', 'Inclinacion',
   ];
 
   @override

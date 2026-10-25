@@ -122,7 +122,11 @@ class OnboardingRouter {
 
           if (response.statusCode == 200) {
             final List<dynamic> tests = json.decode(response.body);
-            squatsTestCompleted = tests.any((test) => test['nombreTest'] == 'sentadillas' && (test['completado'] ?? false) == true);
+            squatsTestCompleted = tests.any((test) {
+              final name = ((test['nombre_test'] ?? test['nombreTest']) as String?)?.toLowerCase() ?? '';
+              final isDone = test['completado'] == null || test['completado'] == true;
+              return name == 'sentadillas' && isDone;
+            });
           }
         } catch (e) {
           debugPrint('Error checking squats test: $e');

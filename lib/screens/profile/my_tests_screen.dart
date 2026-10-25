@@ -56,7 +56,7 @@ class _MyTestsScreenState extends State<MyTestsScreen> {
     try {
       // Más reciente primero
       final matches = _resultados
-          .where((r) => (r['nombre_test'] as String?)?.toLowerCase() == key)
+          .where((r) => ((r['nombre_test'] ?? r['nombreTest']) as String?)?.toLowerCase() == key.toLowerCase())
           .toList();
       if (matches.isEmpty) return null;
       matches.sort((a, b) {

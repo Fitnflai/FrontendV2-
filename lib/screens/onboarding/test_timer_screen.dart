@@ -136,11 +136,11 @@ class _TestTimerScreenState extends State<TestTimerScreen>
 
   // Mapeo nombre_test por índice
   static const _testNames = [
-    'sentadillas',
-    'cooper',
-    'flexiones',
-    'plancha',
-    'inclinacion',
+    'Sentadillas',
+    'Cooper',
+    'Flexiones',
+    'Plancha',
+    'Inclinacion',
   ];
 
   Future<void> _submitResult() async {

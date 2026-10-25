@@ -654,7 +654,7 @@ class _TestResultCards extends StatelessWidget {
   Map<String, dynamic>? _findTest(String nombre) {
     try {
       return tests.firstWhere(
-        (t) => (t['nombre_test'] as String?)?.toLowerCase() == nombre,
+        (t) => ((t['nombre_test'] ?? t['nombreTest']) as String?)?.toLowerCase() == nombre.toLowerCase(),
       );
     } catch (_) {
       return null;
