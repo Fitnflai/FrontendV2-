@@ -317,7 +317,8 @@ class FitnflaiAppBar extends StatelessWidget implements PreferredSizeWidget {
 // ─── Step Header ───────────────────────────────────────────────
 class StepHeader extends StatelessWidget {
   final String stepLabel;
-  const StepHeader({required this.stepLabel, super.key});
+  final VoidCallback? onBack;
+  const StepHeader({required this.stepLabel, this.onBack, super.key});
   @override
   Widget build(BuildContext context) {
     final theme = context.themeColors;
@@ -335,7 +336,11 @@ class StepHeader extends StatelessWidget {
                 border: Border.all(color: theme.border)),
             child: Icon(Icons.arrow_back_ios_new, color: theme.orange, size: 16),
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: onBack ?? () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
         ),
         const Spacer(),
         Text(stepLabel,

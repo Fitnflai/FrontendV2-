@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -112,8 +113,14 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
   final _raceNameCtrl = TextEditingController();
   final _raceDistCtrl = TextEditingController();
   String _raceDistUnit = 'km';
+  final _desnivelCtrl = TextEditingController();
+  final _altitudCtrl = TextEditingController();
+  bool _aclimatacionCalor = false;
+  bool _esInternacional = false;
+  bool _showAdvancedOptions = false;
 
   // Goal 1: Mejorar tiempo personal
+  String? _modalidadMejoraTiempo;
   final _timeDistCtrl = TextEditingController();
   String _timeDistUnit = 'km';
   int _timeHours = 0;
@@ -132,6 +139,9 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
   // Semanas
   int _semanas = 18;
   final _semanasOptions = List.generate(51, (i) => i + 2); // 2..52
+  int? _backendRecommendedWeeks;
+  bool _calculatingWeeks = false;
+  Timer? _debounceTimer;
 
   static const List<String> _months = [
     '', 'ene', 'feb', 'mar', 'abr', 'may',
@@ -179,6 +189,7 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
       } else {
         if (_raceDate == null) return false;
       }
+      if (_calculatingWeeks) return false;
       // Bloquear si hay alerta y no fue aceptada
       if (_showRiskAlert && !_riskAccepted) return false;
       return true;
@@ -186,7 +197,8 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
     if (_selectedGoalIdx == 1) {
       if (_showSemanasAlert && !_semanasRiskAccepted) return false;
       if (_targetExceedsActual) return false;
-      return _timeDistCtrl.text.isNotEmpty &&
+      return _modalidadMejoraTiempo != null &&
+             _timeDistCtrl.text.isNotEmpty &&
              (_timeHours > 0 || _timeMin > 0 || _timeSec > 0);
     }
     if (_selectedGoalIdx == 2) {
@@ -212,10 +224,24 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
   void _selectSport(int i) => setState(() {
     _selectedSportIdx = i;
     _selectedCompetencia = null;
-    // Si elige Acondicionamiento y tenía goal 0 seleccionado, lo resetea
-    if (i == 5 && _selectedGoalIdx == 0) _selectedGoalIdx = -1;
+    _modalidadMejoraTiempo = null;
+    _backendRecommendedWeeks = null;
+    _riskAccepted = false;
+    // Si elige Acondicionamiento (5), solo puede ser Goal 2 (Condición general)
+    if (i == 5) {
+      if (_selectedGoalIdx != 2) _selectedGoalIdx = -1;
+    }
+    // Si elige Senderismo (4) y tenía Goal 0 (Competencia), lo resetea
+    else if (i == 4 && _selectedGoalIdx == 0) {
+      _selectedGoalIdx = -1;
+    }
   });
-  void _selectGoal(int i)  => setState(() => _selectedGoalIdx  = i);
+  void _selectGoal(int i) => setState(() {
+    _selectedGoalIdx = i;
+    _riskAccepted = false;
+    _backendRecommendedWeeks = null;
+    _triggerCalculateWeeks();
+  });
 
   bool _loading = false;
   bool _riskAccepted = false;
@@ -304,7 +330,7 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
 
   bool get _showSemanasAlert =>
       _selectedSportIdx >= 0 &&
-      _semanas < _minSemanasRequeridas;
+      _semanas < (_backendRecommendedWeeks ?? _minSemanasRequeridas);
 
   /// Semanas reales disponibles desde hoy hasta un día antes de la competencia
   int get _weeksAvailableForRace =>
@@ -315,13 +341,14 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
               7
           : 0;
 
+  int get _effectiveRecommendedWeeks =>
+      _backendRecommendedWeeks ?? _requiredWeeks;
+
   bool get _showRiskAlert =>
       _selectedGoalIdx == 0 &&
       _raceDate != null &&
       _selectedCompetencia != null &&
-      _selectedCompetencia != 'Otro' &&
-      _weeksAvailableForRace < _requiredWeeks;
-
+      _weeksAvailableForRace < _effectiveRecommendedWeeks;
 
   // IDs del backend — ajustar cuando se conozcan los UUIDs reales
   static const _sportIds = [
@@ -330,6 +357,130 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
   static const _goalIds = [
     'f7ed624a-0873-488a-acaa-32b53718d5fc', 'c40ff70d-9f95-4a1e-9aa4-03a5b9f232fb', '252e0cf2-d36a-4e71-a950-46f23b83914b',
   ];
+
+  void _triggerCalculateWeeks() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 400), () {
+      if (mounted) _calculateWeeks();
+    });
+  }
+
+  Future<void> _calculateWeeks() async {
+    if (!mounted || _selectedSportIdx < 0 || _selectedGoalIdx < 0) return;
+
+    // Validación mínima según objetivo para disparar el cálculo
+    if (_selectedGoalIdx == 0) {
+      if (_selectedCompetencia == null || _raceDate == null) return;
+      if (_selectedCompetencia == 'Otro' && _raceNameCtrl.text.trim().isEmpty) return;
+    } else if (_selectedGoalIdx == 1) {
+      if (_modalidadMejoraTiempo == null && _timeDistCtrl.text.trim().isEmpty) return;
+    } else if (_selectedGoalIdx == 2) {
+      if (_condicionCategoria == null || _condicionSubcategoria == null) return;
+    }
+
+    final authProvider = context.read<AuthProvider>();
+    final token = authProvider.token;
+
+    setState(() => _calculatingWeeks = true);
+
+    String toTimeStr(int h, int m, int s) =>
+        '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+
+    try {
+      final desnivel = int.tryParse(_desnivelCtrl.text.trim()) ?? 0;
+      final altitud = int.tryParse(_altitudCtrl.text.trim()) ?? 0;
+
+      final body = <String, dynamic>{
+        'disciplina_ids': [int.tryParse(_sportIds[_selectedSportIdx]) ?? _sportIds[_selectedSportIdx]],
+        'id_objetivo': _goalIds[_selectedGoalIdx],
+        'nombre_competencia': null,
+        'fecha_competencia': null,
+        'distancia_objetivo': 0,
+        'unidad_distancia': 'km',
+        'tiempo_actual': null,
+        'tiempo_meta': null,
+        'desnivel_m': desnivel,
+        'altitud_destino_m': altitud,
+        'requiere_aclimatacion_calor': _aclimatacionCalor,
+        'es_internacional': _esInternacional,
+        'modalidad_mejora_tiempo': null,
+        'que_quieres_mejorar_cg': null,
+        'objetivo_especifico_cg': null,
+      };
+
+      if (_selectedGoalIdx == 0) {
+        final comp = _selectedCompetencia ?? '';
+        final compName = comp == 'Otro' ? _raceNameCtrl.text.trim() : comp;
+        body['nombre_competencia'] = compName;
+        // Solo para Goal 1 (o si se requiere): para Goal 0 enviamos null
+        body['modalidad_mejora_tiempo'] = null;
+        if (_raceDate != null) {
+          body['fecha_competencia'] = _raceDate!.toIso8601String().split('T')[0];
+        }
+        if (comp == 'Otro' && _raceDistCtrl.text.isNotEmpty) {
+          body['distancia_objetivo'] = double.tryParse(_raceDistCtrl.text.replaceAll(',', '.')) ?? 0;
+          body['unidad_distancia'] = _raceDistUnit;
+        } else {
+          final match = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(comp);
+          if (match != null) {
+            body['distancia_objetivo'] = double.tryParse(match.group(1)!) ?? 0;
+            body['unidad_distancia'] = 'km';
+          }
+        }
+      } else if (_selectedGoalIdx == 1) {
+        body['modalidad_mejora_tiempo'] = _modalidadMejoraTiempo;
+        if (_timeDistCtrl.text.isNotEmpty) {
+          body['distancia_objetivo'] = double.tryParse(_timeDistCtrl.text.replaceAll(',', '.')) ?? 0;
+          body['unidad_distancia'] = _timeDistUnit;
+        }
+        if (_timeHours > 0 || _timeMin > 0 || _timeSec > 0) {
+          body['tiempo_actual'] = toTimeStr(_timeHours, _timeMin, _timeSec);
+        }
+        if (_timeTargetHours > 0 || _timeTargetMin > 0 || _timeTargetSec > 0) {
+          body['tiempo_meta'] = toTimeStr(_timeTargetHours, _timeTargetMin, _timeTargetSec);
+        }
+      } else if (_selectedGoalIdx == 2) {
+        body['que_quieres_mejorar_cg'] = _condicionCategoria;
+        body['objetivo_especifico_cg'] = _condicionSubcategoria;
+      }
+
+      debugPrint('CALCULATE WEEKS PAYLOAD: ${jsonEncode(body)}');
+      final response = await http.post(
+        Uri.parse('https://apifitnflai.com/onboarding/save-discipline-objective-to-calculate-weeks'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
+
+      debugPrint('CALCULATE WEEKS [${response.statusCode}]: ${response.body}');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map && data['duracion_semanas'] != null) {
+          final rawDuracion = (data['duracion_semanas'] as num).toInt();
+          // Mínimo 2 semanas si el backend devuelve 0 o menor
+          final duracion = rawDuracion < 2 ? 2 : rawDuracion;
+          if (mounted) {
+            setState(() {
+              _backendRecommendedWeeks = duracion;
+              if (_selectedGoalIdx != 0) {
+                _semanas = duracion;
+              }
+            });
+          }
+        }
+      } else {
+        debugPrint('CALCULATE WEEKS ERROR [${response.statusCode}]: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('ERROR CALCULATING WEEKS: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _calculatingWeeks = false);
+      }
+    }
+  }
 
   Future<void> _saveAndContinue() async {
     final authProvider = context.read<AuthProvider>();
@@ -347,12 +498,25 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
     }
 
     try {
+      final desnivel = int.tryParse(_desnivelCtrl.text.trim()) ?? 0;
+      final altitud = int.tryParse(_altitudCtrl.text.trim()) ?? 0;
 
       // ── Campos comunes ──────────────────────────────────────
       final body = <String, dynamic>{
         'disciplina_ids':           [int.tryParse(_sportIds[_selectedSportIdx]) ?? _sportIds[_selectedSportIdx]],
         'id_objetivo':              _goalIds[_selectedGoalIdx],
         'duracion_semanas_objetivo': _semanas,
+        'distancia_objetivo':       0,
+        'unidad_distancia':         'km',
+        'nombre_competencia':       null,
+        'fecha_competencia':        null,
+        'desnivel_m':               desnivel,
+        'altitud_destino_m':        altitud,
+        'requiere_aclimatacion_calor': _aclimatacionCalor,
+        'es_internacional':         _esInternacional,
+        'modalidad_mejora_tiempo':  _selectedGoalIdx == 1 ? _modalidadMejoraTiempo : null,
+        'que_quieres_mejorar_cg':   null,
+        'objetivo_especifico_cg':   null,
       };
 
       // ── Goal 0: Competencia ─────────────────────────────────
@@ -458,11 +622,24 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
         child: child!,
       ),
     );
-    if (picked != null && mounted) setState(() => _raceDate = picked);
+    if (picked != null && mounted) {
+      setState(() {
+        _raceDate = picked;
+        _riskAccepted = false;
+      });
+      _triggerCalculateWeeks();
+    }
   }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
+    _raceNameCtrl.dispose();
+    _raceDistCtrl.dispose();
+    _desnivelCtrl.dispose();
+    _altitudCtrl.dispose();
+    _timeDistCtrl.dispose();
+    _condicionCtrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
   }
@@ -501,7 +678,16 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
         body: SafeArea(
           child: Column(children: [
             // ── Top bar ──────────────────────────────
-            const StepHeader(stepLabel: 'Paso 5 de 6'),
+            StepHeader(
+              stepLabel: 'Paso 5 de 6',
+              onBack: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  Navigator.pushReplacementNamed(context, AppRoutes.step5Test);
+                }
+              },
+            ),
             const SizedBox(height: 16),
   
             // ── Scrollable content ───────────────────
@@ -593,8 +779,10 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
                     final goals = _getGoals(context);
                     return Column(
                       children: List.generate(goals.length, (i) {
-                        // Ocultar "Prepararme para una competencia" si es Acondicionamiento
-                        if (i == 0 && _selectedSportIdx == 5) return const SizedBox.shrink();
+                        // Acondicionamiento (5): solo puede ver "Mejorar mi condición general" (Goal 2)
+                        if (_selectedSportIdx == 5 && i != 2) return const SizedBox.shrink();
+                        // Senderismo (4): no debe salir "Prepararme para una competencia" (Goal 0)
+                        if (_selectedSportIdx == 4 && i == 0) return const SizedBox.shrink();
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: Column(children: [
@@ -610,15 +798,19 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
                                 selectedSportIdx: _selectedSportIdx,
                                 competenciaOpciones: _competenciaOpciones[_selectedSportIdx] ?? [],
                                 selectedCompetencia: _selectedCompetencia,
-                                onCompetenciaChanged: (v) => setState(() {
-                                  _selectedCompetencia = v;
-                                  _riskAccepted = false;
-                                }),
+                                onCompetenciaChanged: (v) {
+                                  setState(() {
+                                    _selectedCompetencia = v;
+                                    _riskAccepted = false;
+                                  });
+                                  _triggerCalculateWeeks();
+                                },
                                 showRiskAlert: _showRiskAlert,
-                                requiredWeeks: _requiredWeeks,
+                                requiredWeeks: _effectiveRecommendedWeeks,
                                 weeksAvailable: _weeksAvailableForRace,
                                 riskAccepted: _riskAccepted,
                                 onRiskAcceptedChanged: (v) => setState(() => _riskAccepted = v),
+                                isCalculatingWeeks: _calculatingWeeks,
                                 // Goal 0
                                 raceNameCtrl: _raceNameCtrl,
                                 raceDate: _raceDate,
@@ -626,7 +818,35 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
                                 raceDistUnit: _raceDistUnit,
                                 onPickDate: _pickDate,
                                 onRaceUnitChanged: (v) => setState(() => _raceDistUnit = v),
+                                desnivelCtrl: _desnivelCtrl,
+                                altitudCtrl: _altitudCtrl,
+                                aclimatacionCalor: _aclimatacionCalor,
+                                esInternacional: _esInternacional,
+                                showAdvancedOptions: _showAdvancedOptions,
+                                onToggleAdvanced: (v) => setState(() => _showAdvancedOptions = v),
+                                onAclimatacionChanged: (v) {
+                                  setState(() => _aclimatacionCalor = v);
+                                  _triggerCalculateWeeks();
+                                },
+                                onEsInternacionalChanged: (v) {
+                                  setState(() => _esInternacional = v);
+                                  _triggerCalculateWeeks();
+                                },
+                                onTriggerCalculate: _triggerCalculateWeeks,
                                 // Goal 1
+                                modalidadMejoraTiempo: _modalidadMejoraTiempo,
+                                onModalidadMejoraTiempoChanged: (v) {
+                                  setState(() {
+                                    _modalidadMejoraTiempo = v;
+                                    if (v != null && v != 'Otro') {
+                                      final match = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(v);
+                                      if (match != null && _timeDistCtrl.text.isEmpty) {
+                                        _timeDistCtrl.text = match.group(1)!;
+                                      }
+                                    }
+                                  });
+                                  _triggerCalculateWeeks();
+                                },
                                 timeDistCtrl: _timeDistCtrl,
                                 timeDistUnit: _timeDistUnit,
                                 timeHours: _timeHours,
@@ -636,22 +856,34 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
                                 timeTargetMin: _timeTargetMin,
                                 timeTargetSec: _timeTargetSec,
                                 onTimeUnitChanged: (v) => setState(() => _timeDistUnit = v),
-                                onTimeChanged: (h, m, s) => setState(() {
-                                  _timeHours = h; _timeMin = m; _timeSec = s;
-                                }),
-                                onTargetTimeChanged: (h, m, s) => setState(() {
-                                  _timeTargetHours = h; _timeTargetMin = m; _timeTargetSec = s;
-                                }),
+                                onTimeChanged: (h, m, s) {
+                                  setState(() {
+                                    _timeHours = h; _timeMin = m; _timeSec = s;
+                                  });
+                                  _triggerCalculateWeeks();
+                                },
+                                onTargetTimeChanged: (h, m, s) {
+                                  setState(() {
+                                    _timeTargetHours = h; _timeTargetMin = m; _timeTargetSec = s;
+                                  });
+                                  _triggerCalculateWeeks();
+                                },
                                 targetExceedsActual: _targetExceedsActual,
                                 // Goal 2
                                 condicionCtrl: _condicionCtrl,
                                 condicionCategoria: _condicionCategoria,
                                 condicionSubcategoria: _condicionSubcategoria,
-                                onCondicionCategoriaChanged: (v) => setState(() {
-                                  _condicionCategoria = v;
-                                  _condicionSubcategoria = null;
-                                }),
-                                onCondicionSubcategoriaChanged: (v) => setState(() => _condicionSubcategoria = v),
+                                onCondicionCategoriaChanged: (v) {
+                                  setState(() {
+                                    _condicionCategoria = v;
+                                    _condicionSubcategoria = null;
+                                  });
+                                  _triggerCalculateWeeks();
+                                },
+                                onCondicionSubcategoriaChanged: (v) {
+                                  setState(() => _condicionSubcategoria = v);
+                                  _triggerCalculateWeeks();
+                                },
                               ),
                             ],
                           ]),
@@ -692,11 +924,47 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
                           ]),
                         ),
                       ]),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
+                      if (_calculatingWeeks) ...[
+                        Row(children: const [
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.orange),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Calculando semanas recomendadas...',
+                            style: TextStyle(color: AppColors.grey, fontSize: 12),
+                          ),
+                        ]),
+                        const SizedBox(height: 14),
+                      ] else if (_backendRecommendedWeeks != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.orange.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.orange.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.auto_awesome, color: AppColors.orange, size: 14),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Fitnflai recomienda $_backendRecommendedWeeks semanas',
+                                style: const TextStyle(color: AppColors.orange, fontSize: 12, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                      ],
                       _SemanasSlider(
                         value: _semanas,
                         options: _semanasOptions,
-                        requiredWeeks: _minSemanasRequeridas,
+                        requiredWeeks: _backendRecommendedWeeks ?? _minSemanasRequeridas,
                         onChanged: (v) {
                           final offset = _scrollCtrl.hasClients ? _scrollCtrl.offset : 0.0;
                           setState(() {
@@ -737,7 +1005,7 @@ class _Step6SportScreenState extends State<Step6SportScreen> {
                                     ]),
                                     const SizedBox(height: 8),
                                     Text(
-                                      AppLocalizations.of(context).onboardingSportTimeTightDesc(_minSemanasRequeridas),
+                                      AppLocalizations.of(context).onboardingSportTimeTightDesc(_backendRecommendedWeeks ?? _minSemanasRequeridas),
                                       style: const TextStyle(color: Color(0xFFFFCC88), fontSize: 13, height: 1.5),
                                     ),
                                     const SizedBox(height: 12),
@@ -1122,6 +1390,7 @@ class _GoalForm extends StatelessWidget {
   final int weeksAvailable;
   final bool riskAccepted;
   final ValueChanged<bool> onRiskAcceptedChanged;
+  final bool isCalculatingWeeks;
   // Goal 0
   final TextEditingController raceNameCtrl;
   final DateTime? raceDate;
@@ -1129,7 +1398,18 @@ class _GoalForm extends StatelessWidget {
   final String raceDistUnit;
   final VoidCallback onPickDate;
   final ValueChanged<String> onRaceUnitChanged;
+  final TextEditingController desnivelCtrl;
+  final TextEditingController altitudCtrl;
+  final bool aclimatacionCalor;
+  final bool esInternacional;
+  final bool showAdvancedOptions;
+  final ValueChanged<bool> onToggleAdvanced;
+  final ValueChanged<bool> onAclimatacionChanged;
+  final ValueChanged<bool> onEsInternacionalChanged;
+  final VoidCallback onTriggerCalculate;
   // Goal 1
+  final String? modalidadMejoraTiempo;
+  final ValueChanged<String?> onModalidadMejoraTiempoChanged;
   final TextEditingController timeDistCtrl;
   final String timeDistUnit;
   final int timeHours, timeMin, timeSec;
@@ -1156,9 +1436,21 @@ class _GoalForm extends StatelessWidget {
     required this.weeksAvailable,
     required this.riskAccepted,
     required this.onRiskAcceptedChanged,
+    required this.isCalculatingWeeks,
     required this.raceNameCtrl, required this.raceDate,
     required this.raceDistCtrl, required this.raceDistUnit,
     required this.onPickDate, required this.onRaceUnitChanged,
+    required this.desnivelCtrl,
+    required this.altitudCtrl,
+    required this.aclimatacionCalor,
+    required this.esInternacional,
+    required this.showAdvancedOptions,
+    required this.onToggleAdvanced,
+    required this.onAclimatacionChanged,
+    required this.onEsInternacionalChanged,
+    required this.onTriggerCalculate,
+    required this.modalidadMejoraTiempo,
+    required this.onModalidadMejoraTiempoChanged,
     required this.timeDistCtrl, required this.timeDistUnit,
     required this.timeHours, required this.timeMin, required this.timeSec,
     required this.timeTargetHours, required this.timeTargetMin, required this.timeTargetSec,
@@ -1197,6 +1489,56 @@ class _GoalForm extends StatelessWidget {
         ]),
       ),
     );
+
+  Widget _switchOption({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: AppColors.grey,
+                    fontSize: 11,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: value,
+            activeTrackColor: AppColors.orange,
+            activeThumbColor: AppColors.white,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1314,6 +1656,105 @@ class _GoalForm extends StatelessWidget {
             l10n.onboardingSportFormRaceDataDesc,
             style: const TextStyle(color: AppColors.grey, fontSize: 11, height: 1.4),
           ),
+          const SizedBox(height: 14),
+
+          // ── Condiciones de carrera (opcional) ──────
+          GestureDetector(
+            onTap: () => onToggleAdvanced(!showAdvancedOptions),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                Icon(
+                  showAdvancedOptions ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  color: AppColors.orange,
+                  size: 20,
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  'Condiciones de carrera (opcional)',
+                  style: TextStyle(
+                    color: AppColors.orange,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (showAdvancedOptions) ...[
+            const SizedBox(height: 12),
+            _label('Desnivel acumulado (metros)'),
+            TextField(
+              controller: desnivelCtrl,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: AppColors.white),
+              decoration: InputDecoration(
+                hintText: 'Ej. 500',
+                hintStyle: const TextStyle(color: AppColors.grey),
+                filled: true,
+                fillColor: AppColors.cardDark,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+              onChanged: (_) => onTriggerCalculate(),
+            ),
+            const SizedBox(height: 12),
+            _label('Altitud de la competencia (m s.n.m.)'),
+            TextField(
+              controller: altitudCtrl,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: AppColors.white),
+              decoration: InputDecoration(
+                hintText: 'Ej. 2600',
+                hintStyle: const TextStyle(color: AppColors.grey),
+                filled: true,
+                fillColor: AppColors.cardDark,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+              onChanged: (_) => onTriggerCalculate(),
+            ),
+            const SizedBox(height: 12),
+            _switchOption(
+              title: 'Requiere aclimatación al calor',
+              subtitle: 'La prueba se realiza en clima significativamente caluroso',
+              value: aclimatacionCalor,
+              onChanged: onAclimatacionChanged,
+            ),
+            const SizedBox(height: 10),
+            _switchOption(
+              title: 'Competencia internacional',
+              subtitle: 'Viaje fuera del país o cambio horario relevante',
+              value: esInternacional,
+              onChanged: onEsInternacionalChanged,
+            ),
+          ],
+
+          // ── Indicador de cálculo ─────────────────
+          if (isCalculatingWeeks) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: const [
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.orange),
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'Calculando semanas recomendadas...',
+                  style: TextStyle(color: AppColors.grey, fontSize: 12),
+                ),
+              ],
+            ),
+          ],
+
           // ── Alerta de riesgo ─────────────────────
           if (showRiskAlert) ...[
             const SizedBox(height: 14),
@@ -1325,13 +1766,13 @@ class _GoalForm extends StatelessWidget {
                 border: Border.all(color: const Color(0xFFCC4444), width: 1.5),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  const Text('⚠️', style: TextStyle(fontSize: 18)),
-                  const SizedBox(width: 8),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+                  Text('⚠️', style: TextStyle(fontSize: 18)),
+                  SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      l10n.onboardingSportRaceWeeksRequiredTitle,
-                      style: const TextStyle(
+                      'Tu tiempo de preparación requiere algunos ajustes.',
+                      style: TextStyle(
                         color: Color(0xFFFF6B6B),
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -1341,17 +1782,18 @@ class _GoalForm extends StatelessWidget {
                 ]),
                 const SizedBox(height: 10),
                 Text(
-                  l10n.onboardingSportRaceWeeksRequiredDesc(weeksAvailable, requiredWeeks),
-                  style: const TextStyle(color: Color(0xFFFFAAAA), fontSize: 13, height: 1.5),
+                  'Tienes $weeksAvailable semanas para prepararte para tu competencia. Según tu perfil deportivo, Fitnflai recomienda un período de preparación de $requiredWeeks semanas. Aunque dispones de menos tiempo del recomendado, podemos adaptar tu entrenamiento para ayudarte a progresar de manera gradual, priorizando tu condición física, recuperación y seguridad.',
+                  style: const TextStyle(color: Color(0xFFFFAAAA), fontSize: 13, height: 1.45),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.onboardingSportRaceWeeksRequiredNote,
-                  style: const TextStyle(color: Color(0xFFFFCCCC), fontSize: 12, height: 1.4),
+                const SizedBox(height: 10),
+                const Text(
+                  'Tu objetivo sigue siendo importante. 💪 Adaptaremos tu preparación al tiempo disponible, respetando tu nivel actual y priorizando una progresión responsable.',
+                  style: TextStyle(color: Color(0xFFFFCCCC), fontSize: 12, height: 1.4),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 GestureDetector(
                   onTap: () => onRiskAcceptedChanged(!riskAccepted),
+                  behavior: HitTestBehavior.opaque,
                   child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
@@ -1369,13 +1811,13 @@ class _GoalForm extends StatelessWidget {
                           : null,
                     ),
                     const SizedBox(width: 10),
-                    Expanded(
+                    const Expanded(
                       child: Text(
-                        l10n.onboardingSportRaceWeeksRequiredCheckbox,
-                        style: const TextStyle(
+                        'Entiendo que el tiempo disponible es menor al recomendado y que esto puede limitar mi preparación. Deseo continuar con un plan adaptado a mi condición física y al tiempo disponible.',
+                        style: TextStyle(
                           color: Color(0xFFFFAAAA),
                           fontSize: 12,
-                          height: 1.5,
+                          height: 1.4,
                         ),
                       ),
                     ),
@@ -1387,6 +1829,18 @@ class _GoalForm extends StatelessWidget {
         ],
 
         if (goalIdx == 1) ...[
+          // ── Modalidad / Prueba ────────────────────
+          _label('Modalidad / Prueba'),
+          _DropdownSelector(
+            value: modalidadMejoraTiempo,
+            hint: competenciaOpciones.isEmpty
+                ? l10n.onboardingSportDropdownSelectSportFirst
+                : 'Selecciona tu prueba o modalidad',
+            options: competenciaOpciones,
+            onChanged: onModalidadMejoraTiempoChanged,
+          ),
+          const SizedBox(height: 12),
+
           // ── Mejorar tiempo ───────────────────────
           _label(l10n.onboardingSportDistance),
           Row(children: [
@@ -1406,6 +1860,7 @@ class _GoalForm extends StatelessWidget {
                       borderSide: BorderSide.none),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
+                onChanged: (_) => onTriggerCalculate(),
               ),
             ),
             const SizedBox(width: 10),
@@ -1484,6 +1939,21 @@ class _GoalForm extends StatelessWidget {
             l10n.onboardingSportGeneralConditionDesc,
             style: const TextStyle(color: AppColors.grey, fontSize: 11, height: 1.4),
           ),
+        ],
+        if (isCalculatingWeeks && goalIdx != 0) ...[
+          const SizedBox(height: 12),
+          Row(children: const [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.orange),
+            ),
+            SizedBox(width: 8),
+            Text(
+              'Calculando semanas recomendadas...',
+              style: TextStyle(color: AppColors.grey, fontSize: 12),
+            ),
+          ]),
         ],
       ]),
     );

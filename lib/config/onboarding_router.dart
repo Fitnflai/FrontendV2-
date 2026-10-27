@@ -157,8 +157,12 @@ class OnboardingRouter {
             backendDeducedStep = 4; // Step 5: Test Selection
           } else {
             // All previous steps (PARQ, Profile, Fitness, Body, Test Selection, Sport) are done.
-            // Next is Generating
-            backendDeducedStep = 6; // Step 7: Generating
+            // If they reached or completed Step 7 (generating), they should be in Feedback
+            if (localCompletedStep != null && localCompletedStep >= 7) {
+              backendDeducedStep = 7; // Step 8: Feedback
+            } else {
+              backendDeducedStep = 6; // Step 7: Generating
+            }
           }
         }
       }

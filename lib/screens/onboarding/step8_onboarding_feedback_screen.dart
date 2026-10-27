@@ -50,9 +50,11 @@ class _OnboardingFeedbackScreenState extends State<OnboardingFeedbackScreen> {
 
       if (results[0].statusCode == 200) {
         _user = jsonDecode(results[0].body) as Map<String, dynamic>;
+        debugPrint('FEEDBACK USER: $_user');
       }
       if (results[1].statusCode == 200) {
         _plan = jsonDecode(results[1].body) as Map<String, dynamic>;
+        debugPrint('FEEDBACK PLAN: $_plan');
       }
       if (results[2].statusCode == 200) {
         final raw = jsonDecode(results[2].body);
@@ -112,9 +114,13 @@ class _OnboardingFeedbackScreenState extends State<OnboardingFeedbackScreen> {
 
     // Fecha de inicio — del AuthProvider (guardado en step4) o del plan/usuario
     final fechaInicioStr = _fechaInicioLocal
-                        ?? (_plan?['fecha_inicio']         as String?)
-                        ?? (_user?['fecha_inicio_deseada'] as String?)
-                        ?? (_user?['fecha_inicio']         as String?);
+                        ?? (_plan?['fecha_inicio']          as String?)
+                        ?? (_plan?['fecha_inicio_plan']     as String?)
+                        ?? (_plan?['inicio']                as String?)
+                        ?? (_plan?['fecha_creacion']        as String?)
+                        ?? (_user?['fecha_inicio_deseada']  as String?)
+                        ?? (_user?['fecha_inicio_preferida'] as String?)
+                        ?? (_user?['fecha_inicio']          as String?);
     final diaInicio   = _diaDeSemana(context, fechaInicioStr);
     final fechaInicio = _formatFecha(context, fechaInicioStr);
 
@@ -378,135 +384,173 @@ class _PlanHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenH = MediaQuery.of(context).size.height;
-    return SizedBox(
-      height: screenH * 0.70,
-      child: Stack(children: [
-        // ── Imagen de fondo ────────────────────────
-        Positioned.fill(
-          child: Image.asset(
-            'assets/images/Frame_111.png',
-            fit: BoxFit.cover,
+    return Stack(children: [
+      // ── Imagen de fondo ────────────────────────
+      Positioned.fill(
+        child: Image.asset(
+          'assets/images/Frame_111.png',
+          fit: BoxFit.cover,
+        ),
+      ),
+      // Círculos decorativos
+      Positioned(
+        top: -40, right: -40,
+        child: Container(
+          width: 200, height: 200,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.orange.withValues(alpha: 0.06),
           ),
         ),
-        // Círculos decorativos
-        Positioned(
-          top: -40, right: -40,
-          child: Container(
-            width: 200, height: 200,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.orange.withValues(alpha: 0.06),
+      ),
+
+      // ── Degradado: transparente arriba → negro abajo ────
+      Positioned.fill(
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0x00000000),
+                Color(0x33000000),
+                Color(0xCC000000),
+                Color(0xFF000000),
+              ],
+              stops: [0.0, 0.25, 0.70, 1.0],
             ),
           ),
         ),
+      ),
 
-        // ── Degradado: transparente arriba → negro abajo ────
-        Positioned.fill(
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0x00000000),
-                  Color(0x44000000),
-                  Color(0xDD000000),
-                  Color(0xFF000000),
-                ],
-                stops: [0.0, 0.35, 0.75, 1.0],
-              ),
-            ),
-          ),
-        ),
-
-        // ── Contenido ───────────────────────────────
-        Positioned(
-          bottom: 28, left: 20, right: 20,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Emoji + saludo centrado
-              Center(child: Column(children: [
-                const Text('😁', style: TextStyle(fontSize: 64)),
-                const SizedBox(height: 12),
-                Text(AppLocalizations.of(context).onboardingFeedbackReadyTitle(nombreMostrado),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800)),
+      // ── Contenido fluido ────────────────────────
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Emoji + saludo centrado
+            Center(
+              child: Column(children: [
+                const Text('😁', style: TextStyle(fontSize: 54)),
+                const SizedBox(height: 10),
+                Text(
+                  AppLocalizations.of(context).onboardingFeedbackReadyTitle(nombreMostrado),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   AppLocalizations.of(context).onboardingFeedbackReadySubtitle,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      color: Color(0xFFE8C090), fontSize: 15, height: 1.5)),
-              ])),
-              const SizedBox(height: 28),
-
-              // Título del plan
-              Text(disciplina,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      height: 1.2)),
-              const SizedBox(height: 12),
-              
-              // Tags
-              Wrap(spacing: 8, runSpacing: 8, children: [
-                if (nombreDisciplina != null) _Tag(nombreDisciplina!),
-                if (diasEntrenamiento != null) _Tag(diasEntrenamiento!),
-                if (ciudad != null) _Tag(ciudad!),
-                if (altitud != null) _Tag(altitud!),
+                    color: Color(0xFFE8C090),
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
               ]),
-              const SizedBox(height: 18),
+            ),
+            const SizedBox(height: 24),
 
-              // Métricas en dos columnas
-              Row(children: [
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      const Text('🎯', style: TextStyle(fontSize: 16)),
-                      const SizedBox(width: 6),
-                      Text(AppLocalizations.of(context).onboardingFeedbackDurationLabel,
-                          style: const TextStyle(color: Colors.white54, fontSize: 13)),
-                    ]),
-                    const SizedBox(height: 4),
-                    Text(semanas,
+            // Título del plan
+            Text(
+              disciplina,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                height: 1.25,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Tags
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              if (nombreDisciplina != null) _Tag(nombreDisciplina!),
+              if (diasEntrenamiento != null) _Tag(diasEntrenamiento!),
+              if (ciudad != null) _Tag(ciudad!),
+              if (altitud != null) _Tag(altitud!),
+            ]),
+            const SizedBox(height: 20),
+
+            // Métricas en dos columnas
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+              ),
+              child: Row(children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        const Text('🎯', style: TextStyle(fontSize: 15)),
+                        const SizedBox(width: 6),
+                        Text(
+                          AppLocalizations.of(context).onboardingFeedbackDurationLabel,
+                          style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                        ),
+                      ]),
+                      const SizedBox(height: 6),
+                      Text(
+                        semanas,
                         style: const TextStyle(
-                            color: AppColors.orange,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800)),
-                  ],
-                )),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      const Text('📅', style: TextStyle(fontSize: 16)),
-                      const SizedBox(width: 6),
-                      Text(AppLocalizations.of(context).onboardingFeedbackStartLabel,
-                          style: const TextStyle(color: Colors.white54, fontSize: 13)),
-                    ]),
-                    const SizedBox(height: 4),
-                    Text(diaInicio != '—'
-                            ? '$diaInicio, $fechaInicio' : fechaInicio,
+                          color: AppColors.orange,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 38,
+                  color: Colors.white.withValues(alpha: 0.15),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        const Text('📅', style: TextStyle(fontSize: 15)),
+                        const SizedBox(width: 6),
+                        Text(
+                          AppLocalizations.of(context).onboardingFeedbackStartLabel,
+                          style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                        ),
+                      ]),
+                      const SizedBox(height: 6),
+                      Text(
+                        diaInicio != '—' && fechaInicio != '—'
+                            ? '$diaInicio, $fechaInicio'
+                            : (fechaInicio != '—' ? fechaInicio : 'Hoy'),
                         style: const TextStyle(
-                            color: AppColors.orange,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800)),
-                  ],
-                )),
+                          color: AppColors.orange,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ]),
-            ],
-          ),
+            ),
+          ],
         ),
-      ]),
-    );
+      ),
+    ]);
   }
 }
 
