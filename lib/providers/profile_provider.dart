@@ -479,16 +479,36 @@ class ProfileProvider with ChangeNotifier, WidgetsBindingObserver {
       );
 
       if (response is Map<String, dynamic>) {
-        final status = response['status'] as String?;
+        final statusRaw = (response['status'] ?? response['estado'] ?? response['state'])?.toString().toLowerCase().trim() ?? '';
+        final messageRaw = (response['message'] ?? response['mensaje'])?.toString().toLowerCase().trim() ?? '';
         final requires3ds = response['requires_3ds'] as bool? ?? false;
+        final requiresOtp = response['requires_otp'] as bool? ?? false;
+        final successFlag = response['success'] == true || response['ok'] == true;
 
-        if (status == 'success' || status == 'completed' || status == '' || status == null) {
+        final isSuccessStatus = successFlag ||
+            statusRaw.contains('exitosa') ||
+            statusRaw.contains('exitoso') ||
+            statusRaw.contains('success') ||
+            statusRaw.contains('complet') ||
+            statusRaw.contains('approv') ||
+            statusRaw.contains('aprobad') ||
+            statusRaw.contains('pagad') ||
+            statusRaw == 'ok' ||
+            statusRaw.isEmpty ||
+            messageRaw.contains('exitosa') ||
+            messageRaw.contains('exitoso') ||
+            messageRaw.contains('éxito') ||
+            messageRaw.contains('exito') ||
+            messageRaw.contains('success') ||
+            messageRaw.contains('aprobada') ||
+            messageRaw.contains('approved');
+
+        if (isSuccessStatus && !requires3ds && !requiresOtp) {
+          _subscriptionError = null;
           await loadAll(token, force: true); // Reload all data to reflect new subscription
-        } else if (requires3ds || (response['requires_otp'] as bool? ?? false)) {
-          // Keep _isProcessingOneClick = true or false?
-          // Since we are showing the dialog inside the app, the app is not paused/resumed,
-          // so we don't rely on app lifecycle to reload. The dialog completion callback itself
-          // will trigger the reload in the UI! So we can set _isProcessingOneClick = false here.
+        } else if (requires3ds || requiresOtp) {
+          _subscriptionError = null;
+          // Dialog completion callback in UI will trigger reload
         } else {
           // Status is failed, declined, or other non-successful status
           final message = response['message'] as String? ?? 'La transacción no pudo completarse.';

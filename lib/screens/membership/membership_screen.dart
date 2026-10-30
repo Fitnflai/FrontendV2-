@@ -7,7 +7,6 @@ import '../../providers/profile_provider.dart';
 import '../../config/app_colors.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/three_ds_challenge_dialog.dart';
-import '../../widgets/blocking_loading_overlay.dart'; // Import the new overlay widget
 import '../../widgets/otp_verification_dialog.dart';
 import '../../widgets/specialist_selection_bottom_sheet.dart';
 
@@ -125,10 +124,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
       _hasReopenedSubscribeSheet = false;
     }
 
-    return BlockingLoadingOverlay(
-      isLoading: profileProvider.isProcessingOneClick,
-      message: AppLocalizations.of(context).processingYourPayment,
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: AppColors.bg,
         appBar: widget.fromOnboarding
             ? null
@@ -195,8 +191,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
             ),
           ]),
         ),
-      ),
-    );
+      );
   }
 
   List<_Plan> _buildPlans(List<dynamic> planesData) {
@@ -437,7 +432,13 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                   timezoneOffset: timezoneOffset,
                                 );
                                 debugPrint('Nuvei response (inline): $response');
-                                if (profileProvider.subscriptionError != null) {
+                                final hasInlineSubError = profileProvider.subscriptionError != null &&
+                                    !profileProvider.subscriptionError!.toLowerCase().contains('exitosa') &&
+                                    !profileProvider.subscriptionError!.toLowerCase().contains('éxito') &&
+                                    !profileProvider.subscriptionError!.toLowerCase().contains('exito') &&
+                                    !profileProvider.subscriptionError!.toLowerCase().contains('success');
+
+                                if (hasInlineSubError) {
                                   setModalState(() {
                                     errorMessageCheckout = profileProvider.subscriptionError;
                                   });
@@ -525,12 +526,15 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                       });
                                     }
                                   } else {
-                                    setModalState(() {
-                                      checkoutStep = 3;
-                                      showCvvPrompt = false;
-                                    });
+                                    if (dialogContext.mounted) {
+                                      setModalState(() {
+                                        showCvvPrompt = false;
+                                        checkoutStep = 3; // Mostrar modal de Pago Completado
+                                      });
+                                    }
                                     cvvController.clear();
-                                    await authProvider.refreshUser();
+                                    profileProvider.loadAll(token, force: true);
+                                    authProvider.refreshUser();
                                   }
                                 }
                               } catch (e) {
@@ -757,7 +761,13 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                 );
                                 debugPrint('Nuvei response (dialog): $response');
 
-                                if (profileProvider.subscriptionError != null) {
+                                final hasDialogSubError = profileProvider.subscriptionError != null &&
+                                    !profileProvider.subscriptionError!.toLowerCase().contains('exitosa') &&
+                                    !profileProvider.subscriptionError!.toLowerCase().contains('éxito') &&
+                                    !profileProvider.subscriptionError!.toLowerCase().contains('exito') &&
+                                    !profileProvider.subscriptionError!.toLowerCase().contains('success');
+
+                                if (hasDialogSubError) {
                                   setModalState(() {
                                     checkoutStep = 0; // Go back to card selection so they can try again or see error
                                     errorMessageCheckout = profileProvider.subscriptionError;
@@ -843,10 +853,13 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                       });
                                     }
                                   } else {
-                                    setModalState(() {
-                                      checkoutStep = 3; // Success!
-                                    });
-                                    await authProvider.refreshUser();
+                                    if (dialogContext.mounted) {
+                                      setModalState(() {
+                                        checkoutStep = 3; // Mostrar modal de Pago Completado
+                                      });
+                                    }
+                                    profileProvider.loadAll(token, force: true);
+                                    authProvider.refreshUser();
                                   }
                                 }
                               } catch (e) {
@@ -1070,6 +1083,36 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   ]),
                 ),
               );
+            } else if (checkoutStep == 2) {
+              return PopScope(
+                canPop: false,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(20, 20, 20, bottomPadding),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildDragHandle(),
+                      const SizedBox(height: 30),
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(l10n.processingYourPayment,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 12),
+                      Text(
+                          l10n.nuveiVerificationMessage,
+                          style: const TextStyle(
+                              color: AppColors.greyLight, fontSize: 13, height: 1.4),
+                          textAlign: TextAlign.center),
+                      const SizedBox(height: 30),
+                    ],
+                  ),
+                ),
+              );
             } else if (checkoutStep == 3) {
               return Padding(
                 padding: EdgeInsets.fromLTRB(20, 20, 20, bottomPadding),
@@ -1116,6 +1159,11 @@ class _MembershipScreenState extends State<MembershipScreen> {
                       child:                       ElevatedButton(
                         onPressed: () async {
                           Navigator.pop(dialogContext); // Close success modal
+                          if (token != null) {
+                            await profileProvider.loadAll(token, force: true);
+                          }
+                          await authProvider.refreshUser();
+                          if (!pageContext.mounted) return;
                           final planName = plan.name.toLowerCase();
                           final isElite = planName.contains('elite') || planName.contains('élite');
                           final specialistId = profileProvider.profileData?['id_especialista'];

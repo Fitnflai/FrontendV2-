@@ -245,14 +245,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                      // ── Banner premium ────────────────────
                      GestureDetector(
-                       onTap: () => Navigator.push(context,
-                           MaterialPageRoute(builder: (_) =>
-                               const MembershipScreen())),
-                       child: _PremiumBanner(
-                         nombre: nombre.split(' ').first,
-                         user: user,
-                       ),
-                     ),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MembershipScreen(),
+                          ),
+                        ).then((_) => _load()),
+                        child: _PremiumBanner(
+                          nombre: nombre.split(' ').first,
+                          user: user,
+                          onUpgradeTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MembershipScreen(),
+                            ),
+                          ).then((_) => _load()),
+                        ),
+                      ),
                      const SizedBox(height: 20),
 
                     // ── ESPECIALISTA ──────────────────────
@@ -1098,7 +1107,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 class _PremiumBanner extends StatelessWidget {
   final String nombre;
   final Usuario? user;
-  const _PremiumBanner({required this.nombre, this.user});
+  final VoidCallback? onUpgradeTap;
+  const _PremiumBanner({required this.nombre, this.user, this.onUpgradeTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1179,7 +1189,7 @@ class _PremiumBanner extends StatelessWidget {
             const SizedBox(height: 12),
             Row(children: [
               GestureDetector(
-                onTap: () => Navigator.push(context,
+                onTap: onUpgradeTap ?? () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const MembershipScreen())),
                 child: Text(buttonText,
                     style: TextStyle(
