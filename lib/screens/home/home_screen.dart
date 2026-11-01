@@ -252,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _planPorFecha.forEach((fechaKey, workout) {
       final tipo = workout['tipo'] as String? ?? '';
       if (tipo != 'descanso_activo' && tipo != 'Descanso') {
-        final titulo = workout['titulo_entrenamiento'] as String? ?? '';
+        final titulo = (workout['nombre'] as String? ?? workout['titulo_entrenamiento'] as String? ?? '').trim();
         if (titulo.isNotEmpty) {
           if (fechaKey.length >= 7) {
             months.add(fechaKey.substring(0, 7));
@@ -271,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final tipo = workout['tipo'] as String? ?? '';
     if (tipo == 'descanso_activo' || tipo == 'Descanso') return false;
     
-    final titulo = workout['titulo_entrenamiento'] as String? ?? '';
+    final titulo = (workout['nombre'] as String? ?? workout['titulo_entrenamiento'] as String? ?? '').trim();
     return titulo.isNotEmpty;
   }
 
@@ -1193,7 +1193,7 @@ class _TodaySession extends StatelessWidget {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
     final l10n  = AppLocalizations.of(context);
     // Sin entrenamiento → tarjeta de descanso
-    final titulo     = data?['titulo_entrenamiento'] as String? ?? '';
+    final titulo     = (data?['nombre'] as String? ?? data?['titulo_entrenamiento'] as String? ?? '').trim();
     final ejercicios = data?['ejercicios_asociados'] as List<dynamic>? ?? [];
 
     if (data == null || titulo.isEmpty) return _NoWorkoutCard();

@@ -216,7 +216,7 @@ class _PlanScreenState extends State<PlanScreen> {
 
   bool _isWorkout(Map<String, dynamic> s) {
     final tipo = (s['tipo'] as String? ?? '').toLowerCase().trim();
-    final titulo = (s['titulo_entrenamiento'] as String? ?? '').trim();
+    final titulo = (s['nombre'] as String? ?? s['titulo_entrenamiento'] as String? ?? '').trim();
     if (tipo == 'descanso_activo' ||
         tipo == 'descanso' ||
         tipo.contains('descanso') ||
@@ -345,7 +345,7 @@ class _PlanScreenState extends State<PlanScreen> {
                       ..._sessions
                         .where((s) {
                           final tipo   = (s['tipo'] as String? ?? '').toLowerCase();
-                          final titulo = (s['titulo_entrenamiento'] as String? ?? '').trim();
+                          final titulo = (s['nombre'] as String? ?? s['titulo_entrenamiento'] as String? ?? '').trim();
                           return titulo.isNotEmpty ||
                               tipo.contains('descanso') ||
                               tipo.contains('rest');
@@ -523,7 +523,7 @@ class _WeekDaysStrip extends StatelessWidget {
 
   bool _isWorkout(Map<String, dynamic> s) {
     final tipo = (s['tipo'] as String? ?? '').toLowerCase().trim();
-    final titulo = (s['titulo_entrenamiento'] as String? ?? '').trim();
+    final titulo = (s['nombre'] as String? ?? s['titulo_entrenamiento'] as String? ?? '').trim();
     if (tipo == 'descanso_activo' ||
         tipo == 'descanso' ||
         tipo.contains('descanso') ||
@@ -833,7 +833,7 @@ class _SessionCardState extends State<_SessionCard> {
       return _RestDayCard(data: widget.data, fecha: fecha);
     }
 
-    final titulo     = widget.data['titulo_entrenamiento'] as String? ?? '';
+    final titulo     = (widget.data['nombre'] as String? ?? widget.data['titulo_entrenamiento'] as String? ?? '').trim();
     final estado     = (widget.data['estado']              as String? ?? '').toLowerCase();
     final ejercicios = widget.data['ejercicios_asociados'] as List<dynamic>? ?? [];
     final cfg        = WorkoutTypes.fromTipo(tipo);

@@ -237,7 +237,8 @@ class _WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
   );
 
   Widget _buildSummaryCard(AppThemeExtensionWrapper theme) {
-    final titulo = widget.entrenamiento?['titulo_entrenamiento']
+    final titulo = widget.entrenamiento?['nombre']
+                ?? widget.entrenamiento?['titulo_entrenamiento']
                 ?? widget.entrenamiento?['titulo'] ?? AppLocalizations.of(context).workoutDetailTitle;
     return Container(
       width: double.infinity,

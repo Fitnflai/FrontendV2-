@@ -149,6 +149,7 @@ class _WorkoutActiveScreenState extends State<WorkoutActiveScreen>
         'descripcion':  ej['descripcion']   as String? ?? '',
         'multimedia':   ej['multimedia_url'] as String? ?? '',
         'descanso':     (asoc['descanso_segundos'] as num?)?.toInt() ?? 0,
+        'distancia_metros': (asoc['distancia_metros'] as num?)?.toInt() ?? 0,
         'necesita_mapa': ej['necesita_mapa'] as bool? ?? false,
         'instrucciones': ej['instrucciones'] as Map<String, dynamic>?,
         'estado':       estado,

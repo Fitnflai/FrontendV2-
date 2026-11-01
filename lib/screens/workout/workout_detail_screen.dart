@@ -105,6 +105,11 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   String get _tipo =>
       _data?['tipo'] as String? ?? '';
 
+  bool get _isDescanso {
+    final t = _tipo.toLowerCase();
+    return t == 'descanso' || t == 'descanso_activo' || t.contains('descanso') || t.contains('rest');
+  }
+
   String get _descripcion =>
       _data?['descripcion_completa'] as String? ??
       _data?['descripcion']         as String? ?? '';
@@ -241,7 +246,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
 
     final n = nombre.toLowerCase();
 
-    // 1. Recuperación
+    // 1. Vuelta a la calma / Recuperación
     if (n.contains('foam roller') ||
         n.contains('foam') ||
         n.contains('roller') ||
@@ -251,12 +256,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         n.contains('vuelta a la calma') ||
         n.contains('recuperaci') ||
         n.contains('cooldown') ||
-        n.contains('cool down')) {
-      return 'Recuperación';
-    }
-
-    // 2. Movilidad y prevención
-    if (n.contains('rotación') ||
+        n.contains('cool down') ||
+        n.contains('rotación') ||
         n.contains('rotacion') ||
         n.contains('manguito') ||
         n.contains('banda') ||
@@ -264,36 +265,15 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         n.contains('estiramiento') ||
         n.contains('movilidad') ||
         n.contains('prevención') ||
-        n.contains('prevencion') ||
-        n.contains('glúteo') ||
-        n.contains('gluteo') ||
-        n.contains('lumbar') ||
-        n.contains('isquio') ||
-        n.contains('core') ||
-        n.contains('plancha')) {
-      return 'Movilidad y prevención';
+        n.contains('prevencion')) {
+      return 'Vuelta a la calma';
     }
 
-    // 3. Técnica
-    if (n.contains('drill') ||
-        n.contains('catch-up') ||
-        n.contains('catch up') ||
-        n.contains('técnica') ||
-        n.contains('tecnica') ||
-        n.contains('brazada') ||
-        n.contains('remada') ||
-        n.contains('un brazo') ||
-        n.contains('skipping') ||
-        n.contains('talones') ||
-        n.contains('coordinación') ||
-        n.contains('coordinacion')) {
-      return 'Técnica';
-    }
-
-    // 4. Calentamiento
+    // 2. Calentamiento
     if (n.contains('calentamiento') ||
         n.contains('nado suave') ||
         n.contains('patada con tabla') ||
+        n.contains('patada dorsal') ||
         n.contains('trote suave') ||
         n.contains('activación') ||
         n.contains('activacion') ||
@@ -303,41 +283,52 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       return 'Calentamiento';
     }
 
-    // 5. Trabajo principal
-    return 'Trabajo principal';
+    // 3. Bloque principal
+    return 'Bloque principal';
   }
 
   // Agrupa ejercicios por bloque funcional
   List<Map<String, dynamic>> get _bloques {
     final Map<String, List<Map<String, dynamic>>> grouped = {};
     for (final e in _ejercicios) {
-      final ej     = e['ejercicio'] as Map<String, dynamic>? ?? e as Map<String, dynamic>? ?? {};
-      final nombre = ej['nombre'] as String? ?? ej['descripcion'] as String? ?? '';
+      final mapE = e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{};
+      final ej = mapE['ejercicio'] as Map<String, dynamic>? ?? mapE;
+      final nombre = ej['nombre'] as String? ?? ej['descripcion'] as String? ?? mapE['nombre'] as String? ?? '';
       if (nombre.isEmpty) continue;
 
-      final rawBloque = ej['bloque'] as String? ?? e['bloque'] as String?;
+      final rawBloque = mapE['bloque'] as String? ?? ej['bloque'] as String?;
       final bloque = _classifyBloque(nombre, rawBloque);
-      final tipo   = ej['tipo_movimiento'] as String? ?? ej['tipo'] as String? ?? '';
-      final series = ej['series']?.toString() ?? '';
-      final reps   = ej['repeticiones']?.toString() ?? ej['reps']?.toString() ?? '';
-      final durMin = ej['duracion_minutos']?.toString() ?? '';
+      final tipo   = ej['tipo_movimiento'] as String? ?? ej['tipo'] as String? ?? mapE['tipo'] as String? ?? '';
+      final series = (mapE['series'] ?? ej['series'])?.toString() ?? '';
+      final reps   = (mapE['repeticiones'] ?? mapE['reps'] ?? ej['repeticiones'] ?? ej['reps'])?.toString() ?? '';
+      final durSeg = int.tryParse((mapE['duracion_segundos'] ?? ej['duracion_segundos'] ?? '').toString()) ?? 0;
+      final durMin = (mapE['duracion_minutos'] ?? ej['duracion_minutos'])?.toString() ?? (durSeg > 0 ? '${(durSeg / 60).round()} min' : '');
+      final descansoSeg = int.tryParse((mapE['descanso_segundos'] ?? ej['descanso_segundos'] ?? '').toString()) ?? 0;
+      final distanciaM = int.tryParse((mapE['distancia_metros'] ?? ej['distancia_metros'] ?? '').toString()) ?? 0;
+      final pesoObj = (mapE['peso_objetivo'] ?? ej['peso_objetivo'])?.toString() ?? '';
 
       grouped.putIfAbsent(bloque, () => []);
       grouped[bloque]!.add({
-        'nombre': nombre,
-        'tipo':   tipo,
-        'series': series,
-        'reps':   reps,
-        'dur':    durMin,
-        'estado': (e['estado'] as String? ?? '').toLowerCase(),
+        'nombre':       nombre,
+        'tipo':         tipo,
+        'series':       series,
+        'reps':         reps,
+        'dur':          durMin,
+        'dur_seg':      durSeg,
+        'descanso_seg': descansoSeg,
+        'distancia_m':  distanciaM,
+        'peso':         pesoObj,
+        'estado':       ((mapE['estado'] ?? ej['estado']) as String? ?? '').toLowerCase(),
       });
     }
 
     const order = [
       'Calentamiento',
-      'Técnica',
+      'Bloque principal',
       'Trabajo principal',
+      'Técnica',
       'Movilidad y prevención',
+      'Vuelta a la calma',
       'Recuperación',
     ];
 
@@ -375,8 +366,10 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     final planNombreProfile = (profileProvider.planActivo?['nombre'] as String?)?.toLowerCase() ?? '';
     final isProOrEliteProfile = planNombreProfile.contains('pro') || planNombreProfile.contains('elite');
     final canSeeNutrition = user?.canSeeNutrition == true || isProOrEliteProfile;
-    final displayTitulo = _data?['titulo_entrenamiento'] as String? ??
-        _data?['titulo'] as String? ?? AppLocalizations.of(context).workoutDetailTitle;
+    final displayTitulo = _data?['nombre'] as String? ??
+        _data?['titulo_entrenamiento'] as String? ??
+        _data?['titulo'] as String? ??
+        (_isDescanso ? 'Día de descanso' : AppLocalizations.of(context).workoutDetailTitle);
 
     final displayDuracion = _data?['duracion_minutos'] != null
         ? AppLocalizations.of(context).statsMinCount(int.tryParse(_data!['duracion_minutos'].toString()) ?? 0)
@@ -418,10 +411,23 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   child: Center(child: CircularProgressIndicator(
                       color: theme.primary, strokeWidth: 2)),
                 )
-              else if (_descripcion.isNotEmpty) ...[
+              else if (_isDescanso) ...[
+                const SizedBox(height: 16),
+                _DescansoInfoCard(data: _data ?? {}),
+              ] else if (_descripcion.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 ..._parseSecciones(_descripcion, canSeeNutrition)
-                    .where((s) => canSeeNutrition || s.tipo != _SeccionTipo.nutricion)
+                    .where((s) {
+                      if (!canSeeNutrition && s.tipo == _SeccionTipo.nutricion) return false;
+                      if (_bloques.isNotEmpty) {
+                        if (s.tipo == _SeccionTipo.calentamiento ||
+                            s.tipo == _SeccionTipo.principal ||
+                            s.tipo == _SeccionTipo.vuelta) {
+                          return false;
+                        }
+                      }
+                      return true;
+                    })
                     .map((s) =>
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -431,7 +437,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
               ],
 
               // Bloques de ejercicios
-              if (_bloques.isNotEmpty) ...[
+              if (!_isDescanso && _bloques.isNotEmpty) ...[
                 const SizedBox(height: 20),
                 Text(AppLocalizations.of(context).workoutDetailExercises,
                     style: TextStyle(
@@ -440,7 +446,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                         fontWeight: FontWeight.w800)),
                 const SizedBox(height: 12),
                 ..._bloques.map((b) => _BloqueCard(bloque: b, workoutSport: _tipo)),
-              ] else if (_ejercicios.isEmpty && _descripcion.isEmpty)
+              ] else if (!_isDescanso && _ejercicios.isEmpty && _descripcion.isEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 40),
                   child: Center(
@@ -470,7 +476,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
           ),
         ),
       ]),
-      bottomNavigationBar: _isToday(_fecha) && !_completado
+      bottomNavigationBar: _isToday(_fecha) && !_completado && !_isDescanso
           ? SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -657,6 +663,303 @@ class _Header extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// DESCANSO INFO CARD
+// ═══════════════════════════════════════════════════════════════
+class _DescansoInfoCard extends StatelessWidget {
+  final Map<String, dynamic> data;
+  const _DescansoInfoCard({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).extension<AppThemeExtension>()!;
+    final mensaje = (data['mensaje'] as String? ?? '').trim();
+    final sueno = (data['sueno'] as String? ?? '').trim();
+    final hidratacion = (data['hidratacion'] as String? ?? '').trim();
+    final sugerenciaH = (data['sugerencia_hidratacion'] as String? ?? '').trim();
+    final hidrMl = data['hidratacion_ml']?.toString() ?? '';
+    final tip = (data['tip_diario'] as String? ?? '').trim();
+    final caminata = (data['caminata'] as String? ?? '').trim();
+    final movilidad = (data['movilidad'] as String? ?? '').trim();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Card Principal
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: theme.card,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: theme.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text('🧘', style: TextStyle(fontSize: 20)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          (data['nombre'] as String? ?? 'Día de Descanso').toUpperCase(),
+                          style: TextStyle(
+                            color: theme.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Recuperación activa y asimilación de carga',
+                          style: TextStyle(color: theme.grey, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (mensaje.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Text(
+                  mensaje,
+                  style: TextStyle(
+                    color: theme.white,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Pilares de recuperación (Sueño e Hidratación)
+        Row(
+          children: [
+            if (sueno.isNotEmpty && sueno != 'string')
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.card,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: theme.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('😴', style: TextStyle(fontSize: 16)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'SUEÑO',
+                            style: TextStyle(
+                              color: theme.grey,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        sueno,
+                        style: TextStyle(color: theme.white, fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if ((sueno.isNotEmpty && sueno != 'string') &&
+                (hidrMl.isNotEmpty && hidrMl != '0' || (hidratacion.isNotEmpty && hidratacion != 'string')))
+              const SizedBox(width: 10),
+            if (hidrMl.isNotEmpty && hidrMl != '0' || (hidratacion.isNotEmpty && hidratacion != 'string'))
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.card,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: theme.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('💧', style: TextStyle(fontSize: 16)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'HIDRATACIÓN',
+                            style: TextStyle(
+                              color: theme.grey,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        hidrMl.isNotEmpty && hidrMl != '0' ? '$hidrMl ml' : hidratacion,
+                        style: TextStyle(color: theme.white, fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+
+        // Sugerencia hidratación o tip
+        if (sugerenciaH.isNotEmpty && sugerenciaH != 'string') ...[
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.water_drop_outlined, color: Colors.blue, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    sugerenciaH,
+                    style: const TextStyle(color: Colors.lightBlueAccent, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        // Actividades complementarias opcionales (caminata, movilidad)
+        if ((caminata.isNotEmpty && caminata != 'string') ||
+            (movilidad.isNotEmpty && movilidad != 'string')) ...[
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: theme.card,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ACTIVIDAD LIGERA RECOMENDADA',
+                  style: TextStyle(
+                    color: theme.grey,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                if (caminata.isNotEmpty && caminata != 'string') ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Text('🚶', style: TextStyle(fontSize: 14)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          caminata,
+                          style: TextStyle(color: theme.white, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (movilidad.isNotEmpty && movilidad != 'string') ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Text('🙆', style: TextStyle(fontSize: 14)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          movilidad,
+                          style: TextStyle(color: theme.white, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+
+        // Tip diario
+        if (tip.isNotEmpty && tip != 'string') ...[
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: theme.cardDark,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.border),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('💡', style: TextStyle(fontSize: 16)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'CONSEJO DEL DÍA',
+                        style: TextStyle(
+                          color: theme.primary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        tip,
+                        style: TextStyle(color: theme.greyLight, fontSize: 12, height: 1.3),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // BLOQUE CARD
 // ═══════════════════════════════════════════════════════════════
 class _BloqueCard extends StatelessWidget {
@@ -800,23 +1103,55 @@ class _BloqueCard extends StatelessWidget {
                             color: isHecho ? theme.greenText : theme.white,
                             fontSize: 13,
                             fontWeight: FontWeight.w600)),
-                    if ((ej['series'] as String? ?? '').isNotEmpty ||
-                        (ej['reps'] as String? ?? '').isNotEmpty ||
-                        (ej['dur'] as String? ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        [
-                          if ((ej['series'] as String? ?? '').isNotEmpty)
-                            AppLocalizations.of(context).statsSeriesCount(int.tryParse(ej['series'] as String) ?? 0),
-                          if ((ej['reps'] as String? ?? '').isNotEmpty)
-                            AppLocalizations.of(context).statsRepsCount(int.tryParse(ej['reps'] as String) ?? 0),
-                          if ((ej['dur'] as String? ?? '').isNotEmpty)
-                            AppLocalizations.of(context).statsMinCount(int.tryParse(ej['dur'] as String) ?? 0),
-                        ].join(' · '),
-                        style: TextStyle(
-                            color: theme.grey, fontSize: 11),
-                      ),
-                    ],
+                    Builder(builder: (context) {
+                      final metrics = <String>[];
+                      final seriesVal = int.tryParse(ej['series']?.toString() ?? '') ?? 0;
+                      final repsVal = int.tryParse(ej['reps']?.toString() ?? '') ?? 0;
+                      final distM = ej['distancia_m'] as int? ?? 0;
+                      final durSeg = ej['dur_seg'] as int? ?? 0;
+                      final durMinStr = ej['dur'] as String? ?? '';
+                      final descansoSeg = ej['descanso_seg'] as int? ?? 0;
+                      final pesoStr = ej['peso'] as String? ?? '';
+
+                      if (seriesVal > 0 && repsVal > 0) {
+                        metrics.add('$seriesVal × $repsVal');
+                      } else if (seriesVal > 0) {
+                        metrics.add(AppLocalizations.of(context).statsSeriesCount(seriesVal));
+                      } else if (repsVal > 0) {
+                        metrics.add(AppLocalizations.of(context).statsRepsCount(repsVal));
+                      }
+
+                      if (distM > 0) {
+                        metrics.add(distM >= 1000 ? '${(distM / 1000).toStringAsFixed(1)} km' : '$distM m');
+                      }
+
+                      if (durSeg > 0) {
+                        metrics.add(durSeg >= 60 ? '${(durSeg / 60).round()} min' : '$durSeg s');
+                      } else if (durMinStr.isNotEmpty) {
+                        metrics.add(durMinStr);
+                      }
+
+                      if (pesoStr.isNotEmpty && pesoStr != '0' && pesoStr != '0.0') {
+                        metrics.add('$pesoStr kg');
+                      }
+
+                      if (descansoSeg > 0) {
+                        metrics.add('Descanso: ${descansoSeg}s');
+                      }
+
+                      if (metrics.isEmpty) return const SizedBox.shrink();
+
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Text(
+                          metrics.join('  ·  '),
+                          style: TextStyle(
+                              color: theme.greyLight,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500),
+                        ),
+                      );
+                    }),
                   ]),
                 ),
 
