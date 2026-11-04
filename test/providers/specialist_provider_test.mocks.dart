@@ -190,6 +190,7 @@ class MockPaymentsService extends _i1.Mock implements _i3.PaymentsService {
   _i4.Future<dynamic> payMeetingSpecialistOneClick(
     String? token,
     int? trackingId, {
+    String? cardId,
     String? cvc = '123',
     Map<String, dynamic>? extraData,
   }) =>
@@ -197,7 +198,7 @@ class MockPaymentsService extends _i1.Mock implements _i3.PaymentsService {
             Invocation.method(
               #payMeetingSpecialistOneClick,
               [token, trackingId],
-              {#cvc: cvc, #extraData: extraData},
+              {#cardId: cardId, #cvc: cvc, #extraData: extraData},
             ),
             returnValue: _i4.Future<dynamic>.value(),
           )

@@ -153,6 +153,7 @@ class SpecialistProvider with ChangeNotifier {
   Future<bool> payMeetingSpecialistOneClick(
     String token,
     int trackingId, {
+    String? cardId,
     String cvc = '123',
     Map<String, dynamic>? extraData,
   }) async {
@@ -164,6 +165,7 @@ class SpecialistProvider with ChangeNotifier {
       final response = await _paymentsService.payMeetingSpecialistOneClick(
         token,
         trackingId,
+        cardId: cardId,
         cvc: cvc,
         extraData: extraData,
       );

@@ -211,6 +211,7 @@ class PaymentsService {
   Future<dynamic> payMeetingSpecialistOneClick(
     String token,
     int trackingId, {
+    String? cardId,
     String cvc = '123',
     Map<String, dynamic>? extraData,
   }) async {
@@ -224,6 +225,10 @@ class PaymentsService {
 
     final Map<String, dynamic> body = {
       'id_seguimiento_especialista': trackingId,
+      if (cardId != null) ...{
+        'id_tarjeta_usuario': cardId,
+        'card_id': cardId,
+      },
       'cvc': cvc,
       'device_type': 'browser', // Hardcoded/fixed
       'reference_id': DateTime.now().millisecondsSinceEpoch.toString(),

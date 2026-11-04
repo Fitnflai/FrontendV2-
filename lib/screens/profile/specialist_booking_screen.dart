@@ -835,6 +835,7 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
       final success = await specialistProvider.payMeetingSpecialistOneClick(
         token,
         idSeguimiento,
+        cardId: _selectedCardId,
         cvc: cvv,
         extraData: extraData,
       );
