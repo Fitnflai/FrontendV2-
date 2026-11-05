@@ -48,6 +48,7 @@ import 'screens/profile/payment_methods_screen.dart';
 import 'screens/legal/terms_and_conditions_screen.dart';
 import 'screens/legal/privacy_policy_screen.dart';
 import 'screens/membership/membership_screen.dart';
+import 'screens/profile/change_password_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -173,6 +174,7 @@ class FitnflaiAppState extends State<FitnflaiApp> {
         AppRoutes.termsConditions: (_) => const TermsAndConditionsScreen(),
         AppRoutes.privacyPolicy: (_) => const PrivacyPolicyScreen(),
         AppRoutes.membership:    (_) => const MembershipScreen(),
+        AppRoutes.changePassword: (_) => const ChangePasswordScreen(),
         '/notifications':        (_) => const NotificationsPanelScreen(),
       },
       onGenerateRoute: (settings) {

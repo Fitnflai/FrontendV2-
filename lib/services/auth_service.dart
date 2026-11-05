@@ -301,4 +301,47 @@ class AuthService {
       }
     }
   }
+
+  // ── Change Password ──────────────────────────────────────────
+  Future<void> changePassword(
+    String token,
+    String currentPassword,
+    String newPassword,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/users/change-password'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      }),
+    );
+
+    debugPrint('CHANGE PASSWORD STATUS: ${response.statusCode}');
+    debugPrint('CHANGE PASSWORD BODY: ${response.body}');
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      try {
+        final data = jsonDecode(response.body);
+        String? msg;
+        if (data is Map<String, dynamic>) {
+          if (data['detail'] is String) {
+            msg = data['detail'];
+          } else if (data['detail'] is List && (data['detail'] as List).isNotEmpty) {
+            final first = (data['detail'] as List).first;
+            msg = first is Map ? first['msg']?.toString() : first.toString();
+          } else {
+            msg = data['message']?.toString();
+          }
+        }
+        throw Exception(msg ?? 'Error al actualizar contraseña');
+      } catch (e) {
+        if (e is Exception) rethrow;
+        throw Exception('Error al cambiar contraseña (${response.statusCode})');
+      }
+    }
+  }
 }

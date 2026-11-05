@@ -23,6 +23,7 @@ import 'support_screen.dart';
 import 'specialist_booking_screen.dart';
 
 import 'payment_methods_screen.dart'; // Import the new screen
+import 'change_password_screen.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/usuario.dart';
 import '../../models/specialist.dart';
@@ -631,6 +632,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           label: l10n.profileMenuPaymentMethods,
                           onTap: () => Navigator.push(context,
                               MaterialPageRoute(builder: (_) => const PaymentMethodsScreen())),
+                        ),
+                        _MenuItem(
+                          icon: Icons.lock_reset_outlined,
+                          label: 'Cambiar contraseña',
+                          onTap: () => Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => const ChangePasswordScreen())),
                         ),
                         _MenuItem(
                           icon: Icons.delete_outline,

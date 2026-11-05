@@ -260,6 +260,22 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    if (_token == null) {
+      throw Exception('No autenticado');
+    }
+    _setLoading(true);
+    _errorMessage = null;
+    try {
+      await _authService.changePassword(_token!, currentPassword, newPassword);
+    } catch (e) {
+      _errorMessage = _friendlyError(e.toString());
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<void> deleteAccount() async {
     if (_token == null) {
       throw Exception('No autenticado');

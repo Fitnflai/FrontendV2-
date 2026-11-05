@@ -28,4 +28,5 @@ class AppRoutes {
   static const termsConditions  = '/legal/terms';
   static const privacyPolicy    = '/legal/privacy';
   static const membership       = '/membership';
+  static const changePassword   = '/profile/change-password';
 }
