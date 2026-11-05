@@ -7,6 +7,8 @@ import '../../config/onboarding_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../l10n/app_localizations.dart';
+import '../../utils/password_validator.dart';
+import '../../widgets/password_requirements_widget.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -159,12 +161,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             AppTextField(
               hint: l10n.authPasswordHint, controller: _pass, obscure: true,
               prefixIcon: const Icon(Icons.lock_outline, color: AppColors.grey, size: 20),
-              validator: (v) {
-                if (v == null || v.isEmpty) return l10n.registerPasswordRequired;
-                if (v.length < 8) return l10n.registerPasswordTooShort;
-                return null;
-              },
+              validator: (v) => PasswordValidator.validate(v, requiredMsg: l10n.registerPasswordRequired),
             ),
+            const SizedBox(height: 10),
+            PasswordRequirementsWidget(controller: _pass),
             const SizedBox(height: 16),
  
             Align(alignment: Alignment.centerLeft, child: FieldLabel(text: l10n.resetPasswordConfirmLabel)),

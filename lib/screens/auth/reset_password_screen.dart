@@ -5,6 +5,8 @@ import '../../config/app_colors.dart';
 import '../../config/app_routes.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../l10n/app_localizations.dart';
+import '../../utils/password_validator.dart';
+import '../../widgets/password_requirements_widget.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -144,12 +146,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.orange, width: 1.5)),
               ),
-              validator: (v) {
-                if (v == null || v.isEmpty) return l10n.resetPasswordNewRequired;
-                if (v.length < 8) return l10n.resetPasswordNewTooShort;
-                return null;
-              },
+              validator: (v) => PasswordValidator.validate(v, requiredMsg: l10n.resetPasswordNewRequired),
             ),
+            const SizedBox(height: 10),
+            PasswordRequirementsWidget(controller: _passCtrl),
             const SizedBox(height: 16),
 
             // Confirmar

@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_theme_extension.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/password_validator.dart';
+import '../../widgets/password_requirements_widget.dart';
 import '../../widgets/shared_widgets.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -122,23 +124,21 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               const FieldLabel(text: 'Nueva contraseña'),
               const SizedBox(height: 8),
               AppTextField(
-                hint: 'Mínimo 6 caracteres',
+                hint: 'Mínimo 8 caracteres',
                 controller: _newPassCtrl,
                 obscure: true,
                 prefixIcon: Icon(Icons.lock_reset_outlined, color: theme.textMuted, size: 20),
                 validator: (val) {
-                  if (val == null || val.trim().isEmpty) {
-                    return 'Ingresa la nueva contraseña';
-                  }
-                  if (val.trim().length < 6) {
-                    return 'La contraseña debe tener al menos 6 caracteres';
-                  }
-                  if (val.trim() == _currentPassCtrl.text.trim()) {
+                  final err = PasswordValidator.validate(val, requiredMsg: 'Ingresa la nueva contraseña');
+                  if (err != null) return err;
+                  if (val!.trim() == _currentPassCtrl.text.trim()) {
                     return 'La nueva contraseña debe ser diferente a la actual';
                   }
                   return null;
                 },
               ),
+              const SizedBox(height: 10),
+              PasswordRequirementsWidget(controller: _newPassCtrl),
               const SizedBox(height: 20),
 
               // Confirmar nueva contraseña
