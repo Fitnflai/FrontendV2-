@@ -460,16 +460,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(AppLocalizations.of(context).editProfileMembershipPlan,
-                          style: TextStyle(color: theme.text,
-                              fontSize: 14, fontWeight: FontWeight.w600)),
-                      Text(AppLocalizations.of(context).editProfileMembershipDays,
-                          style: TextStyle(color: theme.textMuted, fontSize: 12)),
+                      Text(
+                        user?.isCoach == true
+                            ? 'Plan Coach'
+                            : (user?.nombrePlanActivo != null && user!.nombrePlanActivo!.isNotEmpty
+                                ? 'Plan ${user.nombrePlanActivo!}'
+                                : AppLocalizations.of(context).editProfileMembershipPlan),
+                        style: TextStyle(color: theme.text,
+                            fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        user?.isCoach == true
+                            ? 'Seguimiento 1 a 1 por especialista'
+                            : AppLocalizations.of(context).editProfileMembershipDays,
+                        style: TextStyle(color: theme.textMuted, fontSize: 12),
+                      ),
                     ]),
                   ),
-                  Text(AppLocalizations.of(context).editProfileMembershipChange,
-                      style: TextStyle(color: theme.primary,
-                          fontSize: 13, fontWeight: FontWeight.w600)),
+                  Text(
+                    user?.isCoach == true
+                        ? 'Gestionar'
+                        : AppLocalizations.of(context).editProfileMembershipChange,
+                    style: TextStyle(color: theme.primary,
+                        fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(width: 4),
                   Icon(Icons.chevron_right, color: theme.primary, size: 18),
                 ]),

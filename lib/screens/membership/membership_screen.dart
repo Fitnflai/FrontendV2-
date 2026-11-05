@@ -91,7 +91,20 @@ class _MembershipScreenState extends State<MembershipScreen> {
       );
     }
 
-    _currentPlans = _buildPlans(planes);
+    final user = context.watch<AuthProvider>().user;
+    final isCoachUser = user?.isCoach ?? false;
+
+    final allBuiltPlans = _buildPlans(planes);
+    if (isCoachUser) {
+      final coachPlans = allBuiltPlans.where((p) => p.name.toLowerCase().contains('coach')).toList();
+      _currentPlans = coachPlans.isNotEmpty ? coachPlans : allBuiltPlans;
+    } else {
+      _currentPlans = allBuiltPlans.where((p) => !p.name.toLowerCase().contains('coach')).toList();
+    }
+
+    if (_selected >= _currentPlans.length) {
+      _selected = 0;
+    }
 
     if (profileProvider.pendingCheckoutPriceId != null) {
       if (!_hasReopenedSubscribeSheet) {
@@ -162,30 +175,35 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Selector de plan (tabs)
-                  _PlanSelector(
-                    selected: _selected,
-                    onChanged: (i) => setState(() => _selected = i),
-                    plans: _currentPlans, // Pass plans to selector
-                  ),
-                  const SizedBox(height: 16),
+                  // Selector de plan (tabs) - solo si no es Coach y hay múltiples planes
+                  if (!isCoachUser && _currentPlans.length > 1) ...[
+                    _PlanSelector(
+                      selected: _selected,
+                      onChanged: (i) => setState(() => _selected = i),
+                      plans: _currentPlans, // Pass plans to selector
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Tarjeta del plan seleccionado
-                  _PlanCard(
-                    plan: _currentPlans[_selected],
-                    price: _price(_currentPlans[_selected].originalData, _isAnnual),
-                    period: _period(_currentPlans[_selected].originalData, _isAnnual),
-                    isActivePlan: (context.watch<AuthProvider>().user?.nombrePlanActivo?.toLowerCase() ?? '') == _currentPlans[_selected].name.toLowerCase(),
-                    onSubscribe: () => _subscribe(
-                      _currentPlans[_selected],
-                      _getPriceId(_currentPlans[_selected].originalData, _isAnnual),
+                  if (_currentPlans.isNotEmpty)
+                    _PlanCard(
+                      plan: _currentPlans[_selected],
+                      price: _price(_currentPlans[_selected].originalData, _isAnnual),
+                      period: _period(_currentPlans[_selected].originalData, _isAnnual),
+                      isActivePlan: (user?.nombrePlanActivo?.toLowerCase() ?? '') == _currentPlans[_selected].name.toLowerCase(),
+                      onSubscribe: () => _subscribe(
+                        _currentPlans[_selected],
+                        _getPriceId(_currentPlans[_selected].originalData, _isAnnual),
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 20),
 
-                  // Comparativa
-                  _ComparisonTable(),
-                  const SizedBox(height: 24),
+                  // Comparativa - solo para usuarios estándar
+                  if (!isCoachUser) ...[
+                    _ComparisonTable(),
+                    const SizedBox(height: 24),
+                  ],
                 ]),
               ),
             ),
@@ -202,6 +220,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
         id = 1;
       } else if (name.toLowerCase().contains('elite') || name.toLowerCase().contains('élite')) {
         id = 2;
+      } else if (name.toLowerCase().contains('coach')) {
+        id = 3;
       }
       final tagline = planData['descripcion'] as String? ?? '';
       final beneficios = planData['beneficios'] as List<dynamic>? ?? [];
@@ -209,22 +229,22 @@ class _MembershipScreenState extends State<MembershipScreen> {
       _BadgeColor badgeColor;
       String badgeText;
 
-      switch (name) {
-        case 'Essential':
-          badgeColor = _BadgeColor.green;
-          badgeText = 'Incluido gratis';
-          break;
-        case 'Pro':
-          badgeColor = _BadgeColor.blue;
-          badgeText = 'Más popular';
-          break;
-        case 'Elite':
-          badgeColor = _BadgeColor.orange;
-          badgeText = 'Premium';
-          break;
-        default:
-          badgeColor = _BadgeColor.green;
-          badgeText = '';
+      final lowerName = name.toLowerCase();
+      if (lowerName.contains('essential')) {
+        badgeColor = _BadgeColor.green;
+        badgeText = 'Incluido gratis';
+      } else if (lowerName.contains('pro')) {
+        badgeColor = _BadgeColor.blue;
+        badgeText = 'Más popular';
+      } else if (lowerName.contains('elite') || lowerName.contains('élite')) {
+        badgeColor = _BadgeColor.orange;
+        badgeText = 'Premium';
+      } else if (lowerName.contains('coach')) {
+        badgeColor = _BadgeColor.orange;
+        badgeText = 'Plan Especialista';
+      } else {
+        badgeColor = _BadgeColor.green;
+        badgeText = '';
       }
 
       final features = <_Feature>[];
@@ -1403,7 +1423,7 @@ class _PlanSelector extends StatelessWidget {
       border: Border.all(color: AppColors.border),
     ),
     child: Row(
-      children: List.generate(3, (i) => Expanded(
+      children: List.generate(plans.length, (i) => Expanded(
         child: GestureDetector(
           onTap: () => onChanged(i),
           child: AnimatedContainer(

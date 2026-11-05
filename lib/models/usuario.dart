@@ -33,6 +33,11 @@ abstract class Usuario with _$Usuario {
     return plan == 'trial';
   }
 
+  bool get isCoach {
+    final plan = nombrePlanActivo?.trim().toLowerCase() ?? '';
+    return plan == 'coach';
+  }
+
   bool get isEssential {
     final plan = nombrePlanActivo?.trim().toLowerCase() ?? '';
     return plan == 'essential';
@@ -40,17 +45,17 @@ abstract class Usuario with _$Usuario {
 
   bool get isPro {
     final plan = nombrePlanActivo?.trim().toLowerCase() ?? '';
-    if (plan.isEmpty || plan == 'trial' || plan == 'essential' || plan.contains('elite') || plan.contains('élite')) return false;
+    if (plan.isEmpty || plan == 'trial' || plan == 'essential' || plan == 'coach' || plan.contains('elite') || plan.contains('élite')) return false;
     return true;
   }
 
   bool get isElite {
     final plan = nombrePlanActivo?.trim().toLowerCase() ?? '';
-    if (plan.isEmpty || plan == 'trial' || plan == 'essential') return false;
+    if (plan.isEmpty || plan == 'trial' || plan == 'essential' || plan == 'coach') return false;
     return plan.contains('elite') || plan.contains('élite');
   }
 
-  bool get canSeeNutrition => isPro || isElite;
+  bool get canSeeNutrition => isPro || isElite || isCoach;
 
   factory Usuario.fromJson(Map<String, dynamic> json) => _$UsuarioFromJson({
     'id': json['id_usuario']?.toString() ?? json['id']?.toString() ?? '',

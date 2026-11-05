@@ -1140,7 +1140,9 @@ class _PremiumBanner extends StatelessWidget {
     }
 
     if (planDesc == null || planDesc.isEmpty) {
-      if (user?.isElite == true) {
+      if (user?.isCoach == true) {
+        planDesc = 'Plan 1 a 1 guiado por un profesional humano y no por algoritmos.';
+      } else if (user?.isElite == true) {
         planDesc = 'Plan premium completo con acompañamiento de deportólogo, nutricionista y entrenador de cabecera.';
       } else if (user?.isPro == true) {
         planDesc = 'Plan de entrenamiento inteligente con planes de alimentación e hidratación personalizados.';
@@ -1154,7 +1156,7 @@ class _PremiumBanner extends StatelessWidget {
         : l10n.profilePremiumDesc;
 
     final buttonText = tienePlan
-        ? 'CAMBIAR'
+        ? (user?.isCoach == true ? 'GESTIONAR' : 'CAMBIAR')
         : l10n.profilePremiumSubscribe.toUpperCase();
 
     return Container(
