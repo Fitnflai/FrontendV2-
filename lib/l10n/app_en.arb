@@ -3067,7 +3067,7 @@
   "@specialistBookingSelectDate": { "description": "Label to select date" },
   "specialistBookingSelectTime": "Select Time Slot",
   "@specialistBookingSelectTime": { "description": "Label to select time" },
-  "specialistBookingConfirmBtn": "Schedule Appointment ($19.99)",
+  "specialistBookingConfirmBtn": "Schedule Appointment ($1.00)",
   "@specialistBookingConfirmBtn": { "description": "Button to schedule appointment" },
   "specialistBookingCheckoutTitle": "Confirm Booking",
   "@specialistBookingCheckoutTitle": { "description": "Title of the payment modal sheet" },

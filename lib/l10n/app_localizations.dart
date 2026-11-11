@@ -2246,7 +2246,7 @@ abstract class AppLocalizations {
   /// Button to schedule appointment
   ///
   /// In en, this message translates to:
-  /// **'Schedule Appointment (\$19.99)'**
+  /// **'Schedule Appointment (\$1.00)'**
   String get specialistBookingConfirmBtn;
 
   /// Duration label

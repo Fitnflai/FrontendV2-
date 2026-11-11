@@ -1015,7 +1015,7 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
                         style: TextStyle(color: theme.text, fontSize: 16),
                       ),
                       Text(
-                        r"\$19.99",
+                        r"\$1.00",
                         style: TextStyle(color: theme.orange, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ],

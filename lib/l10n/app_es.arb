@@ -1423,7 +1423,7 @@
    "@specialistBookingSelectDate": { "description": "Label to select date" },
    "specialistBookingSelectTime": "Selecciona el horario",
    "@specialistBookingSelectTime": { "description": "Label to select time" },
-   "specialistBookingConfirmBtn": "Programar cita ($19.99)",
+   "specialistBookingConfirmBtn": "Programar cita ($1.00)",
    "@specialistBookingConfirmBtn": { "description": "Button to schedule appointment" },
    "specialistBookingCheckoutTitle": "Confirmar Reserva",
    "@specialistBookingCheckoutTitle": { "description": "Title of the payment modal sheet" },

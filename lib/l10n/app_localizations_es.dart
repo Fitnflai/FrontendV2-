@@ -1206,7 +1206,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get specialistBookingSelectTime => 'Selecciona el horario';
 
   @override
-  String get specialistBookingConfirmBtn => 'Programar cita (\$19.99)';
+  String get specialistBookingConfirmBtn => 'Programar cita (\$1.00)';
 
   @override
   String get specialistBookingDuration => 'Cita de 45 min';
