@@ -57,6 +57,19 @@ class _MembershipScreenState extends State<MembershipScreen> {
     return isAnnual ? 'por año' : 'por mes';
   }
 
+  double _rawPrice(Map<String, dynamic> planData, bool isAnnual) {
+    try {
+      final precios = planData['precios'] as List<dynamic>;
+      final priceInfo = precios.firstWhere(
+        (p) => (p['frecuencia'] as String).toLowerCase().contains(isAnnual ? 'anual' : 'mensual'),
+        orElse: () => precios.isNotEmpty ? precios.first : {'precio': 0.0},
+      );
+      return (priceInfo['precio'] as num).toDouble();
+    } catch (_) {
+      return 0.0;
+    }
+  }
+
   String _getPriceId(Map<String, dynamic> planData, bool isAnnual) {
     final precios = planData['precios'] as List<dynamic>;
     final priceInfo = precios.firstWhere((p) => (p['frecuencia'] as String).contains(isAnnual ? 'anual' : 'mensual'));
@@ -94,7 +107,9 @@ class _MembershipScreenState extends State<MembershipScreen> {
     final user = context.watch<AuthProvider>().user;
     final isCoachUser = user?.isCoach ?? false;
 
-    final allBuiltPlans = _buildPlans(planes);
+    final allBuiltPlans = _buildPlans(planes)
+        .where((p) => !p.name.toLowerCase().contains('trial'))
+        .toList();
     if (isCoachUser) {
       final coachPlans = allBuiltPlans.where((p) => p.name.toLowerCase().contains('coach')).toList();
       _currentPlans = coachPlans.isNotEmpty ? coachPlans : allBuiltPlans;
@@ -305,12 +320,9 @@ class _MembershipScreenState extends State<MembershipScreen> {
       context.read<ProfileProvider>().loadSavedCards(token);
     }
 
-    final TextEditingController cvvController = TextEditingController();
     int checkoutStep = 0; // 0: Card selection, 1: Nuvei Webview, 2: Processing, 3: Success
     String? errorMessageCheckout;
     int selectedCardIndex = 0;
-    bool showCvvPrompt = false;
-    String? cvvError;
 
     showModalBottomSheet(
       context: context,
@@ -336,679 +348,580 @@ class _MembershipScreenState extends State<MembershipScreen> {
                 : 32.0;
 
             if (checkoutStep == 0) {
-              // Card Selection / Add Card Step
-              if (profileProvider.isLoadingCards && profileProvider.savedCards.isEmpty) {
-                return _buildLoadingBottomSheet(l10n, l10n.loadingCards);
+              final double basePrice = _rawPrice(plan.originalData, _isAnnual);
+              final double ivaAmount = basePrice * 0.15;
+              final double totalPrice = basePrice + ivaAmount;
+              final String periodicityText = _isAnnual ? 'Anual' : 'Mensual';
+              final String renewalPeriodText = _isAnnual ? 'año' : 'mes';
+
+              final cards = profileProvider.savedCards;
+              final hasCards = cards.isNotEmpty;
+              if (selectedCardIndex >= cards.length) {
+                selectedCardIndex = 0;
               }
+              final selectedCard = hasCards ? cards[selectedCardIndex] : null;
 
-              if (profileProvider.cardsError != null) {
-                return _buildErrorBottomSheet(l10n, profileProvider.cardsError!, () {
-                  setModalState(() { errorMessageCheckout = null; profileProvider.cardsError = null; });
-                  profileProvider.loadSavedCards(token!);
-                });
-              }
-
-              if (profileProvider.savedCards.isNotEmpty) {
-                final cards = profileProvider.savedCards;
-                final selectedCard = cards[selectedCardIndex];
-
-                return Padding(
-                  padding: EdgeInsets.fromLTRB(20, 20, 20, bottomPadding),
+              return Padding(
+                padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding),
+                child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildDragHandle(),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Confirmar Suscripción',
+                        style: TextStyle(
+                          color: AppColors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 20),
-                      if (showCvvPrompt) ...[
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.arrow_back, color: AppColors.white, size: 20),
-                              onPressed: () => setModalState(() => showCvvPrompt = false),
-                            ),
-                            const Expanded(
-                              child: Text(
-                                'Confirmación de Seguridad',
-                                style: TextStyle(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.w800),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            const SizedBox(width: 40), // Balance back button
-                          ],
-                        ),
-                        const SizedBox(height: 15),
-                        Text(
-                          'Ingresá el código de seguridad (CVV) de tu tarjeta ${selectedCard.brand} finalizada en ${selectedCard.lastFour} para procesar tu suscripción.',
-                          style: const TextStyle(color: AppColors.greyLight, fontSize: 13, height: 1.4),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: 140,
-                          child: TextField(
-                            controller: cvvController,
-                            keyboardType: TextInputType.number,
-                            obscureText: true,
-                            maxLength: 4,
-                            style: const TextStyle(color: AppColors.white, fontSize: 20, letterSpacing: 8, fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                            decoration: InputDecoration(
-                              hintText: '•••',
-                              hintStyle: const TextStyle(color: AppColors.grey, fontSize: 20, letterSpacing: 8),
-                              counterText: '',
-                              errorText: cvvError,
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: AppColors.orange, width: 2),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: AppColors.border),
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (errorMessageCheckout != null) ...[
-                          const SizedBox(height: 16),
-                          Text(
-                            errorMessageCheckout!,
-                            style: const TextStyle(color: Colors.red, fontSize: 14),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                        const SizedBox(height: 25),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: profileProvider.isProcessingOneClick
-                                ? null
-                                : () async {
-                              final cvv = cvvController.text.trim();
-                              final isNumeric = RegExp(r'^\d+$').hasMatch(cvv);
-                              if (cvv.length < 3 || cvv.length > 4 || !isNumeric) {
-                                setModalState(() {
-                                  cvvError = 'CVV inválido (debe tener 3 o 4 dígitos)';
-                                });
-                                return;
-                              }
-                              setModalState(() {
-                                cvvError = null;
-                                errorMessageCheckout = null;
-                              });
-                              try {
-                                profileProvider.isProcessingOneClick = true;
-                                final mediaQuery = MediaQuery.of(context);
-                                final screenWidth = mediaQuery.size.width.toInt();
-                                final screenHeight = mediaQuery.size.height.toInt();
-                                final timezoneOffset = DateTime.now().timeZoneOffset.inMinutes;
 
-                                final response = await profileProvider.subscribeNuveiAction(
-                                  token!,
-                                  priceId,
-                                  cardId: selectedCard.id,
-                                  cvc: cvv,
-                                  screenWidth: screenWidth,
-                                  screenHeight: screenHeight,
-                                  timezoneOffset: timezoneOffset,
-                                );
-                                debugPrint('Nuvei response (inline): $response');
-                                final hasInlineSubError = profileProvider.subscriptionError != null &&
-                                    !profileProvider.subscriptionError!.toLowerCase().contains('exitosa') &&
-                                    !profileProvider.subscriptionError!.toLowerCase().contains('éxito') &&
-                                    !profileProvider.subscriptionError!.toLowerCase().contains('exito') &&
-                                    !profileProvider.subscriptionError!.toLowerCase().contains('success');
-
-                                if (hasInlineSubError) {
-                                  setModalState(() {
-                                    errorMessageCheckout = profileProvider.subscriptionError;
-                                  });
-                                } else {
-                                  final requires3ds = response?['requires_3ds'] as bool? ?? false;
-                                  final requiresOtp = response?['requires_otp'] as bool? ?? false;
-                                  final challengeHtml = response?['challenge_html'] as String? ??
-                                                        response?['challenge_url'] as String? ??
-                                                        response?['redirect_url'] as String? ??
-                                                        response?['checkout_url'] as String? ??
-                                                        response?['url'] as String? ?? '';
-                                  final transactionId = (response?['transaction_id'] ?? 
-                                                         response?['gateway_payment_id'] ?? 
-                                                         response?['id_transaccion']) as String?;
-
-                                  if (requires3ds && challengeHtml.isNotEmpty) {
-                                    setModalState(() {
-                                      showCvvPrompt = false;
-                                    });
-                                    if (dialogContext.mounted) {
-                                      final completed = await ThreeDsChallengeDialog.show(
-                                        dialogContext,
-                                        challengeHtml,
-                                        transactionId: transactionId,
-                                        token: token,
-                                      );
-                                      if (completed == true) {
-                                        if (dialogContext.mounted) {
-                                          setModalState(() {
-                                            checkoutStep = 2; // Show processing loader
-                                          });
-                                        }
-                                        await profileProvider.loadAll(token, force: true);
-                                        await authProvider.refreshUser();
-                                        if (dialogContext.mounted) {
-                                          setModalState(() {
-                                            checkoutStep = 3; // Success!
-                                          });
-                                          cvvController.clear();
-                                        }
-                                      } else {
-                                        if (dialogContext.mounted) {
-                                          setModalState(() {
-                                            errorMessageCheckout = 'Validación 3DS cancelada.';
-                                          });
-                                        }
-                                      }
-                                    }
-                                  } else if (requiresOtp || (requires3ds && challengeHtml.isEmpty)) {
-                                    if (transactionId != null && transactionId.isNotEmpty) {
-                                      if (dialogContext.mounted) {
-                                        final otpResult = await OtpVerificationDialog.show(
-                                          dialogContext,
-                                          transactionId: transactionId,
-                                          onVerify: (otpCode) async {
-                                            return await profileProvider.validateOtpAction(token, transactionId, otpCode);
-                                          },
-                                        );
-                                        if (otpResult != null) {
-                                          if (dialogContext.mounted) {
-                                            setModalState(() {
-                                              showCvvPrompt = false;
-                                              checkoutStep = 2; // Show processing loader
-                                            });
-                                          }
-                                          await profileProvider.loadAll(token, force: true);
-                                          await authProvider.refreshUser();
-                                          if (dialogContext.mounted) {
-                                            setModalState(() {
-                                              checkoutStep = 3; // Success!
-                                            });
-                                            cvvController.clear();
-                                          }
-                                        } else {
-                                          if (dialogContext.mounted) {
-                                            setModalState(() {
-                                              errorMessageCheckout = 'Verificación OTP cancelada.';
-                                            });
-                                          }
-                                        }
-                                      }
-                                    } else {
-                                      setModalState(() {
-                                        errorMessageCheckout = 'Falta el id de transacción para la verificación OTP.';
-                                      });
-                                    }
-                                  } else {
-                                    if (dialogContext.mounted) {
-                                      setModalState(() {
-                                        showCvvPrompt = false;
-                                        checkoutStep = 3; // Mostrar modal de Pago Completado
-                                      });
-                                    }
-                                    cvvController.clear();
-                                    profileProvider.loadAll(token, force: true);
-                                    authProvider.refreshUser();
-                                  }
-                                }
-                              } catch (e) {
-                                setModalState(() {
-                                  errorMessageCheckout = e.toString();
-                                });
-                              } finally {
-                                profileProvider.isProcessingOneClick = false;
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.orange,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              elevation: 0,
-                            ),
-                            child: profileProvider.isProcessingOneClick
-                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                : const Text('Confirmar y Suscribirse',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                          ),
-                        ),
-                      ] else ...[
-                        Text(l10n.subscribeToPlan(plan.name),
-                            style: const TextStyle(
-                                color: AppColors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800)),
-                        const SizedBox(height: 8),
-                        Text(
-                            '${_price(plan.originalData, _isAnnual)} ${_period(plan.originalData, _isAnnual)}',
-                            style: const TextStyle(
-                                color: AppColors.orange,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 20),
-                        Container(
-                          constraints: const BoxConstraints(maxHeight: 180),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              children: List.generate(cards.length, (index) {
-                                final card = cards[index];
-                                final isSelected = selectedCardIndex == index;
-                                return GestureDetector(
-                                  onTap: () => setModalState(() => selectedCardIndex = index),
-                                  child: Container(
-                                    margin: const EdgeInsets.only(bottom: 10),
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? AppColors.cardDark : AppColors.card,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color: isSelected ? AppColors.orange : AppColors.border,
-                                          width: isSelected ? 1.5 : 1),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                            isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                                            color: isSelected ? AppColors.orange : AppColors.grey,
-                                            size: 18),
-                                        const SizedBox(width: 12),
-                                        Icon(Icons.credit_card_outlined,
-                                            color: isSelected ? AppColors.white : AppColors.grey,
-                                            size: 18),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            l10n.payWithCardEnding(card.brand, card.lastFour),
-                                            style: TextStyle(
-                                                color: isSelected ? AppColors.white : AppColors.grey,
-                                                fontSize: 13,
-                                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: () async {
-                            Navigator.pop(dialogContext); // Close modal
-                            try {
-                              profileProvider.pendingSubscribePriceId = priceId;
-                              profileProvider.isAssociatingCard = true;
-                              final returnUrl = 'fitnflai://payment-methods/membership/$priceId';
-                              final checkoutUrl = await profileProvider.associateCard(token!, returnUrl: returnUrl);
-                              if (checkoutUrl != null) {
-                                if (!await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.inAppBrowserView)) {
-                                  await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
-                                }
-                              }
-                            } catch (e) {
-                              debugPrint('Error asociando tarjeta: $e');
-                            } finally {
-                              profileProvider.isAssociatingCard = false;
-                            }
-                          },
-                          icon: const Icon(Icons.add_card_outlined, color: AppColors.orange, size: 16),
-                          label: const Text('Asociar nueva tarjeta',
-                              style: TextStyle(color: AppColors.orange, fontSize: 13, fontWeight: FontWeight.bold)),
-                        ),
-                        if (errorMessageCheckout != null) ...[
-                          const SizedBox(height: 16),
-                          Text(
-                            errorMessageCheckout!,
-                            style: const TextStyle(color: Colors.red, fontSize: 14),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final mediaQuery = MediaQuery.of(pageContext);
-                            final screenWidth = mediaQuery.size.width.toInt();
-                            final screenHeight = mediaQuery.size.height.toInt();
-                            final timezoneOffset = DateTime.now().timeZoneOffset.inMinutes;
-
-                            // 1. Show Dialog to collect CVV / CVC (centered, highly stable, keyboard friendly)
-                            final TextEditingController tempCvvController = TextEditingController();
-                            final bool? confirmed = await showDialog<bool>(
-                                context: dialogContext,
-                                barrierDismissible: false,
-                                builder: (BuildContext alertContext) {
-                                  String? localError;
-                                  return StatefulBuilder(
-                                    builder: (context, setDialogState) {
-                                      return AlertDialog(
-                                        backgroundColor: const Color(0xFF1E1E1E),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                        title: const Text(
-                                          'Confirmación de Seguridad',
-                                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        content: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              'Por motivos de seguridad, ingresá el código de verificación (CVV) de tu tarjeta ${selectedCard.brand} finalizada en ${selectedCard.lastFour} para procesar tu suscripción.',
-                                              style: const TextStyle(color: Colors.grey, fontSize: 13, height: 1.4),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                            const SizedBox(height: 16),
-                                            SizedBox(
-                                              width: 120,
-                                              child: TextField(
-                                                controller: tempCvvController,
-                                                keyboardType: TextInputType.number,
-                                                obscureText: true,
-                                                maxLength: 4,
-                                                style: const TextStyle(color: Colors.white, fontSize: 20, letterSpacing: 8, fontWeight: FontWeight.bold),
-                                                textAlign: TextAlign.center,
-                                                decoration: InputDecoration(
-                                                  hintText: '•••',
-                                                  hintStyle: const TextStyle(color: Colors.grey, fontSize: 20, letterSpacing: 8),
-                                                  counterText: '',
-                                                  errorText: localError,
-                                                  focusedBorder: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.circular(10),
-                                                    borderSide: const BorderSide(color: Colors.orange, width: 2),
-                                                  ),
-                                                  enabledBorder: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.circular(10),
-                                                    borderSide: const BorderSide(color: Color(0xFF2E2E2E)),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        actionsAlignment: MainAxisAlignment.spaceEvenly,
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(alertContext, false),
-                                            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {
-                                              final cvvVal = tempCvvController.text.trim();
-                                              final isNumeric = RegExp(r'^\d+$').hasMatch(cvvVal);
-                                              if (cvvVal.length < 3 || cvvVal.length > 4 || !isNumeric) {
-                                                setDialogState(() {
-                                                  localError = 'CVV inválido';
-                                                });
-                                                return;
-                                              }
-                                              Navigator.pop(alertContext, true);
-                                            },
-                                            child: const Text('Confirmar', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                },
-                              );
-
-                              if (confirmed != true) return;
-
-                              final cvv = tempCvvController.text.trim();
-
-                              try {
-                                setModalState(() {
-                                  checkoutStep = 2; // Show processing loader
-                                  errorMessageCheckout = null;
-                                });
-
-                                final response = await profileProvider.subscribeNuveiAction(
-                                  token!,
-                                  priceId,
-                                  cardId: selectedCard.id,
-                                  cvc: cvv,
-                                  screenWidth: screenWidth,
-                                  screenHeight: screenHeight,
-                                  timezoneOffset: timezoneOffset,
-                                );
-                                debugPrint('Nuvei response (dialog): $response');
-
-                                final hasDialogSubError = profileProvider.subscriptionError != null &&
-                                    !profileProvider.subscriptionError!.toLowerCase().contains('exitosa') &&
-                                    !profileProvider.subscriptionError!.toLowerCase().contains('éxito') &&
-                                    !profileProvider.subscriptionError!.toLowerCase().contains('exito') &&
-                                    !profileProvider.subscriptionError!.toLowerCase().contains('success');
-
-                                if (hasDialogSubError) {
-                                  setModalState(() {
-                                    checkoutStep = 0; // Go back to card selection so they can try again or see error
-                                    errorMessageCheckout = profileProvider.subscriptionError;
-                                  });
-                                } else {
-                                  final requires3ds = response?['requires_3ds'] as bool? ?? false;
-                                  final requiresOtp = response?['requires_otp'] as bool? ?? false;
-                                  final challengeHtml = response?['challenge_html'] as String? ??
-                                                        response?['challenge_url'] as String? ??
-                                                        response?['redirect_url'] as String? ??
-                                                        response?['checkout_url'] as String? ??
-                                                        response?['url'] as String? ?? '';
-                                  final transactionId = (response?['transaction_id'] ?? 
-                                                         response?['gateway_payment_id'] ?? 
-                                                         response?['id_transaccion']) as String?;
-
-                                  if (requires3ds && challengeHtml.isNotEmpty) {
-                                    if (dialogContext.mounted) {
-                                      final completed = await ThreeDsChallengeDialog.show(
-                                        dialogContext,
-                                        challengeHtml,
-                                        transactionId: transactionId,
-                                        token: token,
-                                      );
-                                      if (completed == true) {
-                                        if (dialogContext.mounted) {
-                                          setModalState(() {
-                                            checkoutStep = 2; // Show processing loader
-                                          });
-                                        }
-                                        await profileProvider.loadAll(token, force: true);
-                                        await authProvider.refreshUser();
-                                        if (dialogContext.mounted) {
-                                          setModalState(() {
-                                            checkoutStep = 3; // Success!
-                                          });
-                                        }
-                                      } else {
-                                        if (dialogContext.mounted) {
-                                          setModalState(() {
-                                            checkoutStep = 0; // Go back to card selection
-                                            errorMessageCheckout = 'Validación 3DS cancelada.';
-                                          });
-                                        }
-                                      }
-                                    }
-                                  } else if (requiresOtp || (requires3ds && challengeHtml.isEmpty)) {
-                                    if (transactionId != null && transactionId.isNotEmpty) {
-                                      if (dialogContext.mounted) {
-                                        final otpResult = await OtpVerificationDialog.show(
-                                          dialogContext,
-                                          transactionId: transactionId,
-                                          onVerify: (otpCode) async {
-                                            return await profileProvider.validateOtpAction(token, transactionId, otpCode);
-                                          },
-                                        );
-                                        if (otpResult != null) {
-                                          if (dialogContext.mounted) {
-                                            setModalState(() {
-                                              checkoutStep = 2; // Show processing loader
-                                            });
-                                          }
-                                          await profileProvider.loadAll(token, force: true);
-                                          await authProvider.refreshUser();
-                                          if (dialogContext.mounted) {
-                                            setModalState(() {
-                                              checkoutStep = 3; // Success!
-                                            });
-                                          }
-                                        } else {
-                                          if (dialogContext.mounted) {
-                                            setModalState(() {
-                                              checkoutStep = 0; // Go back to card selection
-                                              errorMessageCheckout = 'Verificación OTP cancelada.';
-                                            });
-                                          }
-                                        }
-                                      }
-                                    } else {
-                                      setModalState(() {
-                                        checkoutStep = 0; // Go back to card selection
-                                        errorMessageCheckout = 'Falta el id de transacción para la verificación OTP.';
-                                      });
-                                    }
-                                  } else {
-                                    if (dialogContext.mounted) {
-                                      setModalState(() {
-                                        checkoutStep = 3; // Mostrar modal de Pago Completado
-                                      });
-                                    }
-                                    profileProvider.loadAll(token, force: true);
-                                    authProvider.refreshUser();
-                                  }
-                                }
-                              } catch (e) {
-                                setModalState(() {
-                                  checkoutStep = 0;
-                                  errorMessageCheckout = e.toString();
-                                });
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.orange,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              elevation: 0,
-                            ),
-                            child: Text(l10n.confirmAndSubscribe,
-                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                );
-              } else {
-                // No saved cards, initiate Add Card flow
-                return Padding(
-                  padding: EdgeInsets.fromLTRB(20, 20, 20, bottomPadding),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildDragHandle(),
-                      const SizedBox(height: 20),
-                      Text(l10n.subscribeToPlan(plan.name),
-                          style: const TextStyle(
-                              color: AppColors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 8),
-                      Text(
-                          '${_price(plan.originalData, _isAnnual)} ${_period(plan.originalData, _isAnnual)}',
-                          style: const TextStyle(
-                              color: AppColors.orange,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 20),
+                      // Breakdown card
                       Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: AppColors.cardDark,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: AppColors.border),
                         ),
-                        child: const Row(children: [
-                          Icon(Icons.info_outline, color: AppColors.grey, size: 16),
-                          SizedBox(width: 10),
-                          Expanded(child: Text(
-                            'Para suscribirte, primero necesitas asociar una tarjeta de crédito.',
-                            style: TextStyle(color: AppColors.grey, fontSize: 12, height: 1.4),
-                          )),
-                        ]),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Plan ${plan.name} ($periodicityText)',
+                                    style: const TextStyle(color: AppColors.white, fontSize: 15, fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                                Text(
+                                  '\$${basePrice.toStringAsFixed(2)}',
+                                  style: const TextStyle(color: AppColors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'IVA (15%)',
+                                  style: TextStyle(color: AppColors.greyLight, fontSize: 14),
+                                ),
+                                Text(
+                                  '+\$${ivaAmount.toStringAsFixed(2)}',
+                                  style: const TextStyle(color: AppColors.greyLight, fontSize: 14, fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                            const Divider(color: AppColors.border, height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Total a pagar',
+                                  style: TextStyle(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  '\$${totalPrice.toStringAsFixed(2)}',
+                                  style: const TextStyle(color: AppColors.orange, fontSize: 17, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            const Divider(color: AppColors.border, height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Frecuencia de cobro',
+                                  style: TextStyle(color: AppColors.greyLight, fontSize: 14),
+                                ),
+                                Text(
+                                  periodicityText,
+                                  style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.card,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.info_outline, color: AppColors.orange, size: 16),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Tu suscripción se renovará automáticamente cada $renewalPeriodText por \$${totalPrice.toStringAsFixed(2)}. Podés cancelarla cuando quieras desde tu perfil.',
+                                      style: const TextStyle(color: AppColors.greyLight, fontSize: 12, height: 1.35),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(height: 16),
+
+                      // Saved cards or loading / error
+                      if (profileProvider.isLoadingCards && cards.isEmpty) ...[
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: CircularProgressIndicator(color: AppColors.orange, strokeWidth: 2),
+                          ),
+                        ),
+                      ] else ...[
+                        if (profileProvider.cardsError != null && cards.isEmpty) ...[
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 14),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.cardDark,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.info_outline, color: AppColors.orange, size: 18),
+                                const SizedBox(width: 10),
+                                const Expanded(
+                                  child: Text(
+                                    'No pudimos sincronizar tus tarjetas guardadas.',
+                                    style: TextStyle(color: AppColors.greyLight, fontSize: 13),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    setModalState(() {
+                                      errorMessageCheckout = null;
+                                      profileProvider.cardsError = null;
+                                    });
+                                    profileProvider.loadSavedCards(token!);
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Reintentar',
+                                    style: TextStyle(color: AppColors.orange, fontSize: 13, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        if (hasCards) ...[
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 160),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: List.generate(cards.length, (index) {
+                                  final card = cards[index];
+                                  final isSelected = selectedCardIndex == index;
+                                  return GestureDetector(
+                                    onTap: () => setModalState(() => selectedCardIndex = index),
+                                    child: Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? AppColors.cardDark : AppColors.card,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: isSelected ? AppColors.orange : AppColors.border,
+                                          width: isSelected ? 1.5 : 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                                            color: isSelected ? AppColors.orange : AppColors.grey,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Icon(
+                                            Icons.credit_card_outlined,
+                                            color: isSelected ? AppColors.white : AppColors.grey,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              l10n.payWithCardEnding(card.brand, card.lastFour),
+                                              style: TextStyle(
+                                                color: isSelected ? AppColors.white : AppColors.grey,
+                                                fontSize: 13,
+                                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton.icon(
+                              onPressed: () async {
+                                Navigator.pop(dialogContext);
+                                try {
+                                  profileProvider.pendingSubscribePriceId = priceId;
+                                  profileProvider.isAssociatingCard = true;
+                                  final returnUrl = 'fitnflai://payment-methods/membership/$priceId';
+                                  final checkoutUrl = await profileProvider.associateCard(token!, returnUrl: returnUrl);
+                                  if (checkoutUrl != null) {
+                                    if (!await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.inAppBrowserView)) {
+                                      await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
+                                    }
+                                  }
+                                } catch (e) {
+                                  debugPrint('Error asociando tarjeta: $e');
+                                } finally {
+                                  profileProvider.isAssociatingCard = false;
+                                }
+                              },
+                              icon: const Icon(Icons.add_card_outlined, color: AppColors.orange, size: 16),
+                              label: const Text(
+                                'Asociar nueva tarjeta',
+                                style: TextStyle(color: AppColors.orange, fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ] else ...[
+                          if (profileProvider.cardsError == null)
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: AppColors.cardDark,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.info_outline, color: AppColors.grey, size: 16),
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Para suscribirte, primero necesitas asociar una tarjeta.',
+                                      style: TextStyle(color: AppColors.grey, fontSize: 12, height: 1.4),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ],
+
                       if (errorMessageCheckout != null) ...[
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         Text(
                           errorMessageCheckout!,
-                          style: const TextStyle(color: Colors.red, fontSize: 14),
+                          style: const TextStyle(color: Colors.red, fontSize: 13),
                           textAlign: TextAlign.center,
                         ),
                       ],
                       const SizedBox(height: 16),
+
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: profileProvider.isAssociatingCard
-                              ? null
-                              : () async {
-                            setModalState(() {
-                              errorMessageCheckout = null;
-                            });
-                             try {
-                                 profileProvider.pendingSubscribePriceId = priceId;
-                                 profileProvider.isAssociatingCard = true;
-                               // Deep link for app to resume
-                               final returnUrl = 'fitnflai://payment-methods/membership/$priceId';
-                              final checkoutUrl = await profileProvider.associateCard(token!, returnUrl: returnUrl);
+                        child: hasCards
+                            ? ElevatedButton(
+                                onPressed: () async {
+                                  final mediaQuery = MediaQuery.of(pageContext);
+                                  final screenWidth = mediaQuery.size.width.toInt();
+                                  final screenHeight = mediaQuery.size.height.toInt();
+                                  final timezoneOffset = DateTime.now().timeZoneOffset.inMinutes;
 
-                              if (checkoutUrl != null) {
-                                if (!await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.inAppBrowserView)) {
-                                  debugPrint('Could not launch $checkoutUrl in inAppBrowserView. Trying external.');
-                                  await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
-                                }
-                                // After launching, we don't immediately set checkoutStep to 2.
-                                // The app will resume, and didChangeAppLifecycleState will trigger card reload.
-                                // Keep this modal open to show status if needed, or close it and let the profile screen handle it.
-                                // For now, let's just close this modal and rely on the profile screen to refresh.
-                                if (dialogContext.mounted) {
-                                  Navigator.pop(dialogContext); // Close this bottom sheet
-                                }
-                              } else if (profileProvider.cardsError != null) {
-                                if (pageContext.mounted) {
-                                  _showErrorSnackBar(pageContext, profileProvider.cardsError!);
-                                }
-                              }
-                            } catch (e) {
-                              setModalState(() {
-                                errorMessageCheckout = e.toString();
-                              });
-                            } finally {
-                                profileProvider.isAssociatingCard = false;
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.orange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 0,
-                          ),
-                          child: profileProvider.isAssociatingCard
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : Text(l10n.associateCardAndSubscribe,
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                        ),
+                                  final TextEditingController tempCvvController = TextEditingController();
+                                  final bool? confirmed = await showDialog<bool>(
+                                    context: dialogContext,
+                                    barrierDismissible: false,
+                                    builder: (BuildContext alertContext) {
+                                      String? localError;
+                                      return StatefulBuilder(
+                                        builder: (context, setDialogState) {
+                                          return AlertDialog(
+                                            backgroundColor: const Color(0xFF1E1E1E),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                            title: const Text(
+                                              'Confirmación de Seguridad',
+                                              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            content: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  'Por motivos de seguridad, ingresá el código de verificación (CVV) de tu tarjeta ${selectedCard!.brand} finalizada en ${selectedCard.lastFour} para procesar tu suscripción.',
+                                                  style: const TextStyle(color: Colors.grey, fontSize: 13, height: 1.4),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                                const SizedBox(height: 16),
+                                                SizedBox(
+                                                  width: 120,
+                                                  child: TextField(
+                                                    controller: tempCvvController,
+                                                    keyboardType: TextInputType.number,
+                                                    obscureText: true,
+                                                    maxLength: 4,
+                                                    style: const TextStyle(color: Colors.white, fontSize: 20, letterSpacing: 8, fontWeight: FontWeight.bold),
+                                                    textAlign: TextAlign.center,
+                                                    decoration: InputDecoration(
+                                                      hintText: '•••',
+                                                      hintStyle: const TextStyle(color: Colors.grey, fontSize: 20, letterSpacing: 8),
+                                                      counterText: '',
+                                                      errorText: localError,
+                                                      focusedBorder: OutlineInputBorder(
+                                                        borderRadius: BorderRadius.circular(10),
+                                                        borderSide: const BorderSide(color: Colors.orange, width: 2),
+                                                      ),
+                                                      enabledBorder: OutlineInputBorder(
+                                                        borderRadius: BorderRadius.circular(10),
+                                                        borderSide: const BorderSide(color: Color(0xFF2E2E2E)),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            actionsAlignment: MainAxisAlignment.spaceEvenly,
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(alertContext, false),
+                                                child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  final cvvVal = tempCvvController.text.trim();
+                                                  final isNumeric = RegExp(r'^\d+$').hasMatch(cvvVal);
+                                                  if (cvvVal.length < 3 || cvvVal.length > 4 || !isNumeric) {
+                                                    setDialogState(() {
+                                                      localError = 'CVV inválido';
+                                                    });
+                                                    return;
+                                                  }
+                                                  Navigator.pop(alertContext, true);
+                                                },
+                                                child: const Text('Confirmar', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                  );
+
+                                  if (confirmed != true) return;
+
+                                  final cvv = tempCvvController.text.trim();
+
+                                  try {
+                                    setModalState(() {
+                                      checkoutStep = 2;
+                                      errorMessageCheckout = null;
+                                    });
+
+                                    final response = await profileProvider.subscribeNuveiAction(
+                                      token!,
+                                      priceId,
+                                      cardId: selectedCard!.id,
+                                      cvc: cvv,
+                                      screenWidth: screenWidth,
+                                      screenHeight: screenHeight,
+                                      timezoneOffset: timezoneOffset,
+                                    );
+                                    debugPrint('Nuvei response (dialog): $response');
+
+                                    final hasDialogSubError = profileProvider.subscriptionError != null &&
+                                        !profileProvider.subscriptionError!.toLowerCase().contains('exitosa') &&
+                                        !profileProvider.subscriptionError!.toLowerCase().contains('éxito') &&
+                                        !profileProvider.subscriptionError!.toLowerCase().contains('exito') &&
+                                        !profileProvider.subscriptionError!.toLowerCase().contains('success');
+
+                                    if (hasDialogSubError) {
+                                      setModalState(() {
+                                        checkoutStep = 0;
+                                        errorMessageCheckout = profileProvider.subscriptionError;
+                                      });
+                                    } else {
+                                      final requires3ds = response?['requires_3ds'] as bool? ?? false;
+                                      final requiresOtp = response?['requires_otp'] as bool? ?? false;
+                                      final challengeHtml = response?['challenge_html'] as String? ??
+                                                            response?['challenge_url'] as String? ??
+                                                            response?['redirect_url'] as String? ??
+                                                            response?['checkout_url'] as String? ??
+                                                            response?['url'] as String? ?? '';
+                                      final transactionId = (response?['transaction_id'] ?? 
+                                                             response?['gateway_payment_id'] ?? 
+                                                             response?['id_transaccion']) as String?;
+
+                                      if (requires3ds && challengeHtml.isNotEmpty) {
+                                        if (dialogContext.mounted) {
+                                          final completed = await ThreeDsChallengeDialog.show(
+                                            dialogContext,
+                                            challengeHtml,
+                                            transactionId: transactionId,
+                                            token: token,
+                                          );
+                                          if (completed == true) {
+                                            if (dialogContext.mounted) {
+                                              setModalState(() {
+                                                checkoutStep = 2;
+                                              });
+                                            }
+                                            await profileProvider.loadAll(token, force: true);
+                                            await authProvider.refreshUser();
+                                            if (dialogContext.mounted) {
+                                              setModalState(() {
+                                                checkoutStep = 3;
+                                              });
+                                            }
+                                          } else {
+                                            if (dialogContext.mounted) {
+                                              setModalState(() {
+                                                checkoutStep = 0;
+                                                errorMessageCheckout = 'Validación 3DS cancelada.';
+                                              });
+                                            }
+                                          }
+                                        }
+                                      } else if (requiresOtp || (requires3ds && challengeHtml.isEmpty)) {
+                                        if (transactionId != null && transactionId.isNotEmpty) {
+                                          if (dialogContext.mounted) {
+                                            final otpResult = await OtpVerificationDialog.show(
+                                              dialogContext,
+                                              transactionId: transactionId,
+                                              onVerify: (otpCode) async {
+                                                return await profileProvider.validateOtpAction(token, transactionId, otpCode);
+                                              },
+                                            );
+                                            if (otpResult != null) {
+                                              if (dialogContext.mounted) {
+                                                setModalState(() {
+                                                  checkoutStep = 2;
+                                                });
+                                              }
+                                              await profileProvider.loadAll(token, force: true);
+                                              await authProvider.refreshUser();
+                                              if (dialogContext.mounted) {
+                                                setModalState(() {
+                                                  checkoutStep = 3;
+                                                });
+                                              }
+                                            } else {
+                                              if (dialogContext.mounted) {
+                                                setModalState(() {
+                                                  checkoutStep = 0;
+                                                  errorMessageCheckout = 'Verificación OTP cancelada.';
+                                                });
+                                              }
+                                            }
+                                          }
+                                        } else {
+                                          setModalState(() {
+                                            checkoutStep = 0;
+                                            errorMessageCheckout = 'Falta el id de transacción para la verificación OTP.';
+                                          });
+                                        }
+                                      } else {
+                                        if (dialogContext.mounted) {
+                                          setModalState(() {
+                                            checkoutStep = 3;
+                                          });
+                                        }
+                                        profileProvider.loadAll(token, force: true);
+                                        authProvider.refreshUser();
+                                      }
+                                    }
+                                  } catch (e) {
+                                    setModalState(() {
+                                      checkoutStep = 0;
+                                      errorMessageCheckout = e.toString();
+                                    });
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.orange,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  elevation: 0,
+                                ),
+                                child: Text(
+                                  l10n.confirmAndSubscribe,
+                                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                                ),
+                              )
+                            : ElevatedButton(
+                                onPressed: profileProvider.isAssociatingCard
+                                    ? null
+                                    : () async {
+                                        setModalState(() {
+                                          errorMessageCheckout = null;
+                                        });
+                                        try {
+                                          profileProvider.pendingSubscribePriceId = priceId;
+                                          profileProvider.isAssociatingCard = true;
+                                          final returnUrl = 'fitnflai://payment-methods/membership/$priceId';
+                                          final checkoutUrl = await profileProvider.associateCard(token!, returnUrl: returnUrl);
+
+                                          if (checkoutUrl != null) {
+                                            if (!await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.inAppBrowserView)) {
+                                              debugPrint('Could not launch $checkoutUrl in inAppBrowserView. Trying external.');
+                                              await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
+                                            }
+                                            if (dialogContext.mounted) {
+                                              Navigator.pop(dialogContext);
+                                            }
+                                          } else if (profileProvider.cardsError != null) {
+                                            if (pageContext.mounted) {
+                                              _showErrorSnackBar(pageContext, profileProvider.cardsError!);
+                                            }
+                                          }
+                                        } catch (e) {
+                                          setModalState(() {
+                                            errorMessageCheckout = e.toString();
+                                          });
+                                        } finally {
+                                          profileProvider.isAssociatingCard = false;
+                                        }
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.orange,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  elevation: 0,
+                                ),
+                                child: profileProvider.isAssociatingCard
+                                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                    : const Text(
+                                        'Asociar tarjeta',
+                                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                                      ),
+                              ),
                       ),
                     ],
                   ),
-                );
-              }
+                ),
+              );
             } else if (checkoutStep == 1) {
               // Existing Nuvei Webview logic
               return PopScope(
@@ -1248,81 +1161,11 @@ class _MembershipScreenState extends State<MembershipScreen> {
     );
   }
 
-  Widget _buildLoadingBottomSheet(AppLocalizations l10n, String message) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildDragHandle(),
-          const SizedBox(height: 30),
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange),
-          ),
-          const SizedBox(height: 24),
-          Text(message,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)),
-          const SizedBox(height: 30),
-        ],
-      ),
-    );
-  }
-
   void _showErrorSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
-      ),
-    );
-  }
-
-  Widget _buildErrorBottomSheet(AppLocalizations l10n, String errorMessage, VoidCallback onRetry) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildDragHandle(),
-          const SizedBox(height: 20),
-          Text(l10n.errorTitle,
-              style: const TextStyle(
-                  color: Colors.red,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800)),
-          const SizedBox(height: 16),
-          Text(errorMessage,
-              style: const TextStyle(color: AppColors.greyLight, fontSize: 14),
-              textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onRetry,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.orange,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-              child: Text(l10n.retryButton,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l10n.cancelButton,
-                  style: const TextStyle(color: AppColors.greyLight, fontSize: 14)),
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/specialist_selection_bottom_sheet.dart';
 import '../../widgets/otp_verification_dialog.dart';
+import '../../widgets/three_ds_challenge_dialog.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/specialist_provider.dart';
@@ -227,7 +228,7 @@ class _SpecialistBookingScreenState extends State<SpecialistBookingScreen> {
   Widget _buildDateSelector(AppThemeExtensionWrapper theme, AppLocalizations l10n, bool isEnabled) {
     final today = DateTime.now();
     return SizedBox(
-      height: 80,
+      height: 64,
       child: ListView.builder(
         key: const Key('date_selector_list_view'),
         scrollDirection: Axis.horizontal,
@@ -246,11 +247,11 @@ class _SpecialistBookingScreenState extends State<SpecialistBookingScreen> {
             } : null,
             key: Key('date_selector_${date.year}-${date.month}-${date.day}'),
             child: Container(
-              width: 60,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: 52,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
               decoration: BoxDecoration(
                 color: isSelected ? theme.orange : theme.card,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: isSelected ? theme.orange : theme.border),
               ),
               child: Column(
@@ -260,16 +261,16 @@ class _SpecialistBookingScreenState extends State<SpecialistBookingScreen> {
                     _getShortDayName(date, l10n.localeName), // Short day name
                     style: TextStyle(
                       color: isSelected ? theme.white : theme.textSecondary,
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     date.day.toString(),
                     style: TextStyle(
                       color: isSelected ? theme.white : theme.text,
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -336,8 +337,8 @@ class _SpecialistBookingScreenState extends State<SpecialistBookingScreen> {
           spacing: 10,
           runSpacing: 10,
           children: availableSlots.map((turno) {
-            final time = turno.horaInicio.substring(0, 5); // Format HH:MM from HH:MM:SS
-            final isSelected = _selectedTime == time;
+            final time = turno.horaInicio.length >= 5 ? turno.horaInicio.substring(0, 5) : turno.horaInicio;
+            final isSelected = _selectedTime == turno.horaInicio || _selectedTime == time;
             final isAvailable = turno.estado == 'disponible'; // Check the status from the Turno object
 
             return GestureDetector(
@@ -419,6 +420,7 @@ class _SpecialistBookingScreenState extends State<SpecialistBookingScreen> {
                       return _CheckoutBottomSheet(
                         selectedDate: _selectedDate,
                         selectedTime: _selectedTime!,
+                        basePrice: 1.00,
                       );
                     },
                   );
@@ -570,10 +572,12 @@ class _SpecialistBookingScreenState extends State<SpecialistBookingScreen> {
 class _CheckoutBottomSheet extends StatefulWidget {
   final DateTime selectedDate;
   final String selectedTime;
+  final double basePrice;
 
   const _CheckoutBottomSheet({
     required this.selectedDate,
     required this.selectedTime,
+    this.basePrice = 1.00,
   });
 
   @override
@@ -585,6 +589,11 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
   bool _isProcessingVerification = false;
   bool _isLoading = false;
   String? _selectedCardId;
+  /// True after the user returns from the external Nuvei browser (web flow).
+  bool _webPaymentReturned = false;
+
+  double get _ivaAmount => widget.basePrice * 0.15;
+  double get _totalPrice => widget.basePrice + _ivaAmount;
 
   @override
   void initState() {
@@ -617,8 +626,26 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _checkoutStep == 2 && !_isProcessingVerification) {
-      _verifyAndBook();
+    if (state == AppLifecycleState.resumed) {
+      // Si el usuario volvió de asociar tarjeta o del navegador, recargamos las tarjetas
+      final authProvider = context.read<AuthProvider>();
+      final profileProvider = context.read<ProfileProvider>();
+      final token = authProvider.token;
+      if (token != null) {
+        profileProvider.loadSavedCards(token).then((_) {
+          if (mounted && profileProvider.savedCards.isNotEmpty) {
+            setState(() {
+              _selectedCardId ??= profileProvider.savedCards.first.id;
+            });
+          }
+        });
+      }
+
+      if (_checkoutStep == 2 && !_isProcessingVerification) {
+        setState(() {
+          _webPaymentReturned = true;
+        });
+      }
     }
   }
 
@@ -844,9 +871,35 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
 
       if (success) {
         final paymentResponse = specialistProvider.lastPaymentResponse;
-        final requiresOtp = paymentResponse?['requires_otp'] as bool? ?? false;
-        if (requiresOtp) {
-          final transactionId = paymentResponse?['transaction_id'] as String?;
+        final requires3ds   = paymentResponse?['requires_3ds']  as bool? ?? false;
+        final requiresOtp   = paymentResponse?['requires_otp']  as bool? ?? false;
+        final challengeHtml = paymentResponse?['challenge_html'] as String? ??
+            paymentResponse?['redirect_url']  as String? ??
+            paymentResponse?['checkout_url']  as String? ??
+            paymentResponse?['url']           as String? ?? '';
+        final transactionId = (paymentResponse?['transaction_id'] ??
+            paymentResponse?['gateway_payment_id'] ??
+            paymentResponse?['id_transaccion']) as String?;
+
+        if (requires3ds && challengeHtml.isNotEmpty) {
+          // ── 3DS challenge ────────────────────────────────────────────────
+          setState(() { _isLoading = false; });
+          final completed = await ThreeDsChallengeDialog.show(
+            context,
+            challengeHtml,
+            transactionId: transactionId,
+            token: token,
+          );
+          if (!mounted) return;
+          if (completed == true) {
+            await _verifyAndBook();
+          } else {
+            scaffoldMessenger.showSnackBar(
+              const SnackBar(content: Text('Validación 3DS cancelada o fallida.')),
+            );
+          }
+        } else if (requiresOtp) {
+          // ── OTP challenge ─────────────────────────────────────────────────
           if (transactionId != null && transactionId.isNotEmpty) {
             final otpResult = await OtpVerificationDialog.show(
               context,
@@ -859,28 +912,25 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
             if (otpResult != null) {
               await _verifyAndBook();
             } else {
-              setState(() {
-                _isLoading = false;
-              });
+              setState(() { _isLoading = false; });
               scaffoldMessenger.showSnackBar(
                 const SnackBar(content: Text('Verificación OTP cancelada.')),
               );
             }
           } else {
-            setState(() {
-              _isLoading = false;
-            });
+            setState(() { _isLoading = false; });
             scaffoldMessenger.showSnackBar(
               const SnackBar(content: Text('Falta el id de transacción para la verificación OTP.')),
             );
           }
         } else {
+          // ── Pago aprobado directamente → agendar ──────────────────────────
           await _verifyAndBook();
         }
       } else {
-        setState(() {
-          _isLoading = false;
-        });
+        // payMeetingSpecialistOneClick retornó false → pago rechazado.
+        // El error ya quedó en specialistProvider.directChargeErrorMessage.
+        setState(() { _isLoading = false; });
       }
     } catch (e) {
       scaffoldMessenger.showSnackBar(
@@ -889,6 +939,51 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _associateCardLocal() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final authProvider = context.read<AuthProvider>();
+    final profileProvider = context.read<ProfileProvider>();
+    final token = authProvider.token;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    if (token == null) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      profileProvider.isAssociatingCard = true;
+      const returnUrl = 'fitnflai://payment-methods/booking';
+      final checkoutUrl = await profileProvider.associateCard(token, returnUrl: returnUrl);
+
+      if (checkoutUrl != null) {
+        final uri = Uri.parse(checkoutUrl);
+        if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text(profileProvider.cardsError ?? 'No se pudo abrir la pasarela para asociar tarjeta.')),
+        );
+      }
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Error al asociar tarjeta: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -930,6 +1025,7 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
                                   setState(() {
                                     _checkoutStep = 2;
                                     _isLoading = false;
+                                    _webPaymentReturned = false; // reset; set to true in didChangeAppLifecycleState
                                   });
                                 } else {
           scaffoldMessenger.showSnackBar(
@@ -1012,15 +1108,43 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
                     children: [
                       Text(
                         l10n.specialistBookingCheckoutSummary,
-                        style: TextStyle(color: theme.text, fontSize: 16),
+                        style: TextStyle(color: theme.text, fontSize: 15),
                       ),
                       Text(
-                        r"\$1.00",
-                        style: TextStyle(color: theme.orange, fontSize: 16, fontWeight: FontWeight.bold),
+                        '\$${widget.basePrice.toStringAsFixed(2)}',
+                        style: TextStyle(color: theme.text, fontSize: 15, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
-                  Divider(color: theme.border, height: 24),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        l10n.localeName == 'es' ? 'IVA (15%)' : 'VAT (15%)',
+                        style: TextStyle(color: theme.textSecondary, fontSize: 14),
+                      ),
+                      Text(
+                        '+\$${_ivaAmount.toStringAsFixed(2)}',
+                        style: TextStyle(color: theme.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                  Divider(color: theme.border, height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        l10n.localeName == 'es' ? 'Total a pagar' : 'Total to pay',
+                        style: TextStyle(color: theme.text, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '\$${_totalPrice.toStringAsFixed(2)}',
+                        style: TextStyle(color: theme.orange, fontSize: 17, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  Divider(color: theme.border, height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1043,7 +1167,9 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
                         style: TextStyle(color: theme.text, fontSize: 16),
                       ),
                       Text(
-                        widget.selectedTime,
+                        widget.selectedTime.length >= 5
+                            ? widget.selectedTime.substring(0, 5)
+                            : widget.selectedTime,
                         style: TextStyle(color: theme.text, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -1062,8 +1188,72 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
                     ),
                   );
                 }
+
+                if (profileProvider.cardsError != null && profileProvider.savedCards.isEmpty) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: theme.cardDark,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: theme.border),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'No pudimos sincronizar tus tarjetas guardadas.',
+                                style: TextStyle(color: theme.textSecondary, fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: _loadSavedCards,
+                            child: const Text('Reintentar', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
                 if (profileProvider.savedCards.isEmpty) {
-                  return const SizedBox.shrink();
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.cardDark,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: theme.border),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(Icons.credit_card_outlined, color: theme.orange, size: 40),
+                        const SizedBox(height: 10),
+                        Text(
+                          l10n.localeName == 'es' ? 'No tenés tarjetas guardadas' : 'No saved cards found',
+                          style: TextStyle(color: theme.text, fontSize: 16, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          l10n.localeName == 'es'
+                              ? 'Asociá tu tarjeta para pagar tus citas de forma rápida y segura con Nuvei.'
+                              : 'Associate a card to pay for appointments quickly and securely with Nuvei.',
+                          style: TextStyle(color: theme.textSecondary, fontSize: 13),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
                 // Auto-select the first card if none is selected yet
@@ -1074,11 +1264,24 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      l10n.localeName == 'es' ? 'Método de pago guardado' : 'Saved Payment Method',
-                      style: TextStyle(color: theme.text, fontSize: 16, fontWeight: FontWeight.bold),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          l10n.localeName == 'es' ? 'Método de pago' : 'Payment Method',
+                          style: TextStyle(color: theme.text, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        TextButton.icon(
+                          onPressed: _isLoading ? null : _associateCardLocal,
+                          icon: Icon(Icons.add, size: 16, color: theme.orange),
+                          label: Text(
+                            l10n.localeName == 'es' ? 'Nueva' : 'New',
+                            style: TextStyle(color: theme.orange, fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -1195,41 +1398,6 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
                         ),
                 ),
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () async {
-                          _initiatePaymentLocal();
-                        },
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: theme.orange),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isLoading && !specialistProvider.isDirectCharging
-                      ? SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: theme.orange,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          l10n.localeName == 'es' ? 'Pagar con otro medio' : 'Pay with another method',
-                          style: TextStyle(
-                            color: theme.orange,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              ),
             ] else ...[
               SizedBox(
                 width: double.infinity,
@@ -1237,7 +1405,7 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
                   onPressed: _isLoading
                       ? null
                       : () async {
-                          _initiatePaymentLocal();
+                          _associateCardLocal();
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.orange,
@@ -1246,7 +1414,7 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: _isLoading
+                  child: _isLoading && profileProvider.isAssociatingCard
                       ? SizedBox(
                           width: 24,
                           height: 24,
@@ -1256,7 +1424,7 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
                           ),
                         )
                       : Text(
-                          l10n.specialistBookingCheckoutConfirmBtn,
+                          l10n.localeName == 'es' ? 'Asociar tarjeta' : 'Associate card',
                           style: TextStyle(
                             color: theme.white,
                             fontSize: 18,
@@ -1267,17 +1435,57 @@ class _CheckoutBottomSheetState extends State<_CheckoutBottomSheet> with Widgets
               ),
             ],
                   ] else if (_checkoutStep == 2) ...[
-                    if (_isProcessingVerification || bookingStatus == BookingStatus.loading || bookingStatus == BookingStatus.idle) ...[
+                    if (_isProcessingVerification || bookingStatus == BookingStatus.loading) ...[
+                      // ── Verificando / agendando ────────────────────────────
                       Column(
                         children: [
                           CircularProgressIndicator(color: theme.orange),
                           const SizedBox(height: 16),
                           Text(
-                            _isProcessingVerification || bookingStatus == BookingStatus.loading
-                                ? 'Confirmando tu pago de Nuvei... Por favor, esperá unos segundos.'
-                                : 'Completá tu pago en la pasarela de Nuvei. Al volver, confirmaremos tu reserva automáticamente.',
+                            'Confirmando tu reserva... Por favor, esperá unos segundos.',
                             style: TextStyle(color: theme.text, fontSize: 16),
                             textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ] else if (_webPaymentReturned && bookingStatus == BookingStatus.idle) ...[
+                      // ── Usuario volvió del browser: confirmar manualmente ──
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.check_circle_outline, color: Colors.orange, size: 48),
+                          const SizedBox(height: 12),
+                          Text(
+                            '¿Completaste tu pago en Nuvei?',
+                            style: TextStyle(color: theme.text, fontSize: 17, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Presioná el botón para verificar el pago y confirmar tu reserva.',
+                            style: TextStyle(color: theme.textSecondary, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : () => _verifyAndBook(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: theme.orange,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: Text(
+                                'Confirmar reserva',
+                                style: TextStyle(color: theme.white, fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text('Cancelar', style: TextStyle(color: theme.textSecondary)),
                           ),
                         ],
                       ),

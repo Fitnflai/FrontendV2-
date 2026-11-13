@@ -169,9 +169,58 @@ class SpecialistProvider with ChangeNotifier {
         cvc: cvc,
         extraData: extraData,
       );
-      _lastPaymentResponse = response is Map<String, dynamic> ? response : null;
-      _setBookingStatus(BookingStatus.success);
-      return true;
+
+      if (response is! Map<String, dynamic>) {
+        _setDirectChargeErrorMessage('Respuesta de pasarela inválida.');
+        _setBookingStatus(BookingStatus.error);
+        return false;
+      }
+
+      _lastPaymentResponse = response;
+
+      final requires3ds = response['requires_3ds'] as bool? ?? false;
+      final requiresOtp  = response['requires_otp']  as bool? ?? false;
+
+      // 3DS / OTP require UI interaction — signal the UI to handle the challenge.
+      // Do NOT set success yet; booking happens only after the challenge is resolved.
+      if (requires3ds || requiresOtp) {
+        _setBookingStatus(BookingStatus.idle);
+        return true;
+      }
+
+      // Validate the actual payment status from Nuvei.
+      final statusRaw  = (response['status']  ?? response['estado'] ?? response['state'])
+          ?.toString().toLowerCase().trim() ?? '';
+      final messageRaw = (response['message'] ?? response['mensaje'])
+          ?.toString().toLowerCase().trim() ?? '';
+      final successFlag = response['success'] == true || response['ok'] == true;
+
+      final isApproved = successFlag ||
+          statusRaw.contains('exitosa') ||
+          statusRaw.contains('exitoso') ||
+          statusRaw.contains('success') ||
+          statusRaw.contains('complet') ||
+          statusRaw.contains('approv') ||
+          statusRaw.contains('aprobad') ||
+          statusRaw.contains('pagad') ||
+          statusRaw == 'ok' ||
+          messageRaw.contains('exitosa') ||
+          messageRaw.contains('success') ||
+          messageRaw.contains('aprobada') ||
+          messageRaw.contains('approved');
+
+      if (isApproved) {
+        _setBookingStatus(BookingStatus.success);
+        return true;
+      }
+
+      // Payment was declined or returned an unexpected status.
+      final message = (response['message'] ?? response['mensaje'] ??
+              'El pago no pudo completarse. Verificá los datos de tu tarjeta.')
+          .toString();
+      _setDirectChargeErrorMessage(message);
+      _setBookingStatus(BookingStatus.error);
+      return false;
     } catch (e) {
       debugPrint('Error direct charging meeting: $e');
       _setDirectChargeErrorMessage(e.toString());
