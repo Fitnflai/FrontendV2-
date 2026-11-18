@@ -24,6 +24,12 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
   bool _stravaLoading   = false;
   bool _isSyncingStrava = false;
   bool _isConnectingStrava = false;
+
+  bool _garminConnected    = false;
+  bool _garminLoading      = false;
+  bool _isSyncingGarmin    = false;
+  bool _isConnectingGarmin = false;
+
   String? _userId;
 
   static const _base = 'https://apifitnflai.com';
@@ -65,18 +71,42 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
         });
         if (_stravaConnected && !previouslyConnected && _isConnectingStrava) {
           _isConnectingStrava = false;
-          // Use a post-frame callback to ensure the dialog is shown after the current build cycle
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              _showSyncConfirmationDialog();
-            }
+            if (mounted) _showSyncConfirmationDialog();
           });
         }
+        // Load Garmin status after we have _userId
+        await _loadGarminStatus(token);
       }
     } catch (e) {
       debugPrint('CONNECTED APPS LOAD ERROR: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadGarminStatus(String token) async {
+    if (_userId == null) return;
+    try {
+      final res = await CachedHttp.get(
+        Uri.parse('$_base/webhooks/garmin/status-integrations?id_usuario=$_userId'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (res.statusCode == 200 && mounted) {
+        final d = jsonDecode(res.body) as Map<String, dynamic>;
+        final previouslyConnected = _garminConnected;
+        setState(() {
+          _garminConnected = d['garmin_connected'] == true;
+        });
+        if (_garminConnected && !previouslyConnected && _isConnectingGarmin) {
+          _isConnectingGarmin = false;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _showGarminSyncConfirmationDialog();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('GARMIN STATUS ERROR: $e');
     }
   }
 
@@ -198,6 +228,188 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
     );
   }
 
+  Future<void> _connectGarmin() async {
+    final token = context.read<AuthProvider>().token ?? '';
+    setState(() => _garminLoading = true);
+    try {
+      debugPrint('GARMIN AUTH-URL CALL');
+      final res = await CachedHttp.get(
+        Uri.parse('$_base/webhooks/garmin/auth-url?id_usuario=$_userId'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      debugPrint('GARMIN STATUS: ${res.statusCode} | BODY: ${res.body}');
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final url = body is String ? body : (body as Map<String, dynamic>?)?['url'] as String?;
+        debugPrint('GARMIN URL: $url');
+        if (url != null) {
+          setState(() => _isConnectingGarmin = true);
+          await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        }
+      }
+    } catch (e) {
+      debugPrint('GARMIN CONNECT ERROR: $e');
+    } finally {
+      if (mounted) setState(() => _garminLoading = false);
+    }
+  }
+
+  Future<void> _disconnectGarmin() async {
+    final token = context.read<AuthProvider>().token ?? '';
+    final theme = context.themeColors;
+    final l10n = AppLocalizations.of(context);
+    setState(() => _garminConnected = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(l10n.connectedAppsDisconnectedToast('Garmin')),
+      backgroundColor: theme.redMid,
+    ));
+    try {
+      await CachedHttp.delete(
+        Uri.parse('$_base/webhooks/garmin/disconnect?id_usuario=$_userId'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+    } catch (e) {
+      debugPrint('GARMIN DISCONNECT ERROR: $e');
+    }
+  }
+
+  Future<void> _syncGarmin() async {
+    if (_userId == null) return;
+    final token = context.read<AuthProvider>().token ?? '';
+    final theme = context.themeColors;
+    final isEs = Localizations.localeOf(context).languageCode == 'es';
+    setState(() => _isSyncingGarmin = true);
+    try {
+      final res = await CachedHttp.post(
+        Uri.parse('$_base/webhooks/garmin/sync-plan?id_usuario=$_userId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+        body: '',
+      );
+      if (mounted) {
+        final isSuccess = res.statusCode == 200 || res.statusCode == 201;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isSuccess
+              ? (isEs ? 'Plan sincronizado con Garmin correctamente.' : 'Plan synced to Garmin successfully.')
+              : (isEs ? 'Error al sincronizar con Garmin.' : 'Error syncing with Garmin.')),
+          backgroundColor: isSuccess ? theme.successBorder : theme.redMid,
+        ));
+      }
+    } catch (e) {
+      debugPrint('GARMIN SYNC ERROR: $e');
+    } finally {
+      if (mounted) setState(() => _isSyncingGarmin = false);
+    }
+  }
+
+  void _showGarminSyncConfirmationDialog() {
+    final theme = context.themeColors;
+    final isEs = Localizations.localeOf(context).languageCode == 'es';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: theme.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [
+          Image.asset(
+            Theme.of(context).brightness == Brightness.dark
+                ? 'assets/images/garmin_white.png'
+                : 'assets/images/garmin_black.png',
+            fit: BoxFit.contain,
+            height: 22,
+          ),
+        ]),
+        content: Text(
+          isEs
+              ? '¡Garmin conectado! ¿Querés sincronizar tu plan de entrenamiento ahora?'
+              : 'Garmin connected! Would you like to sync your training plan now?',
+          style: TextStyle(color: theme.textMuted, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              isEs ? 'Ahora no' : 'Not now',
+              style: TextStyle(color: theme.textMuted),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _syncGarmin();
+            },
+            child: Text(
+              isEs ? 'Sincronizar' : 'Sync',
+              style: TextStyle(color: theme.primary, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleGarmin() {
+    debugPrint('HANDLE GARMIN: connected=$_garminConnected loading=$_garminLoading');
+    final theme = context.themeColors;
+    final l10n = AppLocalizations.of(context);
+    final isEs = Localizations.localeOf(context).languageCode == 'es';
+    if (_userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.connectedAppsNullUserError),
+        backgroundColor: theme.redMid,
+      ));
+      return;
+    }
+    if (_garminLoading || _isSyncingGarmin) {
+      debugPrint('Garmin action already in progress. Ignoring tap.');
+      return;
+    }
+    if (_garminConnected) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: theme.card,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(children: [
+            Image.asset(
+              Theme.of(context).brightness == Brightness.dark
+                  ? 'assets/images/garmin_white.png'
+                  : 'assets/images/garmin_black.png',
+              fit: BoxFit.contain,
+              height: 22,
+            ),
+          ]),
+          content: Text(
+            isEs ? '¿Qué querés hacer con tu cuenta de Garmin?' : 'What would you like to do with your Garmin account?',
+            style: TextStyle(color: theme.textMuted, fontSize: 13),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(l10n.connectedAppsCancel, style: TextStyle(color: theme.textMuted)),
+            ),
+            TextButton(
+              onPressed: () { Navigator.pop(context); _showGarminSyncConfirmationDialog(); },
+              child: Text(l10n.connectedAppsSync,
+                  style: TextStyle(color: theme.primary, fontWeight: FontWeight.w700)),
+            ),
+            TextButton(
+              onPressed: () { Navigator.pop(context); _disconnectGarmin(); },
+              child: Text(l10n.connectedAppsDisconnect,
+                  style: TextStyle(color: theme.errorText, fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+      );
+    } else {
+      _connectGarmin();
+    }
+  }
+
   void _handleStrava() {
     debugPrint('HANDLE STRAVA: connected=$_stravaConnected loading=$_stravaLoading');
     final theme = context.themeColors;
@@ -282,48 +494,12 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
                 height: 26,
               ),
               label: '',
-              subtitle: null,
-              badgeConnected: false,
+              subtitle: _garminConnected ? l10n.connectedAppsConnected : null,
+              badgeConnected: _garminConnected,
               showInfo: true,
-              onTap: () {
-                final themeColors = context.themeColors;
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    backgroundColor: themeColors.card,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    title: Row(
-                      children: [
-                        Image.asset(
-                          Theme.of(context).brightness == Brightness.dark
-                              ? 'assets/images/garmin_white.png'
-                              : 'assets/images/garmin_black.png',
-                          fit: BoxFit.contain,
-                          height: 22,
-                        ),
-                      ],
-                    ),
-                    content: Text(
-                      isEs
-                          ? 'Estamos trabajando en la integración con Garmin para que puedas sincronizar tus entrenamientos automáticamente.\n\n¡Próximamente disponible!'
-                          : 'We are working on the Garmin integration so you can sync your workouts automatically.\n\nComing soon!',
-                      style: TextStyle(color: themeColors.textSecondary, fontSize: 13, height: 1.5),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          isEs ? 'Entendido' : 'Understood',
-                          style: TextStyle(
-                            color: themeColors.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              loading: _garminLoading || _isSyncingGarmin,
+              enabled: _userId != null,
+              onTap: _handleGarmin,
             ),
             _NavItem(
               icon: Image.asset(
