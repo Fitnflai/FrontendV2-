@@ -98,6 +98,12 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
         setState(() {
           _garminConnected = d['garmin_connected'] == true;
         });
+        if (mounted) {
+          context.read<HealthProvider>().setExternalConnectedStatus(
+            garmin: _garminConnected,
+            strava: _stravaConnected,
+          );
+        }
         if (_garminConnected && !previouslyConnected && _isConnectingGarmin) {
           _isConnectingGarmin = false;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -141,6 +147,12 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
     final theme = context.themeColors;
     final l10n = AppLocalizations.of(context);
     setState(() => _stravaConnected = false);
+    if (mounted) {
+      context.read<HealthProvider>().setExternalConnectedStatus(
+        garmin: _garminConnected,
+        strava: false,
+      );
+    }
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(l10n.connectedAppsDisconnectedToast('Strava')),
       backgroundColor: theme.redMid,
@@ -262,6 +274,12 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
     final theme = context.themeColors;
     final l10n = AppLocalizations.of(context);
     setState(() => _garminConnected = false);
+    if (mounted) {
+      context.read<HealthProvider>().setExternalConnectedStatus(
+        garmin: false,
+        strava: _stravaConnected,
+      );
+    }
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(l10n.connectedAppsDisconnectedToast('Garmin')),
       backgroundColor: theme.redMid,

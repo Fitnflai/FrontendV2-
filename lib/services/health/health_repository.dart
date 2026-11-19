@@ -217,4 +217,38 @@ class HealthRepository {
     }
     return null;
   }
+
+  Future<Map<String, bool>> checkAccountIntegrations() async {
+    bool garmin = false;
+    bool strava = false;
+    try {
+      final token = await AuthService().getToken();
+      if (token == null) return {'garmin': false, 'strava': false};
+
+      final userRes = await CachedHttp.get(
+        Uri.parse('https://apifitnflai.com/users/me'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (userRes.statusCode == 200) {
+        final d = jsonDecode(userRes.body) as Map<String, dynamic>;
+        strava = (d['strava_access_token'] as String?)?.isNotEmpty == true;
+        final userId = d['id_usuario'] as String?;
+
+        if (userId != null) {
+          final garminRes = await CachedHttp.get(
+            Uri.parse('https://apifitnflai.com/webhooks/garmin/status-integrations?id_usuario=$userId'),
+            headers: {'Authorization': 'Bearer $token'},
+          );
+          if (garminRes.statusCode == 200) {
+            final gd = jsonDecode(garminRes.body) as Map<String, dynamic>;
+            garmin = gd['garmin_connected'] == true;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error checking account integrations: $e');
+    }
+    return {'garmin': garmin, 'strava': strava};
+  }
 }

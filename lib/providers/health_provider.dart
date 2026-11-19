@@ -8,6 +8,8 @@ class HealthProvider extends ChangeNotifier {
   HealthProviderType _connectedProvider = HealthProviderType.none;
   bool _isLoading = false;
   bool _hasExternalActivities = false;
+  bool _isGarminConnected = false;
+  bool _isStravaConnected = false;
   List<String> _externalSources = [];
   DateTime? _lastSyncTime;
 
@@ -23,8 +25,16 @@ class HealthProvider extends ChangeNotifier {
   HealthProviderType get connectedProvider => _connectedProvider;
   bool get isLoading => _isLoading;
   bool get hasExternalActivities => _hasExternalActivities;
+  bool get isGarminConnected => _isGarminConnected;
+  bool get isStravaConnected => _isStravaConnected;
   List<String> get externalSources => _externalSources;
   DateTime? get lastSyncTime => _lastSyncTime;
+
+  bool get isDeviceConnected =>
+      _connectedProvider != HealthProviderType.none ||
+      _isGarminConnected ||
+      _isStravaConnected ||
+      _hasExternalActivities;
 
   int get steps => _steps;
   double get calories => _calories;
@@ -45,6 +55,8 @@ class HealthProvider extends ChangeNotifier {
     _distance = prefs.getDouble('health_today_distance') ?? 0.0;
     _heartRate = prefs.getDouble('health_today_heart_rate') ?? 0.0;
     _hasExternalActivities = prefs.getBool('health_has_external_activities') ?? false;
+    _isGarminConnected = prefs.getBool('health_garmin_connected') ?? false;
+    _isStravaConnected = prefs.getBool('health_strava_connected') ?? false;
     _externalSources = prefs.getStringList('health_external_sources') ?? [];
     final lastSyncMillis = prefs.getInt('health_last_sync_time');
     if (lastSyncMillis != null) {
@@ -52,6 +64,16 @@ class HealthProvider extends ChangeNotifier {
     }
     
     notifyListeners();
+  }
+
+  void setExternalConnectedStatus({required bool garmin, required bool strava}) async {
+    _isGarminConnected = garmin;
+    _isStravaConnected = strava;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('health_garmin_connected', garmin);
+    await prefs.setBool('health_strava_connected', strava);
   }
 
   void _updateConsolidatedData({
@@ -197,6 +219,16 @@ class HealthProvider extends ChangeNotifier {
       if (_connectedProvider != HealthProviderType.none) {
         localData = await _healthRepository.fetchAndDeduplicateData(DateTime.now());
       }
+      
+      // Check Garmin/Strava account-level integration status in background
+      final integrations = await _healthRepository.checkAccountIntegrations();
+      _isGarminConnected = integrations['garmin'] ?? _isGarminConnected;
+      _isStravaConnected = integrations['strava'] ?? _isStravaConnected;
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('health_garmin_connected', _isGarminConnected);
+      await prefs.setBool('health_strava_connected', _isStravaConnected);
+
       final backendSummary = await _healthRepository.fetchDailyActivitySummary(DateTime.now());
       _updateConsolidatedData(localData: localData, backendSummary: backendSummary);
       debugPrint('Consolidated silent sync for today completed.');

@@ -293,8 +293,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final healthProvider = context.watch<HealthProvider>();
     final user = authProvider.user;
     final tienePlan = user?.tienePlanActivo == true;
-    final isDeviceConnected = healthProvider.connectedProvider != HealthProviderType.none ||
-        healthProvider.hasExternalActivities;
+    final isDeviceConnected = healthProvider.isDeviceConnected;
 
     if (!tienePlan) {
       return Scaffold(
@@ -548,11 +547,19 @@ class _DeviceConnectedBanner extends StatelessWidget {
     final isEs = Localizations.localeOf(context).languageCode == 'es';
 
     String title = l10n.homeDeviceConnectedTitle;
-    if (healthProvider.connectedProvider == HealthProviderType.none && healthProvider.hasExternalActivities) {
-      final sources = healthProvider.externalSources.join(', ');
-      title = isEs
-          ? 'Actividad conectada${sources.isNotEmpty ? ' ($sources)' : ''}'
-          : 'Activity connected${sources.isNotEmpty ? ' ($sources)' : ''}';
+    if (healthProvider.connectedProvider == HealthProviderType.none) {
+      if (healthProvider.isGarminConnected && healthProvider.isStravaConnected) {
+        title = isEs ? 'Garmin y Strava conectados' : 'Garmin & Strava connected';
+      } else if (healthProvider.isGarminConnected) {
+        title = isEs ? 'Garmin conectado' : 'Garmin connected';
+      } else if (healthProvider.isStravaConnected) {
+        title = isEs ? 'Strava conectado' : 'Strava connected';
+      } else if (healthProvider.hasExternalActivities) {
+        final sources = healthProvider.externalSources.join(', ');
+        title = isEs
+            ? 'Actividad conectada${sources.isNotEmpty ? ' ($sources)' : ''}'
+            : 'Activity connected${sources.isNotEmpty ? ' ($sources)' : ''}';
+      }
     }
 
     String syncDesc = l10n.homeDeviceConnectedDesc;
