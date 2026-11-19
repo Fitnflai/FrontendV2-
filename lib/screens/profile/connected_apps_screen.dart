@@ -173,6 +173,9 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
       );
       if (mounted) {
         final isSuccess = res.statusCode == 200 || res.statusCode == 201;
+        if (isSuccess && mounted) {
+          context.read<HealthProvider>().silentSyncToday();
+        }
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(isSuccess
               ? l10n.connectedAppsStravaSynced : l10n.connectedAppsStravaSyncError),
@@ -291,6 +294,9 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen> with WidgetsB
       );
       if (mounted) {
         final isSuccess = res.statusCode == 200 || res.statusCode == 201;
+        if (isSuccess && mounted) {
+          context.read<HealthProvider>().silentSyncToday();
+        }
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(isSuccess
               ? (isEs ? 'Plan sincronizado con Garmin correctamente.' : 'Plan synced to Garmin successfully.')

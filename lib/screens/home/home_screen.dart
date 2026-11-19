@@ -51,9 +51,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _loadCheckinState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final healthProvider = context.read<HealthProvider>();
-      if (healthProvider.connectedProvider != HealthProviderType.none) {
-        healthProvider.silentSyncToday();
-      }
+      healthProvider.silentSyncToday();
     });
   }
 
@@ -67,9 +65,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       final healthProvider = context.read<HealthProvider>();
-      if (healthProvider.connectedProvider != HealthProviderType.none) {
-        healthProvider.silentSyncToday();
-      }
+      healthProvider.silentSyncToday();
     }
   }
 
@@ -297,7 +293,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final healthProvider = context.watch<HealthProvider>();
     final user = authProvider.user;
     final tienePlan = user?.tienePlanActivo == true;
-    final isDeviceConnected = healthProvider.connectedProvider != HealthProviderType.none;
+    final isDeviceConnected = healthProvider.connectedProvider != HealthProviderType.none ||
+        healthProvider.hasExternalActivities;
 
     if (!tienePlan) {
       return Scaffold(
@@ -547,6 +544,27 @@ class _DeviceConnectedBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
     final l10n  = AppLocalizations.of(context);
+    final healthProvider = context.watch<HealthProvider>();
+    final isEs = Localizations.localeOf(context).languageCode == 'es';
+
+    String title = l10n.homeDeviceConnectedTitle;
+    if (healthProvider.connectedProvider == HealthProviderType.none && healthProvider.hasExternalActivities) {
+      final sources = healthProvider.externalSources.join(', ');
+      title = isEs
+          ? 'Actividad conectada${sources.isNotEmpty ? ' ($sources)' : ''}'
+          : 'Activity connected${sources.isNotEmpty ? ' ($sources)' : ''}';
+    }
+
+    String syncDesc = l10n.homeDeviceConnectedDesc;
+    if (healthProvider.lastSyncTime != null) {
+      final t = healthProvider.lastSyncTime!;
+      final hour = t.hour.toString().padLeft(2, '0');
+      final minute = t.minute.toString().padLeft(2, '0');
+      syncDesc = '$syncDesc$hour:$minute';
+    } else {
+      syncDesc = '$syncDesc${isEs ? 'Hoy' : 'Today'}';
+    }
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -584,13 +602,13 @@ class _DeviceConnectedBanner extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l10n.homeDeviceConnectedTitle,
+            Text(title,
                 style: TextStyle(
                     color: theme.greenText,
                     fontSize: 14,
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text(l10n.homeDeviceConnectedDesc,
+            Text(syncDesc,
                 style: TextStyle(color: theme.grey, fontSize: 11, height: 1.4)),
           ]),
         ),

@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:fitnflaifrontendv2/services/auth_service.dart';
@@ -188,5 +189,32 @@ class HealthRepository {
       debugPrint('${providerType.id} not available on this device.');
     }
     return false;
+  }
+
+  Future<Map<String, dynamic>?> fetchDailyActivitySummary(DateTime date) async {
+    try {
+      final token = await AuthService().getToken();
+      final dateStr = DateFormat('yyyy-MM-dd').format(date);
+      final response = await CachedHttp.get(
+        Uri.parse('https://apifitnflai.com/health-service-integration/daily-activity-summary?fecha=$dateStr'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return decoded;
+        }
+      } else {
+        debugPrint('Failed to fetch daily activity summary: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error fetching daily activity summary: $e');
+    }
+    return null;
   }
 }
