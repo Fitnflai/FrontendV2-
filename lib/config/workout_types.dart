@@ -133,4 +133,47 @@ class WorkoutTypes {
 
     return _default;
   }
+
+  /// Extrae el título más apropiado para un entrenamiento de forma tolerante a distintas
+  /// nomenclaturas del backend ('nombre', 'titulo_entrenamiento', 'titulo', 'nombre_entrenamiento', 'title', 'name', 'tipo').
+  static String extractTitle(Map<String, dynamic>? data, {String fallback = ''}) {
+    if (data == null) return fallback;
+    final candidates = [
+      data['nombre'],
+      data['titulo_entrenamiento'],
+      data['titulo'],
+      data['nombre_entrenamiento'],
+      data['title'],
+      data['name'],
+      data['tipo'],
+    ];
+    for (final c in candidates) {
+      if (c is String && c.trim().isNotEmpty) {
+        final trimmed = c.trim();
+        if (!isRestType(trimmed)) {
+          return trimmed;
+        }
+      }
+    }
+    return fallback;
+  }
+
+  /// Determina si un tipo corresponde a descanso o recuperación pasiva/activa
+  static bool isRestType(String? tipo) {
+    if (tipo == null || tipo.isEmpty) return false;
+    final t = tipo.toLowerCase().trim();
+    return t.contains('descanso') || t.contains('rest') || t.contains('recuperaci');
+  }
+
+  /// Determina si un mapa de sesión corresponde a un entrenamiento real programado
+  static bool isWorkoutSession(Map<String, dynamic>? data) {
+    if (data == null || data.isEmpty) return false;
+    final tipo = data['tipo'] as String? ?? '';
+    if (isRestType(tipo)) return false;
+
+    final titulo = extractTitle(data);
+    final ejercicios = data['ejercicios_asociados'] as List<dynamic>? ?? [];
+
+    return titulo.isNotEmpty || ejercicios.isNotEmpty || (tipo.trim().isNotEmpty && !isRestType(tipo));
+  }
 }

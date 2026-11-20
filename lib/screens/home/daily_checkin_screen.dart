@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/cached_http.dart'; // Our custom CachedHttp client
 import '../../config/app_theme_extension.dart'; // Import for AppThemeExtension
+import '../../config/workout_types.dart';
 import '../../widgets/bottom_nav.dart';
 import '../../providers/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
@@ -180,9 +181,13 @@ class _DailyCheckinScreenState extends State<DailyCheckinScreen> {
                       final diasEn = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
                       final diaSemanaName = isEs ? diasEs[date.weekday - 1] : diasEn[date.weekday - 1];
 
-                      final sessionTitle = widget.selectedSession?['titulo_entrenamiento'] as String? ?? '';
-                      final subtitleText = sessionTitle.isNotEmpty
-                          ? (isEs ? '$diaSemanaName · Sesión de hoy: $sessionTitle' : '$diaSemanaName · Today\'s session: $sessionTitle')
+                      final isWorkout = WorkoutTypes.isWorkoutSession(widget.selectedSession);
+                      final sessionTitle = WorkoutTypes.extractTitle(widget.selectedSession);
+                      final displayTitle = sessionTitle.isNotEmpty
+                          ? sessionTitle
+                          : (isEs ? 'Entrenamiento' : 'Workout');
+                      final subtitleText = isWorkout
+                          ? (isEs ? '$diaSemanaName · Sesión de hoy: $displayTitle' : '$diaSemanaName · Today\'s session: $displayTitle')
                           : (isEs ? '$diaSemanaName · Día de descanso' : '$diaSemanaName · Rest day');
 
                       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

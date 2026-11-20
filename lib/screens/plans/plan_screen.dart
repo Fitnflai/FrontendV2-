@@ -215,15 +215,7 @@ class _PlanScreenState extends State<PlanScreen> {
   }
 
   bool _isWorkout(Map<String, dynamic> s) {
-    final tipo = (s['tipo'] as String? ?? '').toLowerCase().trim();
-    final titulo = (s['nombre'] as String? ?? s['titulo_entrenamiento'] as String? ?? '').trim();
-    if (tipo == 'descanso_activo' ||
-        tipo == 'descanso' ||
-        tipo.contains('descanso') ||
-        tipo.contains('rest')) {
-      return false;
-    }
-    return titulo.isNotEmpty;
+    return WorkoutTypes.isWorkoutSession(s);
   }
 
   List<Map<String, dynamic>> get _workoutSessions =>
@@ -344,11 +336,9 @@ class _PlanScreenState extends State<PlanScreen> {
                     else
                       ..._sessions
                         .where((s) {
-                          final tipo   = (s['tipo'] as String? ?? '').toLowerCase();
-                          final titulo = (s['nombre'] as String? ?? s['titulo_entrenamiento'] as String? ?? '').trim();
-                          return titulo.isNotEmpty ||
-                              tipo.contains('descanso') ||
-                              tipo.contains('rest');
+                          final tipo = (s['tipo'] as String? ?? '').toLowerCase();
+                          return WorkoutTypes.isWorkoutSession(s) ||
+                              WorkoutTypes.isRestType(tipo);
                         })
                         .map((s) {
                           final fecha = (s['fecha_programada'] as String? ?? '').split('T')[0];
@@ -522,15 +512,7 @@ class _WeekDaysStrip extends StatelessWidget {
   }
 
   bool _isWorkout(Map<String, dynamic> s) {
-    final tipo = (s['tipo'] as String? ?? '').toLowerCase().trim();
-    final titulo = (s['nombre'] as String? ?? s['titulo_entrenamiento'] as String? ?? '').trim();
-    if (tipo == 'descanso_activo' ||
-        tipo == 'descanso' ||
-        tipo.contains('descanso') ||
-        tipo.contains('rest')) {
-      return false;
-    }
-    return titulo.isNotEmpty;
+    return WorkoutTypes.isWorkoutSession(s);
   }
 
   @override
@@ -825,18 +807,19 @@ class _SessionCardState extends State<_SessionCard> {
     final fecha  = widget.data['fecha_programada'] as String? ?? '';
     final tipoLower = tipo.toLowerCase().trim();
 
+    final cfg        = WorkoutTypes.fromTipo(tipo);
+
     // ── Día de descanso activo / total ──────────────────────────
-    if (tipoLower == 'descanso_activo' ||
-        tipoLower == 'descanso' ||
-        tipoLower.contains('descanso') ||
-        tipoLower.contains('rest')) {
+    if (WorkoutTypes.isRestType(tipoLower) || cfg.tipo == 'Descanso') {
       return _RestDayCard(data: widget.data, fecha: fecha);
     }
 
-    final titulo     = (widget.data['nombre'] as String? ?? widget.data['titulo_entrenamiento'] as String? ?? '').trim();
+    final titulo     = WorkoutTypes.extractTitle(
+      widget.data,
+      fallback: cfg.tipo.isNotEmpty ? cfg.tipo : 'Entrenamiento',
+    );
     final estado     = (widget.data['estado']              as String? ?? '').toLowerCase();
     final ejercicios = widget.data['ejercicios_asociados'] as List<dynamic>? ?? [];
-    final cfg        = WorkoutTypes.fromTipo(tipo);
 
     final isToday     = _isToday(fecha) && widget.weekContext == _WeekContext.current;
     final isCompleted = estado == 'completado' || estado == 'completo' || estado == 'done';

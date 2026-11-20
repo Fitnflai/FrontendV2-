@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import '../../config/app_theme_extension.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/cached_http.dart';
+import '../../services/activity_analytics_service.dart';
+import '../../models/activity_detail.dart';
+import 'activity_analytics_screen.dart';
 import '../../l10n/app_localizations.dart';
 
 // ═══════════════════════════════════════════════════════════════
@@ -14,6 +17,7 @@ class WorkoutFeedbackScreen extends StatefulWidget {
   final int    tiempoSecs;
   final double distanciaKm;
   final bool   isExterior;
+  final ActivityDetail? activity;
 
   const WorkoutFeedbackScreen({
     super.key,
@@ -21,6 +25,7 @@ class WorkoutFeedbackScreen extends StatefulWidget {
     required this.tiempoSecs,
     required this.distanciaKm,
     required this.isExterior,
+    this.activity,
   });
 
   @override
@@ -124,8 +129,31 @@ class _WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
     }
 
     if (!mounted) return;
-    // Volver al home (pop hasta la raíz de este flujo)
-    Navigator.of(context).popUntil((r) => r.isFirst);
+    if (widget.activity != null) {
+      final token = context.read<AuthProvider>().token ?? '';
+      final workoutId = (widget.entrenamiento?['id_entrenamiento'] ??
+              widget.entrenamiento?['id'] ??
+              '')
+          .toString();
+      // Upload activity in background if possible
+      ActivityAnalyticsService().saveActivity(
+        activity: widget.activity!,
+        token: token,
+        workoutId: workoutId,
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ActivityAnalyticsScreen(
+            activityId: widget.activity!.id,
+            initialActivity: widget.activity,
+          ),
+        ),
+      );
+    } else {
+      Navigator.of(context).popUntil((r) => r.isFirst);
+    }
   }
 
   @override

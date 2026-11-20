@@ -10,6 +10,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import '../../config/app_theme_extension.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/workout_gps_tracker.dart';
+import '../../models/activity_detail.dart';
 import 'workout_feedback_screen.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/interactive_glossary_text.dart';
@@ -261,6 +263,9 @@ class _WorkoutActiveScreenState extends State<WorkoutActiveScreen>
         if (!necesita) _isExterior = false;
         if (_state == _WState.running) _startTimer();
       });
+      if (_isExterior == true) {
+        WorkoutGpsTracker().markLap();
+      }
     }
   }
 
@@ -268,6 +273,18 @@ class _WorkoutActiveScreenState extends State<WorkoutActiveScreen>
     _timer?.cancel();
     _posSub?.cancel();
     if (!mounted) return;
+
+    ActivityDetail? generatedActivity;
+    if (_isExterior == true) {
+      final titulo = widget.entrenamiento?['titulo'] as String? ?? 'Entrenamiento';
+      generatedActivity = WorkoutGpsTracker().stopAndBuildActivity(
+        title: titulo,
+        workoutType: 'RUNNING',
+      );
+    } else {
+      WorkoutGpsTracker().reset();
+    }
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -276,6 +293,7 @@ class _WorkoutActiveScreenState extends State<WorkoutActiveScreen>
           tiempoSecs:    _elapsedSecs,
           distanciaKm:   _distanceKm,
           isExterior:    _isExterior ?? false,
+          activity:      generatedActivity,
         ),
       ),
     );
@@ -295,6 +313,8 @@ class _WorkoutActiveScreenState extends State<WorkoutActiveScreen>
     final pos = await Geolocator.getCurrentPosition();
     if (!mounted) return;
     setState(() => _currentPos = LatLng(pos.latitude, pos.longitude));
+
+    WorkoutGpsTracker().startTracking();
 
     _posSub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(

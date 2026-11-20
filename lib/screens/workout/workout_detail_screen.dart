@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
 import 'workout_active_screen.dart';
 import 'workout_feedback_screen.dart';
+import 'activity_analytics_screen.dart';
 import '../../l10n/app_localizations.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
@@ -527,26 +528,66 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
             ? SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: theme.greenBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: theme.greenText.withValues(alpha: 0.5)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check_circle, color: theme.greenText, size: 20),
-                      const SizedBox(width: 8),
-                      Text(AppLocalizations.of(context).workoutDetailCompletedBanner,
-                          style: TextStyle(
-                              color: theme.greenText,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700)),
-                    ],
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: theme.greenBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: theme.greenText.withValues(alpha: 0.5)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle, color: theme.greenText, size: 20),
+                          const SizedBox(width: 8),
+                          Text(AppLocalizations.of(context).workoutDetailCompletedBanner,
+                              style: TextStyle(
+                                  color: theme.greenText,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          final actId = (_data?['id_actividad'] ??
+                                  _data?['id_entrenamiento'] ??
+                                  _data?['id'] ??
+                                  '')
+                              .toString();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ActivityAnalyticsScreen(
+                                activityId: actId,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.insights, size: 20),
+                        label: const Text(
+                          'Ver analítica y métricas',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             )

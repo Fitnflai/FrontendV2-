@@ -181,7 +181,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             // Súper robusto: divide tanto por 'T' como por espacio ' ' para limpiar la fecha
             final fechaKey = rawFecha.split('T')[0].split(' ')[0];
             mapItem['fecha_local'] = fechaKey;
-            _planPorFecha[fechaKey] = mapItem;
+
+            // Si ya existe una sesión en esa fecha pero es de descanso y la nueva es de entrenamiento, priorizamos la de entrenamiento
+            if (_planPorFecha.containsKey(fechaKey)) {
+              final existing = _planPorFecha[fechaKey]!;
+              final existingIsWorkout = WorkoutTypes.isWorkoutSession(existing);
+              final newIsWorkout = WorkoutTypes.isWorkoutSession(mapItem);
+
+              if (!existingIsWorkout && newIsWorkout) {
+                _planPorFecha[fechaKey] = mapItem;
+              } else if (existingIsWorkout && !newIsWorkout) {
+                // Mantener el entrenamiento real en lugar de sobreescribir con descanso
+              } else {
+                _planPorFecha[fechaKey] = mapItem;
+              }
+            } else {
+              _planPorFecha[fechaKey] = mapItem;
+            }
           }
         }
 
@@ -246,13 +262,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Set<String> get _monthsWithData {
     final months = <String>{};
     _planPorFecha.forEach((fechaKey, workout) {
-      final tipo = workout['tipo'] as String? ?? '';
-      if (tipo != 'descanso_activo' && tipo != 'Descanso') {
-        final titulo = (workout['nombre'] as String? ?? workout['titulo_entrenamiento'] as String? ?? '').trim();
-        if (titulo.isNotEmpty) {
-          if (fechaKey.length >= 7) {
-            months.add(fechaKey.substring(0, 7));
-          }
+      if (WorkoutTypes.isWorkoutSession(workout)) {
+        if (fechaKey.length >= 7) {
+          months.add(fechaKey.substring(0, 7));
         }
       }
     });
@@ -263,12 +275,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final key = _fmt(d);
     final workout = _planPorFecha[key];
     if (workout == null) return false;
-    
-    final tipo = workout['tipo'] as String? ?? '';
-    if (tipo == 'descanso_activo' || tipo == 'Descanso') return false;
-    
-    final titulo = (workout['nombre'] as String? ?? workout['titulo_entrenamiento'] as String? ?? '').trim();
-    return titulo.isNotEmpty;
+    return WorkoutTypes.isWorkoutSession(workout);
   }
 
   List<Map<String, dynamic>> get _weekSessions {
@@ -1217,22 +1224,29 @@ class _TodaySession extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<AppThemeExtension>() ?? AppThemeExtension.dark;
     final l10n  = AppLocalizations.of(context);
-    // Sin entrenamiento → tarjeta de descanso
-    final titulo     = (data?['nombre'] as String? ?? data?['titulo_entrenamiento'] as String? ?? '').trim();
+
+    if (data == null) return _NoWorkoutCard();
+
+    final tipo   = data?['tipo'] as String? ?? '';
+    final cfg    = WorkoutTypes.fromTipo(tipo);
+
+    // Día de descanso → tarjeta de descanso
+    if (WorkoutTypes.isRestType(tipo) || cfg.tipo == 'Descanso') return _RestDayCard();
+
+    final isWorkout = WorkoutTypes.isWorkoutSession(data);
+    if (!isWorkout) return _NoWorkoutCard();
+
+    final titulo = WorkoutTypes.extractTitle(
+      data,
+      fallback: cfg.tipo.isNotEmpty ? cfg.tipo : 'Entrenamiento',
+    );
     final ejercicios = data?['ejercicios_asociados'] as List<dynamic>? ?? [];
 
-    if (data == null || titulo.isEmpty) return _NoWorkoutCard();
-
     final fecha  = data?['fecha_programada'] as String? ?? '';
-    final tipo   = data?['tipo'] as String? ?? '';
     final estado = data?['estado'] as String? ?? '';
     final isCompletado = estado.toLowerCase() == 'completado' ||
         estado.toLowerCase() == 'completo' ||
         estado.toLowerCase() == 'done';
-    final cfg    = WorkoutTypes.fromTipo(tipo);
-
-    // Día de descanso → misma tarjeta que "sin entrenamiento"
-    if (cfg.tipo == 'Descanso') return _RestDayCard();
 
     final isMissed = _isPast(fecha) &&
         estado.toLowerCase() != 'completado' &&
