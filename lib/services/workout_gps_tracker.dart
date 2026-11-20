@@ -163,14 +163,22 @@ class WorkoutGpsTracker {
     String? locationName,
     String? description,
     int? customCalories,
+    int fallbackElapsedSeconds = 0,
+    double fallbackDistanceMeters = 0.0,
+    dynamic currentPos,
   }) {
     _positionSub?.cancel();
     _positionSub = null;
 
     final now = DateTime.now();
-    final elapsedSeconds = _startTime != null
+    final effectiveDistanceMeters = _totalDistanceMeters > 0
+        ? _totalDistanceMeters
+        : fallbackDistanceMeters;
+
+    final gpsElapsed = _startTime != null
         ? now.difference(_startTime!).inSeconds
         : 0;
+    final elapsedSeconds = gpsElapsed > 0 ? gpsElapsed : fallbackElapsedSeconds;
 
     // Close final lap if not closed
     if (_totalDistanceMeters > _lapStartDistanceMeters) {
@@ -178,8 +186,8 @@ class WorkoutGpsTracker {
     }
 
     // Close final partial split if exists
-    final remainingMeters = _totalDistanceMeters - ((_currentSplitKm - 1) * 1000.0);
-    if (remainingMeters > 200) {
+    final remainingMeters = effectiveDistanceMeters - ((_currentSplitKm - 1) * 1000.0);
+    if (remainingMeters > 200 && elapsedSeconds > 0) {
       final partialTime = elapsedSeconds - _lastSplitElapsedSeconds;
       final projectedPace = (partialTime / (remainingMeters / 1000.0));
       final diff = _previousSplitPace > 0
@@ -194,13 +202,15 @@ class WorkoutGpsTracker {
       );
     }
 
-    final avgPace = (_totalDistanceMeters > 100 && elapsedSeconds > 10)
-        ? (elapsedSeconds / (_totalDistanceMeters / 1000.0))
+    final avgPace = (effectiveDistanceMeters > 50 && elapsedSeconds > 5)
+        ? (elapsedSeconds / (effectiveDistanceMeters / 1000.0))
         : 0.0;
 
-    // Approximate calories: ~62 kcal per km
+    // Approximate calories: ~62 kcal per km running or ~4 kcal per minute resting/exercising
     final calories = customCalories ??
-        ((_totalDistanceMeters / 1000.0) * 62).round();
+        (effectiveDistanceMeters > 0
+            ? ((effectiveDistanceMeters / 1000.0) * 62).round()
+            : ((elapsedSeconds / 60) * 4).round());
 
     // Best efforts (fastest 1km)
     final bestEfforts = <BestEffort>[];
@@ -215,11 +225,51 @@ class WorkoutGpsTracker {
       );
     }
 
-    // Downsample route if too many points (> 400)
-    final downsampledRoute = _downsampleRoute(_rawRoute, 400);
+    // Downsample route or use current position if stationary
+    List<RoutePoint> downsampledRoute;
+    if (_rawRoute.isNotEmpty) {
+      downsampledRoute = _downsampleRoute(_rawRoute, 400);
+    } else if (currentPos != null) {
+      try {
+        downsampledRoute = [
+          RoutePoint(
+            lat: (currentPos.latitude as num).toDouble(),
+            lng: (currentPos.longitude as num).toDouble(),
+          ),
+        ];
+      } catch (_) {
+        downsampledRoute = [];
+      }
+    } else {
+      downsampledRoute = [];
+    }
+
+    // Laps: if empty, generate at least 1 lap representing the session
+    final lapsList = _laps.isNotEmpty
+        ? List<ActivityLap>.unmodifiable(_laps)
+        : [
+            ActivityLap(
+              lapOrder: 1,
+              distanceMeters: effectiveDistanceMeters,
+              actualPaceSecPerKm: avgPace,
+              targetPaceSecPerKm: null,
+            ),
+          ];
+
+    // Telemetry: if empty, add starting point so charts don't crash
+    final telemetryList = _telemetrySamples.isNotEmpty
+        ? List<TelemetrySample>.unmodifiable(_telemetrySamples)
+        : [
+            TelemetrySample(
+              distanceKm: effectiveDistanceMeters / 1000.0,
+              paceSecPerKm: avgPace,
+              elevationMeters: _maxAltitude,
+              heartRateBpm: 0,
+            ),
+          ];
 
     final summary = ActivitySummary(
-      distanceMeters: double.parse(_totalDistanceMeters.toStringAsFixed(1)),
+      distanceMeters: double.parse(effectiveDistanceMeters.toStringAsFixed(1)),
       movingTimeSeconds: elapsedSeconds,
       avgPaceSecPerKm: avgPace,
       elevationGainMeters: double.parse(_elevationGainMeters.toStringAsFixed(1)),
@@ -242,9 +292,9 @@ class WorkoutGpsTracker {
       summary: summary,
       routePoints: downsampledRoute,
       bestEfforts: bestEfforts,
-      laps: List.unmodifiable(_laps),
+      laps: lapsList,
       splits: List.unmodifiable(_splits),
-      telemetry: List.unmodifiable(_telemetrySamples),
+      telemetry: telemetryList,
       hrZones: const [],
     );
   }

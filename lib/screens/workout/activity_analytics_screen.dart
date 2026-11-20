@@ -43,6 +43,14 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
   }
 
   Future<void> _loadActivity() async {
+    if (widget.activityId.trim().isEmpty) {
+      setState(() {
+        _errorMessage = 'No hay un ID de actividad asociado a este entrenamiento.';
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -52,6 +60,8 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
       final auth = context.read<AuthProvider>();
       final userId = auth.user?.id.toString() ?? '';
       final token = auth.token ?? '';
+
+      debugPrint('🔍 [ActivityAnalyticsScreen] Fetching activityId: "${widget.activityId}", userId: "$userId"');
 
       final data = await _service.getActivityAnalytics(
         activityId: widget.activityId,
@@ -66,9 +76,14 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
         });
       }
     } catch (e) {
+      debugPrint('🚨 [ActivityAnalyticsScreen] Error loading activity: $e');
       if (mounted) {
+        final errStr = e.toString();
+        final isNotFound = errStr.contains('404');
         setState(() {
-          _errorMessage = 'No se pudieron cargar los datos de la actividad.';
+          _errorMessage = isNotFound
+              ? 'Aún no hay datos de telemetría o GPS registrados para esta sesión.\n\nCompletala usando el tracking en vivo del móvil o sincronizá tu reloj Garmin para ver los gráficos.'
+              : 'No se pudieron cargar los datos de la actividad.';
           _isLoading = false;
         });
       }
@@ -122,20 +137,30 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
     }
 
     if (_errorMessage != null || _activity == null) {
+      final isInfo = _errorMessage != null &&
+          _errorMessage!.contains('telemetría o GPS');
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 48, color: theme.errorText),
+              Icon(
+                isInfo ? Icons.directions_run_outlined : Icons.error_outline,
+                size: 56,
+                color: isInfo ? theme.primary : theme.errorText,
+              ),
               const SizedBox(height: 16),
               Text(
                 _errorMessage ?? 'Actividad no encontrada',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: theme.text, fontSize: 15),
+                style: TextStyle(
+                  color: isInfo ? theme.textMuted : theme.text,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _loadActivity,
                 style: ElevatedButton.styleFrom(
@@ -143,7 +168,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Text('Reintentar'),
+                child: Text(isInfo ? 'Volver a intentar' : 'Reintentar'),
               ),
             ],
           ),

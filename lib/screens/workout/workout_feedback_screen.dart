@@ -135,18 +135,20 @@ class _WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
               widget.entrenamiento?['id'] ??
               '')
           .toString();
-      // Upload activity in background if possible
-      ActivityAnalyticsService().saveActivity(
+
+      // Guardar en backend y en caché local persistente
+      final savedId = await ActivityAnalyticsService().saveActivity(
         activity: widget.activity!,
         token: token,
         workoutId: workoutId,
       );
 
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => ActivityAnalyticsScreen(
-            activityId: widget.activity!.id,
+            activityId: savedId,
             initialActivity: widget.activity,
           ),
         ),

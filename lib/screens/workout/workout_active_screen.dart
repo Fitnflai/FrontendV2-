@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import '../../config/app_theme_extension.dart';
+import '../../config/workout_types.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/workout_gps_tracker.dart';
 import '../../models/activity_detail.dart';
@@ -274,16 +275,20 @@ class _WorkoutActiveScreenState extends State<WorkoutActiveScreen>
     _posSub?.cancel();
     if (!mounted) return;
 
-    ActivityDetail? generatedActivity;
-    if (_isExterior == true) {
-      final titulo = widget.entrenamiento?['titulo'] as String? ?? 'Entrenamiento';
-      generatedActivity = WorkoutGpsTracker().stopAndBuildActivity(
-        title: titulo,
-        workoutType: 'RUNNING',
-      );
-    } else {
-      WorkoutGpsTracker().reset();
-    }
+    final titulo = WorkoutTypes.extractTitle(
+      widget.entrenamiento,
+      fallback: 'Entrenamiento',
+    );
+    final tipo = widget.entrenamiento?['tipo'] as String? ?? 'RUNNING';
+
+    // Generar SIEMPRE el ActivityDetail de la sesión, incluso si no hubo movimiento o fue en reposo
+    final generatedActivity = WorkoutGpsTracker().stopAndBuildActivity(
+      title: titulo,
+      workoutType: tipo,
+      fallbackElapsedSeconds: _elapsedSecs,
+      fallbackDistanceMeters: _distanceKm * 1000.0,
+      currentPos: _currentPos,
+    );
 
     Navigator.pushReplacement(
       context,
