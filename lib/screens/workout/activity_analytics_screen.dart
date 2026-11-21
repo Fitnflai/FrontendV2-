@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/app_theme_extension.dart';
 import '../../models/activity_detail.dart';
 import '../../providers/auth_provider.dart';
@@ -11,16 +13,19 @@ import 'widgets/analytics/activity_kpi_grid.dart';
 import 'widgets/analytics/activity_laps_chart.dart';
 import 'widgets/analytics/activity_map_header.dart';
 import 'widgets/analytics/activity_splits_list.dart';
+import 'widgets/analytics/activity_strength_exercises_card.dart';
 import 'widgets/analytics/activity_telemetry_chart.dart';
 
 class ActivityAnalyticsScreen extends StatefulWidget {
   final String activityId;
   final ActivityDetail? initialActivity;
+  final Map<String, dynamic>? workoutData;
 
   const ActivityAnalyticsScreen({
     super.key,
     required this.activityId,
     this.initialActivity,
+    this.workoutData,
   });
 
   @override
@@ -32,6 +37,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
   late ActivityDetail _activity;
   bool _isLoading = false;
   String? _noticeBanner;
+  List<Map<String, dynamic>> _exercises = [];
 
   @override
   void initState() {
@@ -39,17 +45,109 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
     _activity = widget.initialActivity ??
         ActivityDetail.empty(title: 'Resumen de actividad');
 
+    _initExercises();
+
     if (widget.initialActivity == null) {
       _loadActivity();
     } else {
-      final isZero = _activity.summary.distanceMeters == 0 &&
-          _activity.routePoints.isEmpty &&
-          _activity.telemetry.isEmpty;
-      if (isZero) {
+      _checkBanner();
+    }
+  }
+
+  void _checkBanner() {
+    final hasGps = _activity.summary.distanceMeters > 0 ||
+        _activity.routePoints.isNotEmpty ||
+        _activity.telemetry.isNotEmpty;
+
+    if (!hasGps) {
+      if (_exercises.isNotEmpty) {
+        _noticeBanner =
+            'Esta sesión incluye ejercicios de fuerza y cardio interior. Mostrando el desglose de ejercicios completados y métricas generales.';
+      } else {
         _noticeBanner =
             'Aún no hay datos de telemetría o GPS registrados para esta sesión.\nCompletala usando el tracking en vivo del móvil o sincronizá tu reloj Garmin para ver los gráficos.';
       }
+    } else {
+      _noticeBanner = null;
     }
+  }
+
+  Future<void> _initExercises() async {
+    final parsed = _extractExercisesFromMap(widget.workoutData);
+    if (parsed.isNotEmpty) {
+      setState(() {
+        _exercises = parsed;
+      });
+      _cacheExercises(parsed);
+      _checkBanner();
+      return;
+    }
+
+    // Try loading from local storage cache
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'workout_exercises_${widget.activityId}';
+      final cachedJson = prefs.getString(key);
+      if (cachedJson != null) {
+        final decoded = (json.decode(cachedJson) as List<dynamic>?)
+            ?.map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+        if (decoded != null && decoded.isNotEmpty && mounted) {
+          setState(() {
+            _exercises = decoded;
+          });
+          _checkBanner();
+        }
+      }
+    } catch (e) {
+      debugPrint('🚨 Error loading cached exercises: $e');
+    }
+  }
+
+  Future<void> _cacheExercises(List<Map<String, dynamic>> list) async {
+    if (widget.activityId.isEmpty) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'workout_exercises_${widget.activityId}';
+      await prefs.setString(key, json.encode(list));
+    } catch (_) {}
+  }
+
+  List<Map<String, dynamic>> _extractExercisesFromMap(Map<String, dynamic>? data) {
+    if (data == null) return const [];
+    final raw = data['ejercicios_asociados'] as List<dynamic>? ??
+        data['ejercicios'] as List<dynamic>? ??
+        const [];
+    final list = <Map<String, dynamic>>[];
+
+    for (final e in raw) {
+      if (e is! Map) continue;
+      final mapE = Map<String, dynamic>.from(e);
+      final ej = mapE['ejercicio'] is Map
+          ? Map<String, dynamic>.from(mapE['ejercicio'] as Map)
+          : mapE;
+
+      final nombre = ej['nombre'] ?? ej['descripcion'] ?? 'Ejercicio';
+      final tipo = ej['tipo'] ?? ej['tipo_movimiento'] ?? mapE['bloque'] ?? '';
+      final series = (mapE['series'] ?? ej['series'])?.toString() ?? '';
+      final reps = (mapE['repeticiones'] ?? mapE['reps'] ?? ej['repeticiones'] ?? ej['reps'])?.toString() ?? '';
+      final durSeg = int.tryParse((mapE['duracion_segundos'] ?? ej['duracion_segundos'] ?? '').toString()) ?? 0;
+      final durMin = (mapE['duracion_minutos'] ?? ej['duracion_minutos'])?.toString() ??
+          (durSeg > 0 ? '${(durSeg / 60).round()} min' : '');
+      final descansoSeg = int.tryParse((mapE['descanso_segundos'] ?? ej['descanso_segundos'] ?? '').toString()) ?? 0;
+
+      list.add({
+        'nombre': nombre,
+        'tipo': tipo,
+        'series': series,
+        'reps': reps,
+        'dur': durMin,
+        'dur_seg': durSeg,
+        'descanso_seg': descansoSeg,
+      });
+    }
+
+    return list;
   }
 
   Future<void> _loadActivity() async {
@@ -58,9 +156,8 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
         _activity = ActivityDetail.empty(
           title: widget.initialActivity?.title ?? 'Resumen de actividad',
         );
-        _noticeBanner =
-            'Aún no hay datos de telemetría o GPS registrados para esta sesión.\nCompletala usando el tracking en vivo del móvil o sincronizá tu reloj Garmin para ver los gráficos.';
         _isLoading = false;
+        _checkBanner();
       });
       return;
     }
@@ -86,30 +183,18 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
         setState(() {
           _activity = data;
           _isLoading = false;
-          final isZero = data.summary.distanceMeters == 0 &&
-              data.routePoints.isEmpty &&
-              data.telemetry.isEmpty;
-          if (isZero) {
-            _noticeBanner =
-                'Aún no hay datos de telemetría o GPS registrados para esta sesión.\nCompletala usando el tracking en vivo del móvil o sincronizá tu reloj Garmin para ver los gráficos.';
-          } else {
-            _noticeBanner = null;
-          }
+          _checkBanner();
         });
       }
     } catch (e) {
       debugPrint('🚨 [ActivityAnalyticsScreen] Error loading activity: $e');
       if (mounted) {
-        final errStr = e.toString();
-        final isNotFound = errStr.contains('404');
         setState(() {
           _activity = ActivityDetail.empty(
             title: widget.initialActivity?.title ?? 'Resumen de actividad',
           );
-          _noticeBanner = isNotFound
-              ? 'Aún no hay datos de telemetría o GPS registrados para esta sesión.\nCompletala usando el tracking en vivo del móvil o sincronizá tu reloj Garmin para ver los gráficos.'
-              : 'No se pudieron sincronizar los datos de la actividad con el servidor. Mostrando métricas locales en cero.';
           _isLoading = false;
+          _checkBanner();
         });
       }
     }
@@ -199,6 +284,10 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
                     const SizedBox(height: 16),
                   ],
                   ActivityKpiGrid(summary: act.summary),
+                  if (_exercises.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    ActivityStrengthExercisesCard(exercises: _exercises),
+                  ],
                   if (act.bestEfforts.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     ActivityBestEffortsCard(bestEfforts: act.bestEfforts),
@@ -306,7 +395,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Sesión sin telemetría o GPS',
+                  'Sesión híbrida / sin GPS continuo',
                   style: TextStyle(
                     color: theme.text,
                     fontSize: 14,

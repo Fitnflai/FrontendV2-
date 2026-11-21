@@ -31,10 +31,22 @@ class WorkoutGpsTracker {
   int _lapStartSeconds = 0;
   double _lapStartDistanceMeters = 0.0;
 
+  bool _isPaused = false;
   bool get isTracking => _positionSub != null;
+  bool get isPaused => _isPaused;
   double get totalDistanceKm => _totalDistanceMeters / 1000.0;
   double get totalDistanceMeters => _totalDistanceMeters;
   List<RoutePoint> get currentRoute => List.unmodifiable(_rawRoute);
+
+  void pauseTracking() {
+    _isPaused = true;
+    debugPrint('⏸️ [WorkoutGpsTracker] GPS paused for strength/indoor exercise');
+  }
+
+  void resumeTracking() {
+    _isPaused = false;
+    debugPrint('▶️ [WorkoutGpsTracker] GPS resumed for cardio/outdoor exercise');
+  }
 
   void startTracking() {
     reset();
@@ -51,6 +63,7 @@ class WorkoutGpsTracker {
   }
 
   void _onPositionUpdate(Position p) {
+    if (_isPaused) return; // Ignore GPS drift while paused on strength/mobility exercises
     if (p.accuracy > 25.0) return; // filter noisy GPS
 
     final lat = p.latitude;

@@ -150,6 +150,7 @@ class _WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
           builder: (_) => ActivityAnalyticsScreen(
             activityId: savedId,
             initialActivity: widget.activity,
+            workoutData: widget.entrenamiento,
           ),
         ),
       );

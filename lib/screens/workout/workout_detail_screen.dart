@@ -567,6 +567,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                             MaterialPageRoute(
                               builder: (_) => ActivityAnalyticsScreen(
                                 activityId: actId,
+                                workoutData: _data,
                               ),
                             ),
                           );

@@ -266,6 +266,12 @@ class _WorkoutActiveScreenState extends State<WorkoutActiveScreen>
       if (_isExterior == true) {
         WorkoutGpsTracker().markLap();
       }
+      final stepType = (_pasos[_pasoIdx]['tipo'] ?? '').toString().toUpperCase();
+      if (stepType.contains('FUERZA') || stepType.contains('MOVILIDAD') || _isExterior != true) {
+        WorkoutGpsTracker().pauseTracking();
+      } else {
+        WorkoutGpsTracker().resumeTracking();
+      }
     }
   }
 
