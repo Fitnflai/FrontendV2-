@@ -1233,7 +1233,7 @@ class _BloqueCard extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(width: 4),
-                Icon(Icons.chevron_right, size: 18, color: theme.textMuted.withValues(alpha: 0.4)),
+                Icon(Icons.chevron_right, size: 18, color: theme.greyLight.withValues(alpha: 0.5)),
               ]),
             ),
           ),

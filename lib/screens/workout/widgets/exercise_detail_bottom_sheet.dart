@@ -274,7 +274,7 @@ class ExerciseDetailBottomSheet extends StatelessWidget {
                           label: 'DURACIÓN O TRAMO',
                           value: durSeg > 0
                               ? (durSeg >= 60 ? '${(durSeg / 60).round()} min' : '$durSeg s')
-                              : (durMinStr.isNotEmpty ? durMinStr : (distM > 0 ? '${distM} m' : '--')),
+                              : (durMinStr.isNotEmpty ? durMinStr : (distM > 0 ? '$distM m' : '--')),
                           theme: theme,
                         ),
                       ),
