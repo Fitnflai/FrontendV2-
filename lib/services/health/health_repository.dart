@@ -262,6 +262,13 @@ class HealthRepository {
     final savedProviderId = prefs.getString('health_connected_provider') ?? 'none';
     if (savedProviderId == 'none') return null;
 
+    if (savedProviderId == 'huawei_health') {
+      return HuaweiHealthService().fetchWorkoutHeartRate(
+        startTime: startTime,
+        endTime: endTime,
+      );
+    }
+
     try {
       final health = Health();
       await health.configure();

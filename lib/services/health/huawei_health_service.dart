@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:huawei_health/huawei_health.dart';
 import 'package:fitnflaifrontendv2/services/health/base_health_service.dart';
 import 'package:fitnflaifrontendv2/services/health/health_data_model.dart';
+import 'package:fitnflaifrontendv2/models/activity_detail.dart';
 import 'package:intl/intl.dart';
 
 class HuaweiHealthService implements BaseHealthService {
@@ -14,12 +15,13 @@ class HuaweiHealthService implements BaseHealthService {
     Scope.HEALTHKIT_STEP_READ,
     Scope.HEALTHKIT_CALORIES_READ,
     Scope.HEALTHKIT_DISTANCE_READ,
+    Scope.HEALTHKIT_HEARTRATE_READ,
+    Scope.HEALTHKIT_ACTIVITY_RECORD_READ,
+    Scope.HEALTHKIT_SLEEP_READ,
   ];
 
   @override
   Future<bool> checkAvailability() async {
-    // getHealthAppAuthorization() only returns true AFTER the user has already authorized our app.
-    // To allow the initial connection flow to trigger, we must return true if running on Android.
     return Platform.isAndroid;
   }
 
@@ -28,12 +30,22 @@ class HuaweiHealthService implements BaseHealthService {
     try {
       if (!Platform.isAndroid) return false;
 
-      // We request permission via HealthAuth.signIn
+      // 1. Verificar autorización de datos en la app Salud de Huawei
+      try {
+        final authorized = await SettingController.getHealthAppAuthorization();
+        if (!authorized) {
+          await SettingController.checkHealthAppAuthorization();
+        }
+      } catch (e) {
+        debugPrint('⚠️ [HuaweiHealth] Error checking health app authorization: $e');
+      }
+
+      // 2. Solicitar inicio de sesión y permisos mediante HealthAuth.signIn
       final authResult = await HealthAuth.signIn(_healthScopes);
       debugPrint('Huawei Health authResult: $authResult');
       return authResult != null;
     } on PlatformException catch (e) {
-      debugPrint('PlatformException requesting Huawei Health permissions: ${e.message}');
+      debugPrint('PlatformException requesting Huawei Health permissions: ${e.message} (code: ${e.code})');
       return false;
     } catch (e) {
       debugPrint('Error requesting Huawei Health permissions: $e');
@@ -43,9 +55,8 @@ class HuaweiHealthService implements BaseHealthService {
 
   @override
   Future<Map<String, dynamic>?> fetchSyncData(DateTime date) async {
-    // If not on Android, return mock data
     if (!Platform.isAndroid) {
-      return _getMockHealthData(date);
+      return null;
     }
 
     try {
@@ -64,88 +75,168 @@ class HuaweiHealthService implements BaseHealthService {
       double fcReposo = 0.0;
       List<Map<String, dynamic>> workouts = [];
 
-      final startOfDay = DateTime(date.year, date.month, date.day);
-      final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
-      
-      final int startTime = startOfDay.millisecondsSinceEpoch;
-      final int endTime = endOfDay.millisecondsSinceEpoch;
+      final now = DateTime.now();
+      final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+      final int yyyymmdd = date.year * 10000 + date.month * 100 + date.day;
 
       // 1. Fetch Steps
-      try {
-        final SampleSet? stepsSum = await dataController.readDailySummation(
-          DataType.DT_CONTINUOUS_STEPS_DELTA,
-          startTime,
-          endTime,
-        );
-        if (stepsSum != null) {
-          for (var point in stepsSum.samplePoints) {
-            final values = point.fieldValues;
-            if (values != null) {
-              final val = values['steps_delta'] ?? values['steps'];
-              if (val is num) {
-                totalSteps += val.toInt();
+      if (isToday) {
+        try {
+          final SampleSet? stepsSum = await dataController.readTodaySummation(
+            DataType.DT_CONTINUOUS_STEPS_DELTA,
+          );
+          if (stepsSum != null) {
+            for (var point in stepsSum.samplePoints) {
+              final values = point.fieldValues;
+              if (values != null) {
+                final val = values['steps_delta'] ?? values['steps'];
+                if (val is num) totalSteps += val.toInt();
               }
             }
           }
+        } catch (e) {
+          debugPrint('⚠️ [HuaweiHealth] Error in readTodaySummation steps: $e');
         }
-      } on PlatformException catch (e) {
-        debugPrint('PlatformException reading steps summation: ${e.message}');
-      } catch (e) {
-        debugPrint('Error reading steps summation: $e');
+      }
+
+      if (totalSteps == 0) {
+        try {
+          final SampleSet? stepsSum = await dataController.readDailySummation(
+            DataType.DT_CONTINUOUS_STEPS_DELTA,
+            yyyymmdd,
+            yyyymmdd,
+          );
+          if (stepsSum != null) {
+            for (var point in stepsSum.samplePoints) {
+              final values = point.fieldValues;
+              if (values != null) {
+                final val = values['steps_delta'] ?? values['steps'];
+                if (val is num) totalSteps += val.toInt();
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ [HuaweiHealth] Error in readDailySummation steps: $e');
+        }
       }
 
       // 2. Fetch Calories
-      try {
-        final SampleSet? caloriesSum = await dataController.readDailySummation(
-          DataType.DT_CONTINUOUS_CALORIES_BURNT,
-          startTime,
-          endTime,
-        );
-        if (caloriesSum != null) {
-          for (var point in caloriesSum.samplePoints) {
-            final values = point.fieldValues;
-            if (values != null) {
-              final val = values['calories'];
-              if (val is num) {
-                totalCaloriesBurned += val.toDouble();
+      if (isToday) {
+        try {
+          final SampleSet? caloriesSum = await dataController.readTodaySummation(
+            DataType.DT_CONTINUOUS_CALORIES_BURNT,
+          );
+          if (caloriesSum != null) {
+            for (var point in caloriesSum.samplePoints) {
+              final values = point.fieldValues;
+              if (values != null) {
+                final val = values['calories'] ?? values['calories_total'];
+                if (val is num) totalCaloriesBurned += val.toDouble();
               }
             }
           }
+        } catch (e) {
+          debugPrint('⚠️ [HuaweiHealth] Error in readTodaySummation calories: $e');
         }
-      } on PlatformException catch (e) {
-        debugPrint('PlatformException reading calories summation: ${e.message}');
-      } catch (e) {
-        debugPrint('Error reading calories summation: $e');
+      }
+
+      if (totalCaloriesBurned == 0.0) {
+        try {
+          final SampleSet? caloriesSum = await dataController.readDailySummation(
+            DataType.DT_CONTINUOUS_CALORIES_BURNT,
+            yyyymmdd,
+            yyyymmdd,
+          );
+          if (caloriesSum != null) {
+            for (var point in caloriesSum.samplePoints) {
+              final values = point.fieldValues;
+              if (values != null) {
+                final val = values['calories'] ?? values['calories_total'];
+                if (val is num) totalCaloriesBurned += val.toDouble();
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ [HuaweiHealth] Error in readDailySummation calories: $e');
+        }
       }
 
       // 3. Fetch Distance
-      try {
-        final SampleSet? distanceSum = await dataController.readDailySummation(
-          DataType.DT_CONTINUOUS_DISTANCE_DELTA,
-          startTime,
-          endTime,
-        );
-        if (distanceSum != null) {
-          for (var point in distanceSum.samplePoints) {
-            final values = point.fieldValues;
-            if (values != null) {
-              final val = values['distance'];
-              if (val is num) {
-                totalDistanceKm += val.toDouble() / 1000.0; // Convert meters to km
+      if (isToday) {
+        try {
+          final SampleSet? distanceSum = await dataController.readTodaySummation(
+            DataType.DT_CONTINUOUS_DISTANCE_DELTA,
+          );
+          if (distanceSum != null) {
+            for (var point in distanceSum.samplePoints) {
+              final values = point.fieldValues;
+              if (values != null) {
+                final val = values['distance'] ?? values['distance_delta'];
+                if (val is num) totalDistanceKm += val.toDouble() / 1000.0;
               }
             }
           }
+        } catch (e) {
+          debugPrint('⚠️ [HuaweiHealth] Error in readTodaySummation distance: $e');
         }
-      } on PlatformException catch (e) {
-        debugPrint('PlatformException reading distance summation: ${e.message}');
-      } catch (e) {
-        debugPrint('Error reading distance summation: $e');
       }
 
-      // Check if we got any real values, otherwise fall back to some default values
-      if (totalSteps == 0 && totalCaloriesBurned == 0.0 && totalDistanceKm == 0.0) {
-        debugPrint('No actual HMS data found, using graceful mock fallback values.');
-        return _getMockHealthData(date);
+      if (totalDistanceKm == 0.0) {
+        try {
+          final SampleSet? distanceSum = await dataController.readDailySummation(
+            DataType.DT_CONTINUOUS_DISTANCE_DELTA,
+            yyyymmdd,
+            yyyymmdd,
+          );
+          if (distanceSum != null) {
+            for (var point in distanceSum.samplePoints) {
+              final values = point.fieldValues;
+              if (values != null) {
+                final val = values['distance'] ?? values['distance_delta'];
+                if (val is num) totalDistanceKm += val.toDouble() / 1000.0;
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ [HuaweiHealth] Error in readDailySummation distance: $e');
+        }
+      }
+
+      // 4. Fetch Heart Rate
+      try {
+        final startOfDay = DateTime(date.year, date.month, date.day);
+        final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+
+        final ReadOptions hrReadOptions = ReadOptions(
+          dataCollectors: [
+            DataCollector(
+              dataType: DataType.DT_INSTANTANEOUS_HEART_RATE,
+              dataGenerateType: DataGenerateType.DATA_TYPE_RAW,
+            ),
+          ],
+          startTime: startOfDay,
+          endTime: endOfDay,
+        );
+
+        final ReadReply? hrReply = await dataController.read(hrReadOptions);
+        if (hrReply != null && hrReply.sampleSets.isNotEmpty) {
+          final hrValues = <double>[];
+          for (final set in hrReply.sampleSets) {
+            for (final point in set.samplePoints) {
+              final val = point.fieldValues?['bpm'] ?? point.fieldValues?['heart_rate'];
+              if (val is num && val > 30 && val < 240) {
+                hrValues.add(val.toDouble());
+              }
+            }
+          }
+          if (hrValues.isNotEmpty) {
+            avgHeartRate = double.parse((hrValues.reduce((a, b) => a + b) / hrValues.length).toStringAsFixed(1));
+            restingHeartRate = hrValues.reduce((a, b) => a < b ? a : b);
+            fcReposo = restingHeartRate;
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [HuaweiHealth] Error reading heart rate: $e');
       }
 
       final healthData = HealthDataModel(
@@ -163,39 +254,137 @@ class HuaweiHealthService implements BaseHealthService {
       );
 
       return healthData.toMap();
-    } on PlatformException catch (e) {
-      debugPrint('PlatformException during Huawei Health data fetching: ${e.message}. Returning mock fallback data.');
-      return _getMockHealthData(date);
     } catch (e) {
-      debugPrint('Exception in fetchSyncData: $e. Returning mock fallback data.');
-      return _getMockHealthData(date);
+      debugPrint('🚨 [HuaweiHealth] Exception in fetchSyncData: $e');
+      return null;
     }
   }
 
-  // Graceful mock fallback for Huawei Health data
-  Map<String, dynamic> _getMockHealthData(DateTime date) {
-    final DateFormat formatter = DateFormat('yyyy-MM-dd');
-    final String formattedDate = formatter.format(date);
-    return HealthDataModel(
-      fecha: formattedDate,
-      pasos: 7500, // Mock value
-      caloriasQuemadas: 250.0, // Mock value
-      distanciaKm: 5.0, // Mock value
-      ritmoCardiacoPromedio: 70.0, // Mock value
-      ritmoCardiacoReposo: 60.0, // Mock value
-      pesoKg: 70.0, // Mock value
-      horasSueno: 7.0, // Mock value
-      fuente: providerId,
-      fcReposo: 60.0, // Mock value
-      workouts: [
-        {
-          "tipo_entrenamiento": "WALKING",
-          "duracion_minutos": 30,
-          "calorias": 150.0,
-          "fecha_inicio": "${formattedDate}T07:00:00Z",
-        },
-      ],
-    ).toMap();
+  /// Consulta la frecuencia cardíaca y zonas durante un entrenamiento con Huawei Health
+  Future<Map<String, dynamic>?> fetchWorkoutHeartRate({
+    required DateTime startTime,
+    required DateTime endTime,
+  }) async {
+    if (!Platform.isAndroid) return null;
+    try {
+      final dataController = await DataController.init();
+      final ReadOptions hrReadOptions = ReadOptions(
+        dataCollectors: [
+          DataCollector(
+            dataType: DataType.DT_INSTANTANEOUS_HEART_RATE,
+            dataGenerateType: DataGenerateType.DATA_TYPE_RAW,
+          ),
+        ],
+        startTime: startTime,
+        endTime: endTime,
+      );
+
+      final ReadReply? hrReply = await dataController.read(hrReadOptions);
+      if (hrReply == null || hrReply.sampleSets.isEmpty) return null;
+
+      final values = <double>[];
+      final timestampValues = <Map<String, dynamic>>[];
+
+      for (final set in hrReply.sampleSets) {
+        for (final point in set.samplePoints) {
+          final val = point.fieldValues?['bpm'] ?? point.fieldValues?['heart_rate'];
+          if (val is num && val > 30 && val < 240) {
+            final double bpm = val.toDouble();
+            values.add(bpm);
+            final timeMs = point.startTime?.millisecondsSinceEpoch ??
+                point.samplingTime?.millisecondsSinceEpoch ??
+                0;
+            timestampValues.add({
+              'time': timeMs,
+              'bpm': bpm.round(),
+            });
+          }
+        }
+      }
+
+      if (values.isEmpty) return null;
+
+      values.sort();
+      final avgHr = (values.reduce((a, b) => a + b) / values.length).round();
+      final maxHr = values.last.round();
+
+      final z1Max = (maxHr * 0.60).round();
+      final z2Max = (maxHr * 0.70).round();
+      final z3Max = (maxHr * 0.80).round();
+      final z4Max = (maxHr * 0.90).round();
+
+      int z1Count = 0;
+      int z2Count = 0;
+      int z3Count = 0;
+      int z4Count = 0;
+      int z5Count = 0;
+
+      for (final v in values) {
+        if (v < z1Max) {
+          z1Count++;
+        } else if (v < z2Max) {
+          z2Count++;
+        } else if (v < z3Max) {
+          z3Count++;
+        } else if (v < z4Max) {
+          z4Count++;
+        } else {
+          z5Count++;
+        }
+      }
+
+      final totalDurationSec = endTime.difference(startTime).inSeconds;
+      final total = values.length;
+
+      final zones = [
+        HrZoneDetail(
+          zoneNumber: 1,
+          minBpm: (maxHr * 0.50).round(),
+          maxBpm: z1Max,
+          percentage: double.parse((z1Count / total).toStringAsFixed(2)),
+          timeInSeconds: ((z1Count / total) * totalDurationSec).round(),
+        ),
+        HrZoneDetail(
+          zoneNumber: 2,
+          minBpm: z1Max,
+          maxBpm: z2Max,
+          percentage: double.parse((z2Count / total).toStringAsFixed(2)),
+          timeInSeconds: ((z2Count / total) * totalDurationSec).round(),
+        ),
+        HrZoneDetail(
+          zoneNumber: 3,
+          minBpm: z2Max,
+          maxBpm: z3Max,
+          percentage: double.parse((z3Count / total).toStringAsFixed(2)),
+          timeInSeconds: ((z3Count / total) * totalDurationSec).round(),
+        ),
+        HrZoneDetail(
+          zoneNumber: 4,
+          minBpm: z3Max,
+          maxBpm: z4Max,
+          percentage: double.parse((z4Count / total).toStringAsFixed(2)),
+          timeInSeconds: ((z4Count / total) * totalDurationSec).round(),
+        ),
+        HrZoneDetail(
+          zoneNumber: 5,
+          minBpm: z4Max,
+          maxBpm: maxHr,
+          percentage: double.parse((z5Count / total).toStringAsFixed(2)),
+          timeInSeconds: ((z5Count / total) * totalDurationSec).round(),
+        ),
+      ];
+
+      return {
+        'avgHeartRate': avgHr,
+        'maxHeartRate': maxHr,
+        'samples': timestampValues,
+        'hrZones': zones,
+        'provider': providerId,
+      };
+    } catch (e) {
+      debugPrint('🚨 [HuaweiHealth] Error fetching workout heart rate: $e');
+      return null;
+    }
   }
 
   @override
