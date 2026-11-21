@@ -338,7 +338,6 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
         rawTipo.contains('CARRERA') ||
         rawTipo.contains('CICLISMO') ||
         rawTipo.contains('VELOCIDAD');
-    final isMovilidad = rawTipo.contains('MOVILIDAD');
 
     final color = _badgeColor(rawTipo);
     final icon = _disciplineIcon(rawTipo);

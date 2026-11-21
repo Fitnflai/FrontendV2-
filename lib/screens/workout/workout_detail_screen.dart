@@ -446,7 +446,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.w800)),
                 const SizedBox(height: 12),
-                ..._bloques.map((b) => _BloqueCard(bloque: b, workoutSport: _tipo)),
+                ..._bloques.map((b) => _BloqueCard(bloque: b, workoutSport: _tipo, workoutData: _data)),
               ] else if (!_isDescanso && _ejercicios.isEmpty && _descripcion.isEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 40),
@@ -1007,7 +1007,12 @@ class _DescansoInfoCard extends StatelessWidget {
 class _BloqueCard extends StatelessWidget {
   final Map<String, dynamic> bloque;
   final String workoutSport;
-  const _BloqueCard({required this.bloque, this.workoutSport = ''});
+  final Map<String, dynamic>? workoutData;
+  const _BloqueCard({
+    required this.bloque,
+    this.workoutSport = '',
+    this.workoutData,
+  });
 
   String _bloqueIcon(String name) {
     final n = name.toLowerCase();
@@ -1112,9 +1117,9 @@ class _BloqueCard extends StatelessWidget {
           return Column(children: [
             InkWell(
               onTap: () {
-                final actId = (_data?['id_actividad'] ??
-                        _data?['id_entrenamiento'] ??
-                        _data?['id'] ??
+                final actId = (workoutData?['id_actividad'] ??
+                        workoutData?['id_entrenamiento'] ??
+                        workoutData?['id'] ??
                         '')
                     .toString();
                 Navigator.push(
@@ -1122,7 +1127,7 @@ class _BloqueCard extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => ActivityAnalyticsScreen(
                       activityId: actId,
-                      workoutData: _data,
+                      workoutData: workoutData,
                       selectedExercise: ej,
                       exerciseIndex: i,
                       isSingleExerciseMode: true,
