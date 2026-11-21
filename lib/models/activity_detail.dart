@@ -75,6 +75,62 @@ class ActivityDetail {
     );
   }
 
+  factory ActivityDetail.empty({
+    String id = '',
+    String title = 'Resumen de actividad',
+    String workoutType = 'RUNNING',
+    DateTime? date,
+  }) {
+    return ActivityDetail(
+      id: id,
+      title: title,
+      workoutType: workoutType,
+      date: date ?? DateTime.now(),
+      summary: const ActivitySummary.empty(),
+      routePoints: const [],
+      bestEfforts: const [
+        BestEffort(distanceMeters: 1000, label: '1k', timeSeconds: 0),
+        BestEffort(distanceMeters: 1609.34, label: '1 mi', timeSeconds: 0),
+        BestEffort(distanceMeters: 5000, label: '5k', timeSeconds: 0),
+      ],
+      laps: const [
+        ActivityLap(
+          lapOrder: 1,
+          distanceMeters: 0,
+          actualPaceSecPerKm: 0,
+        ),
+      ],
+      splits: const [
+        ActivitySplit(
+          kilometer: 1,
+          paceSecPerKm: 0,
+          diffPreviousSplitSec: 0,
+        ),
+      ],
+      telemetry: const [
+        TelemetrySample(
+          distanceKm: 0.0,
+          paceSecPerKm: 0,
+          elevationMeters: 0,
+          heartRateBpm: 0,
+        ),
+        TelemetrySample(
+          distanceKm: 1.0,
+          paceSecPerKm: 0,
+          elevationMeters: 0,
+          heartRateBpm: 0,
+        ),
+      ],
+      hrZones: const [
+        HrZoneDetail(zoneNumber: 1, minBpm: 95, maxBpm: 114, percentage: 0, timeInSeconds: 0),
+        HrZoneDetail(zoneNumber: 2, minBpm: 114, maxBpm: 133, percentage: 0, timeInSeconds: 0),
+        HrZoneDetail(zoneNumber: 3, minBpm: 133, maxBpm: 152, percentage: 0, timeInSeconds: 0),
+        HrZoneDetail(zoneNumber: 4, minBpm: 152, maxBpm: 171, percentage: 0, timeInSeconds: 0),
+        HrZoneDetail(zoneNumber: 5, minBpm: 171, maxBpm: 190, percentage: 0, timeInSeconds: 0),
+      ],
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'title': title,

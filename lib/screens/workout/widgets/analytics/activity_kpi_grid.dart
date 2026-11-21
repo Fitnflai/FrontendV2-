@@ -93,22 +93,20 @@ class ActivityKpiGrid extends StatelessWidget {
               ),
             ],
           ),
-          if (summary.calories > 0) ...[
-            const SizedBox(height: 16),
-            Divider(color: theme.border.withValues(alpha: 0.3), height: 1),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _KpiItem(
-                    label: 'CALORÍAS',
-                    value: '${summary.calories} kcal',
-                    theme: theme,
-                  ),
+          const SizedBox(height: 16),
+          Divider(color: theme.border.withValues(alpha: 0.3), height: 1),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _KpiItem(
+                  label: 'CALORÍAS',
+                  value: '${summary.calories} kcal',
+                  theme: theme,
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ],
       ),
     );

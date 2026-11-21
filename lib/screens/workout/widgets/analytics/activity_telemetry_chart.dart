@@ -43,14 +43,20 @@ class ActivityTelemetryChart extends StatelessWidget {
 
     final theme = context.themeColors;
 
+    final xValues = spots.map((s) => s.x).toList();
+    final minX = xValues.reduce((a, b) => a < b ? a : b);
+    final rawMaxX = xValues.reduce((a, b) => a > b ? a : b);
+    final chartMinX = minX;
+    final chartMaxX = (rawMaxX <= minX) ? minX + 1.0 : rawMaxX;
+
     final yValues = spots.map((s) => s.y).toList();
     final minY = yValues.reduce((a, b) => a < b ? a : b);
-    final maxY = yValues.reduce((a, b) => a > b ? a : b);
+    final rawMaxY = yValues.reduce((a, b) => a > b ? a : b);
 
-    // Padding on Y axis
-    final yRange = maxY - minY;
+    // Padding on Y axis and guarantee maxY > minY
+    final yRange = (rawMaxY - minY == 0) ? 10.0 : (rawMaxY - minY);
     final chartMinY = (minY - (yRange * 0.1)).clamp(0.0, double.infinity);
-    final chartMaxY = maxY + (yRange * 0.1);
+    final chartMaxY = (rawMaxY <= chartMinY) ? chartMinY + yRange : (rawMaxY + (yRange * 0.1));
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -141,6 +147,8 @@ class ActivityTelemetryChart extends StatelessWidget {
                     left: BorderSide(color: theme.border.withValues(alpha: 0.4)),
                   ),
                 ),
+                minX: chartMinX,
+                maxX: chartMaxX,
                 minY: chartMinY,
                 maxY: chartMaxY,
                 lineBarsData: [

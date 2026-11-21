@@ -12,7 +12,6 @@ import '../../config/app_theme_extension.dart';
 import '../../config/workout_types.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/workout_gps_tracker.dart';
-import '../../models/activity_detail.dart';
 import 'workout_feedback_screen.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/interactive_glossary_text.dart';

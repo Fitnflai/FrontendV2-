@@ -79,7 +79,10 @@ class ActivityLapsChart extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: laps.map((lap) {
                 // In running, lower paceSec is faster, but visually a taller bar represents more effort or relative pace
-                final barRatio = (lap.actualPaceSecPerKm / maxPace).clamp(0.2, 1.0);
+                final safeMaxPace = maxPace > 0 ? maxPace : 1.0;
+                final barRatio = maxPace > 0
+                    ? (lap.actualPaceSecPerKm / safeMaxPace).clamp(0.2, 1.0)
+                    : 0.2;
                 final actualBarHeight = chartHeight * barRatio * 0.85;
 
                 return Expanded(

@@ -29,23 +29,37 @@ class ActivityAnalyticsScreen extends StatefulWidget {
 
 class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
   final ActivityAnalyticsService _service = ActivityAnalyticsService();
-  ActivityDetail? _activity;
+  late ActivityDetail _activity;
   bool _isLoading = false;
-  String? _errorMessage;
+  String? _noticeBanner;
 
   @override
   void initState() {
     super.initState();
-    _activity = widget.initialActivity;
-    if (_activity == null) {
+    _activity = widget.initialActivity ??
+        ActivityDetail.empty(title: 'Resumen de actividad');
+
+    if (widget.initialActivity == null) {
       _loadActivity();
+    } else {
+      final isZero = _activity.summary.distanceMeters == 0 &&
+          _activity.routePoints.isEmpty &&
+          _activity.telemetry.isEmpty;
+      if (isZero) {
+        _noticeBanner =
+            'Aún no hay datos de telemetría o GPS registrados para esta sesión.\nCompletala usando el tracking en vivo del móvil o sincronizá tu reloj Garmin para ver los gráficos.';
+      }
     }
   }
 
   Future<void> _loadActivity() async {
     if (widget.activityId.trim().isEmpty) {
       setState(() {
-        _errorMessage = 'No hay un ID de actividad asociado a este entrenamiento.';
+        _activity = ActivityDetail.empty(
+          title: widget.initialActivity?.title ?? 'Resumen de actividad',
+        );
+        _noticeBanner =
+            'Aún no hay datos de telemetría o GPS registrados para esta sesión.\nCompletala usando el tracking en vivo del móvil o sincronizá tu reloj Garmin para ver los gráficos.';
         _isLoading = false;
       });
       return;
@@ -53,7 +67,6 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
     try {
@@ -73,6 +86,15 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
         setState(() {
           _activity = data;
           _isLoading = false;
+          final isZero = data.summary.distanceMeters == 0 &&
+              data.routePoints.isEmpty &&
+              data.telemetry.isEmpty;
+          if (isZero) {
+            _noticeBanner =
+                'Aún no hay datos de telemetría o GPS registrados para esta sesión.\nCompletala usando el tracking en vivo del móvil o sincronizá tu reloj Garmin para ver los gráficos.';
+          } else {
+            _noticeBanner = null;
+          }
         });
       }
     } catch (e) {
@@ -81,9 +103,12 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
         final errStr = e.toString();
         final isNotFound = errStr.contains('404');
         setState(() {
-          _errorMessage = isNotFound
-              ? 'Aún no hay datos de telemetría o GPS registrados para esta sesión.\n\nCompletala usando el tracking en vivo del móvil o sincronizá tu reloj Garmin para ver los gráficos.'
-              : 'No se pudieron cargar los datos de la actividad.';
+          _activity = ActivityDetail.empty(
+            title: widget.initialActivity?.title ?? 'Resumen de actividad',
+          );
+          _noticeBanner = isNotFound
+              ? 'Aún no hay datos de telemetría o GPS registrados para esta sesión.\nCompletala usando el tracking en vivo del móvil o sincronizá tu reloj Garmin para ver los gráficos.'
+              : 'No se pudieron sincronizar los datos de la actividad con el servidor. Mostrando métricas locales en cero.';
           _isLoading = false;
         });
       }
@@ -111,7 +136,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          _activity?.title ?? 'Resumen de actividad',
+          _activity.title,
           style: TextStyle(
             color: theme.text,
             fontSize: 16,
@@ -119,6 +144,11 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.refresh, color: theme.text),
+            tooltip: 'Actualizar métricas',
+            onPressed: _isLoading ? null : _loadActivity,
+          ),
           IconButton(
             icon: Icon(Icons.more_vert, color: theme.text),
             onPressed: () {},
@@ -136,47 +166,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
       );
     }
 
-    if (_errorMessage != null || _activity == null) {
-      final isInfo = _errorMessage != null &&
-          _errorMessage!.contains('telemetría o GPS');
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isInfo ? Icons.directions_run_outlined : Icons.error_outline,
-                size: 56,
-                color: isInfo ? theme.primary : theme.errorText,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                _errorMessage ?? 'Actividad no encontrada',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: isInfo ? theme.textMuted : theme.text,
-                  fontSize: 14,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _loadActivity,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: Text(isInfo ? 'Volver a intentar' : 'Reintentar'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final act = _activity!;
+    final act = _activity;
     final paceSpots = act.telemetry
         .map((t) => FlSpot(t.distanceKm, t.paceSecPerKm))
         .toList();
@@ -187,85 +177,151 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
         .map((t) => FlSpot(t.distanceKm, t.heartRateBpm.toDouble()))
         .toList();
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Column(
+    return RefreshIndicator(
+      color: theme.primary,
+      backgroundColor: theme.cardDark,
+      onRefresh: _loadActivity,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        child: Column(
+          children: [
+            ActivityMapHeader(
+              activity: act,
+              onShare: () {},
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  if (_noticeBanner != null) ...[
+                    _buildNoticeBanner(theme, _noticeBanner!),
+                    const SizedBox(height: 16),
+                  ],
+                  ActivityKpiGrid(summary: act.summary),
+                  if (act.bestEfforts.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    ActivityBestEffortsCard(bestEfforts: act.bestEfforts),
+                  ],
+                  if (act.laps.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    ActivityLapsChart(laps: act.laps),
+                  ],
+                  if (act.splits.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    ActivitySplitsList(splits: act.splits),
+                  ],
+                  if (paceSpots.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    ActivityTelemetryChart(
+                      title: 'Ritmo',
+                      yAxisLabel: '/km',
+                      spots: paceSpots,
+                      type: TelemetryType.pace,
+                      primaryColor: const Color(0xFF26A69A), // Cyan / Teal
+                      footerStat1Label: 'Ritmo prom.',
+                      footerStat1Value: _formatPace(act.summary.avgPaceSecPerKm),
+                      footerStat2Label: 'Ritmo máx.',
+                      footerStat2Value: act.summary.maxPaceSecPerKm != null
+                          ? _formatPace(act.summary.maxPaceSecPerKm!)
+                          : null,
+                    ),
+                  ],
+                  if (elevationSpots.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    ActivityTelemetryChart(
+                      title: 'Desnivel',
+                      yAxisLabel: 'm',
+                      spots: elevationSpots,
+                      type: TelemetryType.elevation,
+                      primaryColor: const Color(0xFF42A5F5), // Blue
+                      footerStat1Label: 'Desnivel positivo',
+                      footerStat1Value: '${act.summary.elevationGainMeters.toStringAsFixed(0)} m',
+                      footerStat2Label: 'Desnivel máx.',
+                      footerStat2Value: act.summary.maxElevationMeters != null
+                          ? '${act.summary.maxElevationMeters!.toStringAsFixed(0)} m'
+                          : null,
+                    ),
+                  ],
+                  if (hrSpots.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    ActivityTelemetryChart(
+                      title: 'Ritmo cardíaco',
+                      yAxisLabel: 'bpm',
+                      spots: hrSpots,
+                      type: TelemetryType.heartRate,
+                      primaryColor: const Color(0xFFEF5350), // Red / Coral
+                      footerStat1Label: 'Ritmo cardiaco med.',
+                      footerStat1Value: '${act.summary.avgHeartRate} bpm',
+                      footerStat2Label: 'Ritmo cardiaco máx.',
+                      footerStat2Value: act.summary.maxHeartRate != null
+                          ? '${act.summary.maxHeartRate} bpm'
+                          : null,
+                    ),
+                  ],
+                  if (act.hrZones.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    ActivityHrZonesCard(zones: act.hrZones),
+                  ],
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoticeBanner(AppThemeExtensionWrapper theme, String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE65100).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFF9800).withValues(alpha: 0.35),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ActivityMapHeader(
-            activity: act,
-            onShare: () {},
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF9800).withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.info_outline_rounded,
+              color: Color(0xFFFF9800),
+              size: 20,
+            ),
           ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ActivityKpiGrid(summary: act.summary),
-                if (act.bestEfforts.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  ActivityBestEffortsCard(bestEfforts: act.bestEfforts),
-                ],
-                if (act.laps.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  ActivityLapsChart(laps: act.laps),
-                ],
-                if (act.splits.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  ActivitySplitsList(splits: act.splits),
-                ],
-                if (paceSpots.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  ActivityTelemetryChart(
-                    title: 'Ritmo',
-                    yAxisLabel: '/km',
-                    spots: paceSpots,
-                    type: TelemetryType.pace,
-                    primaryColor: const Color(0xFF26A69A), // Cyan / Teal
-                    footerStat1Label: 'Ritmo prom.',
-                    footerStat1Value: _formatPace(act.summary.avgPaceSecPerKm),
-                    footerStat2Label: 'Ritmo máx.',
-                    footerStat2Value: act.summary.maxPaceSecPerKm != null
-                        ? _formatPace(act.summary.maxPaceSecPerKm!)
-                        : null,
+                Text(
+                  'Sesión sin telemetría o GPS',
+                  style: TextStyle(
+                    color: theme.text,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                   ),
-                ],
-                if (elevationSpots.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  ActivityTelemetryChart(
-                    title: 'Desnivel',
-                    yAxisLabel: 'm',
-                    spots: elevationSpots,
-                    type: TelemetryType.elevation,
-                    primaryColor: const Color(0xFF42A5F5), // Blue
-                    footerStat1Label: 'Desnivel positivo',
-                    footerStat1Value: '${act.summary.elevationGainMeters.toStringAsFixed(0)} m',
-                    footerStat2Label: 'Desnivel máx.',
-                    footerStat2Value: act.summary.maxElevationMeters != null
-                        ? '${act.summary.maxElevationMeters!.toStringAsFixed(0)} m'
-                        : null,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: TextStyle(
+                    color: theme.textMuted,
+                    fontSize: 12,
+                    height: 1.4,
                   ),
-                ],
-                if (hrSpots.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  ActivityTelemetryChart(
-                    title: 'Ritmo cardíaco',
-                    yAxisLabel: 'bpm',
-                    spots: hrSpots,
-                    type: TelemetryType.heartRate,
-                    primaryColor: const Color(0xFFEF5350), // Red / Coral
-                    footerStat1Label: 'Ritmo cardiaco med.',
-                    footerStat1Value: '${act.summary.avgHeartRate} bpm',
-                    footerStat2Label: 'Ritmo cardiaco máx.',
-                    footerStat2Value: act.summary.maxHeartRate != null
-                        ? '${act.summary.maxHeartRate} bpm'
-                        : null,
-                  ),
-                ],
-                if (act.hrZones.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  ActivityHrZonesCard(zones: act.hrZones),
-                ],
-                const SizedBox(height: 40),
+                ),
               ],
             ),
           ),

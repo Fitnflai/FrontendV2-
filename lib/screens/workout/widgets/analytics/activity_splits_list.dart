@@ -94,7 +94,10 @@ class ActivitySplitsList extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final split = splits[index];
-              final ratio = (split.paceSecPerKm / maxPace).clamp(0.4, 1.0);
+              final safeMaxPace = maxPace > 0 ? maxPace : 1.0;
+              final ratio = maxPace > 0
+                  ? (split.paceSecPerKm / safeMaxPace).clamp(0.4, 1.0)
+                  : 0.4;
 
               // In running: negative diff means faster than previous split (green/good), positive means slower
               final isFaster = split.diffPreviousSplitSec < 0;
