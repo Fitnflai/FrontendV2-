@@ -10,7 +10,6 @@ import '../../providers/profile_provider.dart';
 import 'workout_active_screen.dart';
 import 'workout_feedback_screen.dart';
 import 'activity_analytics_screen.dart';
-import 'widgets/exercise_detail_bottom_sheet.dart';
 import '../../l10n/app_localizations.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
@@ -1113,11 +1112,23 @@ class _BloqueCard extends StatelessWidget {
           return Column(children: [
             InkWell(
               onTap: () {
-                ExerciseDetailBottomSheet.show(
+                final actId = (_data?['id_actividad'] ??
+                        _data?['id_entrenamiento'] ??
+                        _data?['id'] ??
+                        '')
+                    .toString();
+                Navigator.push(
                   context,
-                  exercise: ej,
-                  badgeText: badgeText,
-                  workoutSport: workoutSport,
+                  MaterialPageRoute(
+                    builder: (_) => ActivityAnalyticsScreen(
+                      activityId: actId,
+                      workoutData: _data,
+                      selectedExercise: ej,
+                      exerciseIndex: i,
+                      isSingleExerciseMode: true,
+                      badgeText: badgeText,
+                    ),
+                  ),
                 );
               },
               borderRadius: BorderRadius.circular(8),
