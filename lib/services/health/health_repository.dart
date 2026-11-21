@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:health/health.dart';
+import '../../models/activity_detail.dart';
 import 'package:fitnflaifrontendv2/services/auth_service.dart';
 import 'package:fitnflaifrontendv2/services/health/base_health_service.dart';
 import 'package:fitnflaifrontendv2/services/health/android_health_connect_service.dart';
@@ -250,5 +252,139 @@ class HealthRepository {
       debugPrint('Error checking account integrations: $e');
     }
     return {'garmin': garmin, 'strava': strava};
+  }
+
+  Future<Map<String, dynamic>?> fetchWorkoutHeartRateData({
+    required DateTime startTime,
+    required DateTime endTime,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedProviderId = prefs.getString('health_connected_provider') ?? 'none';
+    if (savedProviderId == 'none') return null;
+
+    try {
+      final health = Health();
+      await health.configure();
+      final hasPerm = await health.hasPermissions(
+        [HealthDataType.HEART_RATE],
+        permissions: [HealthDataAccess.READ],
+      ) ?? false;
+      if (!hasPerm) {
+        final granted = await health.requestAuthorization(
+          [HealthDataType.HEART_RATE],
+          permissions: [HealthDataAccess.READ],
+        );
+        if (!granted) return null;
+      }
+
+      final dataPoints = await health.getHealthDataFromTypes(
+        types: [HealthDataType.HEART_RATE],
+        startTime: startTime,
+        endTime: endTime,
+      );
+
+      if (dataPoints.isEmpty) return null;
+
+      final values = <double>[];
+      final timestampValues = <Map<String, dynamic>>[];
+
+      for (final dp in dataPoints) {
+        double val = 0.0;
+        if (dp.value is NumericHealthValue) {
+          val = (dp.value as NumericHealthValue).numericValue.toDouble();
+        }
+        if (val > 30 && val < 240) {
+          values.add(val);
+          timestampValues.add({
+            'time': dp.dateFrom.millisecondsSinceEpoch,
+            'bpm': val.round(),
+          });
+        }
+      }
+
+      if (values.isEmpty) return null;
+
+      values.sort();
+      final avgHr = (values.reduce((a, b) => a + b) / values.length).round();
+      final maxHr = values.last.round();
+
+      // Calculate HR zones based on maxHr
+      final z1Max = (maxHr * 0.60).round();
+      final z2Max = (maxHr * 0.70).round();
+      final z3Max = (maxHr * 0.80).round();
+      final z4Max = (maxHr * 0.90).round();
+
+      int z1Count = 0;
+      int z2Count = 0;
+      int z3Count = 0;
+      int z4Count = 0;
+      int z5Count = 0;
+
+      for (final v in values) {
+        if (v < z1Max) {
+          z1Count++;
+        } else if (v < z2Max) {
+          z2Count++;
+        } else if (v < z3Max) {
+          z3Count++;
+        } else if (v < z4Max) {
+          z4Count++;
+        } else {
+          z5Count++;
+        }
+      }
+
+      final totalDurationSec = endTime.difference(startTime).inSeconds;
+      final total = values.length;
+
+      final zones = [
+        HrZoneDetail(
+          zoneNumber: 1,
+          minBpm: (maxHr * 0.50).round(),
+          maxBpm: z1Max,
+          percentage: double.parse((z1Count / total).toStringAsFixed(2)),
+          timeInSeconds: ((z1Count / total) * totalDurationSec).round(),
+        ),
+        HrZoneDetail(
+          zoneNumber: 2,
+          minBpm: z1Max,
+          maxBpm: z2Max,
+          percentage: double.parse((z2Count / total).toStringAsFixed(2)),
+          timeInSeconds: ((z2Count / total) * totalDurationSec).round(),
+        ),
+        HrZoneDetail(
+          zoneNumber: 3,
+          minBpm: z2Max,
+          maxBpm: z3Max,
+          percentage: double.parse((z3Count / total).toStringAsFixed(2)),
+          timeInSeconds: ((z3Count / total) * totalDurationSec).round(),
+        ),
+        HrZoneDetail(
+          zoneNumber: 4,
+          minBpm: z3Max,
+          maxBpm: z4Max,
+          percentage: double.parse((z4Count / total).toStringAsFixed(2)),
+          timeInSeconds: ((z4Count / total) * totalDurationSec).round(),
+        ),
+        HrZoneDetail(
+          zoneNumber: 5,
+          minBpm: z4Max,
+          maxBpm: maxHr,
+          percentage: double.parse((z5Count / total).toStringAsFixed(2)),
+          timeInSeconds: ((z5Count / total) * totalDurationSec).round(),
+        ),
+      ];
+
+      return {
+        'avgHeartRate': avgHr,
+        'maxHeartRate': maxHr,
+        'samples': timestampValues,
+        'hrZones': zones,
+        'provider': savedProviderId,
+      };
+    } catch (e) {
+      debugPrint('🚨 Error fetching workout heart rate from health provider: $e');
+      return null;
+    }
   }
 }

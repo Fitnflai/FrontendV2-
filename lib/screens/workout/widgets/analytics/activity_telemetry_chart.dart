@@ -39,7 +39,7 @@ class ActivityTelemetryChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (spots.isEmpty) return const SizedBox.shrink();
+    if (spots.isEmpty || spots.every((s) => s.y <= 0)) return const SizedBox.shrink();
 
     final theme = context.themeColors;
 

@@ -275,7 +275,7 @@ class _WorkoutActiveScreenState extends State<WorkoutActiveScreen>
     }
   }
 
-  void _finish() {
+  Future<void> _finish() async {
     _timer?.cancel();
     _posSub?.cancel();
     if (!mounted) return;
@@ -286,14 +286,16 @@ class _WorkoutActiveScreenState extends State<WorkoutActiveScreen>
     );
     final tipo = widget.entrenamiento?['tipo'] as String? ?? 'RUNNING';
 
-    // Generar SIEMPRE el ActivityDetail de la sesión, incluso si no hubo movimiento o fue en reposo
-    final generatedActivity = WorkoutGpsTracker().stopAndBuildActivity(
+    // Generar el ActivityDetail de la sesión fusionando GPS y HealthKit / Health Connect si están conectados
+    final generatedActivity = await WorkoutGpsTracker().stopAndBuildActivity(
       title: titulo,
       workoutType: tipo,
       fallbackElapsedSeconds: _elapsedSecs,
       fallbackDistanceMeters: _distanceKm * 1000.0,
       currentPos: _currentPos,
     );
+
+    if (!mounted) return;
 
     Navigator.pushReplacement(
       context,

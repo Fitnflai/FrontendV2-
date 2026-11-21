@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/activity_detail.dart';
+import 'health/health_repository.dart';
 
 class WorkoutGpsTracker {
   static final WorkoutGpsTracker _instance = WorkoutGpsTracker._internal();
@@ -170,7 +171,7 @@ class WorkoutGpsTracker {
   }
 
   /// Stops tracking, compiles and returns the complete ActivityDetail model
-  ActivityDetail stopAndBuildActivity({
+  Future<ActivityDetail> stopAndBuildActivity({
     required String title,
     String workoutType = 'RUNNING',
     String? locationName,
@@ -179,7 +180,7 @@ class WorkoutGpsTracker {
     int fallbackElapsedSeconds = 0,
     double fallbackDistanceMeters = 0.0,
     dynamic currentPos,
-  }) {
+  }) async {
     _positionSub?.cancel();
     _positionSub = null;
 
@@ -269,28 +270,67 @@ class WorkoutGpsTracker {
             ),
           ];
 
-    // Telemetry: if empty, add starting point so charts don't crash
-    final telemetryList = _telemetrySamples.isNotEmpty
-        ? List<TelemetrySample>.unmodifiable(_telemetrySamples)
-        : [
-            TelemetrySample(
-              distanceKm: effectiveDistanceMeters / 1000.0,
-              paceSecPerKm: avgPace,
-              elevationMeters: _maxAltitude,
-              heartRateBpm: 0,
-            ),
-          ];
+    // Consulta de salud conectada (HealthKit / Health Connect / Huawei)
+    int avgHeartRate = 0;
+    int? maxHeartRate;
+    List<HrZoneDetail> hrZones = const [];
+    final sourcesList = <String>['phone'];
+
+    try {
+      final workoutStart = _startTime ?? now.subtract(Duration(seconds: elapsedSeconds));
+      final healthData = await HealthRepository().fetchWorkoutHeartRateData(
+        startTime: workoutStart,
+        endTime: now,
+      );
+
+      if (healthData != null) {
+        avgHeartRate = healthData['avgHeartRate'] as int? ?? 0;
+        maxHeartRate = healthData['maxHeartRate'] as int?;
+        hrZones = (healthData['hrZones'] as List<HrZoneDetail>?) ?? const [];
+        final p = healthData['provider']?.toString();
+        if (p != null && p.isNotEmpty && p != 'none') {
+          sourcesList.add(p);
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ [WorkoutGpsTracker] Health heart rate query failed: $e');
+    }
+    sourcesList.add('fitnflai');
+
+    // Telemetry: merge HR if available
+    List<TelemetrySample> telemetryList;
+    if (_telemetrySamples.isNotEmpty) {
+      telemetryList = _telemetrySamples.map((t) {
+        return TelemetrySample(
+          distanceKm: t.distanceKm,
+          paceSecPerKm: t.paceSecPerKm,
+          elevationMeters: t.elevationMeters,
+          heartRateBpm: t.heartRateBpm > 0 ? t.heartRateBpm : avgHeartRate,
+        );
+      }).toList();
+    } else if (effectiveDistanceMeters > 0 || elapsedSeconds > 0 || avgHeartRate > 0) {
+      telemetryList = [
+        TelemetrySample(
+          distanceKm: effectiveDistanceMeters / 1000.0,
+          paceSecPerKm: avgPace,
+          elevationMeters: _maxAltitude,
+          heartRateBpm: avgHeartRate,
+        ),
+      ];
+    } else {
+      telemetryList = const [];
+    }
 
     final summary = ActivitySummary(
       distanceMeters: double.parse(effectiveDistanceMeters.toStringAsFixed(1)),
       movingTimeSeconds: elapsedSeconds,
       avgPaceSecPerKm: avgPace,
       elevationGainMeters: double.parse(_elevationGainMeters.toStringAsFixed(1)),
-      avgHeartRate: 0,
+      avgHeartRate: avgHeartRate,
       avgCadence: 0,
       calories: calories,
       maxElevationMeters: _maxAltitude > 0 ? _maxAltitude : null,
-      maxHeartRate: null,
+      maxHeartRate: maxHeartRate,
       maxPaceSecPerKm: _maxPaceSecPerKm > 0 ? _maxPaceSecPerKm : null,
     );
 
@@ -301,14 +341,14 @@ class WorkoutGpsTracker {
       date: _startTime ?? now,
       locationName: locationName ?? 'Entrenamiento con móvil',
       description: description,
-      sources: const ['phone', 'fitnflai'],
+      sources: sourcesList,
       summary: summary,
       routePoints: downsampledRoute,
       bestEfforts: bestEfforts,
       laps: lapsList,
       splits: List.unmodifiable(_splits),
       telemetry: telemetryList,
-      hrZones: const [],
+      hrZones: hrZones,
     );
   }
 

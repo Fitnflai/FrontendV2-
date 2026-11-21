@@ -15,7 +15,8 @@ class ActivityBestEffortsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (bestEfforts.isEmpty) return const SizedBox.shrink();
+    final validEfforts = bestEfforts.where((e) => e.timeSeconds > 0).toList();
+    if (validEfforts.isEmpty) return const SizedBox.shrink();
 
     final theme = context.themeColors;
 
@@ -47,7 +48,7 @@ class ActivityBestEffortsCard extends StatelessWidget {
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: bestEfforts.map((effort) {
+            children: validEfforts.map((effort) {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(

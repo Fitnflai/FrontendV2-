@@ -72,22 +72,24 @@ class ActivityKpiGrid extends StatelessWidget {
               Expanded(
                 child: _KpiItem(
                   label: 'DESNIVEL POSITIVO',
-                  value: '${summary.elevationGainMeters.toStringAsFixed(0)} m',
-                  prefixIcon: Icons.arrow_drop_up,
+                  value: summary.elevationGainMeters > 0
+                      ? '${summary.elevationGainMeters.toStringAsFixed(0)} m'
+                      : (summary.distanceMeters > 0 ? '0 m' : '--'),
+                  prefixIcon: summary.elevationGainMeters > 0 ? Icons.arrow_drop_up : null,
                   theme: theme,
                 ),
               ),
               Expanded(
                 child: _KpiItem(
                   label: 'FC MEDIA',
-                  value: '${summary.avgHeartRate} bpm',
+                  value: summary.avgHeartRate > 0 ? '${summary.avgHeartRate} bpm' : '--',
                   theme: theme,
                 ),
               ),
               Expanded(
                 child: _KpiItem(
                   label: 'CADENCIA',
-                  value: '${summary.avgCadence} spm',
+                  value: summary.avgCadence > 0 ? '${summary.avgCadence} spm' : '--',
                   theme: theme,
                 ),
               ),
@@ -101,7 +103,7 @@ class ActivityKpiGrid extends StatelessWidget {
               Expanded(
                 child: _KpiItem(
                   label: 'CALORÍAS',
-                  value: '${summary.calories} kcal',
+                  value: summary.calories > 0 ? '${summary.calories} kcal' : '--',
                   theme: theme,
                 ),
               ),

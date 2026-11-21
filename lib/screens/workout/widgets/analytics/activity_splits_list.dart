@@ -28,7 +28,7 @@ class ActivitySplitsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (splits.isEmpty) return const SizedBox.shrink();
+    if (splits.isEmpty || splits.every((s) => s.paceSecPerKm <= 0)) return const SizedBox.shrink();
 
     final theme = context.themeColors;
     final maxPace = splits.map((s) => s.paceSecPerKm).reduce((a, b) => a > b ? a : b);

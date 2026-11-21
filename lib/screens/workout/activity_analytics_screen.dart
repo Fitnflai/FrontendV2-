@@ -397,7 +397,9 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
                   ],
 
                   // Zonas cardíacas si hubo telemetría de FC en la sesión
-                  if (_activity.hrZones.isNotEmpty) ...[
+                  if (_activity.summary.avgHeartRate > 0 &&
+                      _activity.hrZones.isNotEmpty &&
+                      _activity.hrZones.any((z) => z.percentage > 0 || z.timeInSeconds > 0)) ...[
                     const SizedBox(height: 16),
                     ActivityHrZonesCard(zones: _activity.hrZones),
                   ],
@@ -905,22 +907,22 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
 
                   ActivityKpiGrid(summary: act.summary),
 
-                  if (act.bestEfforts.isNotEmpty) ...[
+                  if (act.bestEfforts.isNotEmpty && act.bestEfforts.any((b) => b.timeSeconds > 0)) ...[
                     const SizedBox(height: 16),
                     ActivityBestEffortsCard(bestEfforts: act.bestEfforts),
                   ],
 
-                  if (act.laps.isNotEmpty) ...[
+                  if (act.laps.isNotEmpty && act.laps.any((l) => l.distanceMeters > 0 || l.actualPaceSecPerKm > 0)) ...[
                     const SizedBox(height: 16),
                     ActivityLapsChart(laps: act.laps),
                   ],
 
-                  if (act.splits.isNotEmpty) ...[
+                  if (act.splits.isNotEmpty && act.splits.any((s) => s.paceSecPerKm > 0)) ...[
                     const SizedBox(height: 16),
                     ActivitySplitsList(splits: act.splits),
                   ],
 
-                  if (paceSpots.isNotEmpty) ...[
+                  if (paceSpots.isNotEmpty && paceSpots.any((s) => s.y > 0)) ...[
                     const SizedBox(height: 16),
                     ActivityTelemetryChart(
                       title: 'Ritmo',
@@ -937,7 +939,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
                     ),
                   ],
 
-                  if (elevationSpots.isNotEmpty) ...[
+                  if (elevationSpots.isNotEmpty && elevationSpots.any((s) => s.y > 0)) ...[
                     const SizedBox(height: 16),
                     ActivityTelemetryChart(
                       title: 'Desnivel',
@@ -954,7 +956,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
                     ),
                   ],
 
-                  if (hrSpots.isNotEmpty) ...[
+                  if (act.summary.avgHeartRate > 0 && hrSpots.isNotEmpty && hrSpots.any((s) => s.y > 0)) ...[
                     const SizedBox(height: 16),
                     ActivityTelemetryChart(
                       title: 'Ritmo cardíaco',
@@ -971,7 +973,9 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
                     ),
                   ],
 
-                  if (act.hrZones.isNotEmpty) ...[
+                  if (act.summary.avgHeartRate > 0 &&
+                      act.hrZones.isNotEmpty &&
+                      act.hrZones.any((z) => z.percentage > 0 || z.timeInSeconds > 0)) ...[
                     const SizedBox(height: 16),
                     ActivityHrZonesCard(zones: act.hrZones),
                   ],

@@ -32,7 +32,9 @@ class ActivityHrZonesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (zones.isEmpty) return const SizedBox.shrink();
+    if (zones.isEmpty || zones.every((z) => z.percentage <= 0 && z.timeInSeconds <= 0)) {
+      return const SizedBox.shrink();
+    }
 
     final theme = context.themeColors;
 

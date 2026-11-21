@@ -23,7 +23,9 @@ class ActivityLapsChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (laps.isEmpty) return const SizedBox.shrink();
+    if (laps.isEmpty || laps.every((l) => l.actualPaceSecPerKm <= 0 && l.distanceMeters <= 0)) {
+      return const SizedBox.shrink();
+    }
 
     final theme = context.themeColors;
     final hasTargets = laps.any((l) => l.targetPaceSecPerKm != null);
