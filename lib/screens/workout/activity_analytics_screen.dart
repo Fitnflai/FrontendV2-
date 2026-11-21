@@ -8,6 +8,7 @@ import '../../models/activity_detail.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/activity_analytics_service.dart';
 import 'widgets/analytics/activity_best_efforts_card.dart';
+import 'widgets/analytics/activity_exercise_inspector_card.dart';
 import 'widgets/analytics/activity_hr_zones_card.dart';
 import 'widgets/analytics/activity_kpi_grid.dart';
 import 'widgets/analytics/activity_laps_chart.dart';
@@ -38,6 +39,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
   bool _isLoading = false;
   String? _noticeBanner;
   List<Map<String, dynamic>> _exercises = [];
+  int? _selectedExerciseIndex;
 
   @override
   void initState() {
@@ -62,7 +64,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
     if (!hasGps) {
       if (_exercises.isNotEmpty) {
         _noticeBanner =
-            'Esta sesión incluye ejercicios de fuerza y cardio interior. Mostrando el desglose de ejercicios completados y métricas generales.';
+            'Esta sesión incluye ejercicios de fuerza y cardio interior. Podés tocar cualquier ejercicio de la lista para ver su rendimiento específico.';
       } else {
         _noticeBanner =
             'Aún no hay datos de telemetría o GPS registrados para esta sesión.\nCompletala usando el tracking en vivo del móvil o sincronizá tu reloj Garmin para ver los gráficos.';
@@ -135,6 +137,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
       final durMin = (mapE['duracion_minutos'] ?? ej['duracion_minutos'])?.toString() ??
           (durSeg > 0 ? '${(durSeg / 60).round()} min' : '');
       final descansoSeg = int.tryParse((mapE['descanso_segundos'] ?? ej['descanso_segundos'] ?? '').toString()) ?? 0;
+      final peso = (mapE['peso_objetivo'] ?? ej['peso_objetivo'] ?? mapE['peso'])?.toString() ?? '';
 
       list.add({
         'nombre': nombre,
@@ -144,6 +147,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
         'dur': durMin,
         'dur_seg': durSeg,
         'descanso_seg': descansoSeg,
+        'peso': peso,
       });
     }
 
@@ -198,6 +202,43 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
         });
       }
     }
+  }
+
+  List<RoutePoint>? _getHighlightedRoutePoints() {
+    if (_selectedExerciseIndex == null) return null;
+    if (_activity.routePoints.isEmpty) return null;
+    if (_selectedExerciseIndex! >= _exercises.length) return null;
+
+    final selectedEj = _exercises[_selectedExerciseIndex!];
+    final tipo = (selectedEj['tipo'] ?? selectedEj['bloque'] ?? '').toString().toUpperCase();
+    final isCardio = tipo.contains('CARDIO') || tipo.contains('CARRERA') || tipo.contains('VELOCIDAD');
+    if (!isCardio) return null;
+
+    final cardioExercises = _exercises.where((e) {
+      final t = (e['tipo'] ?? e['bloque'] ?? '').toString().toUpperCase();
+      return t.contains('CARDIO') || t.contains('CARRERA') || t.contains('VELOCIDAD');
+    }).toList();
+
+    final cardioIdx = cardioExercises.indexOf(selectedEj);
+    if (cardioIdx == -1) return null;
+
+    final totalPoints = _activity.routePoints.length;
+    final segmentLen = (totalPoints / cardioExercises.length).ceil();
+    final startIdx = (cardioIdx * segmentLen).clamp(0, totalPoints - 1);
+    final endIdx = ((cardioIdx + 1) * segmentLen).clamp(0, totalPoints);
+
+    if (endIdx > startIdx) {
+      return _activity.routePoints.sublist(startIdx, endIdx);
+    }
+    return null;
+  }
+
+  ActivityLap? _getCorrespondingLap(int exerciseIndex) {
+    if (_activity.laps.isEmpty) return null;
+    if (exerciseIndex < _activity.laps.length) {
+      return _activity.laps[exerciseIndex];
+    }
+    return _activity.laps.first;
   }
 
   String _formatPace(double paceSec) {
@@ -262,6 +303,12 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
         .map((t) => FlSpot(t.distanceKm, t.heartRateBpm.toDouble()))
         .toList();
 
+    final highlightedPoints = _getHighlightedRoutePoints();
+    final selectedLapTitle = _selectedExerciseIndex != null &&
+            _selectedExerciseIndex! < _exercises.length
+        ? _exercises[_selectedExerciseIndex!]['nombre'] as String?
+        : null;
+
     return RefreshIndicator(
       color: theme.primary,
       backgroundColor: theme.cardDark,
@@ -272,6 +319,8 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
           children: [
             ActivityMapHeader(
               activity: act,
+              highlightedPoints: highlightedPoints,
+              highlightedLapTitle: selectedLapTitle,
               onShare: () {},
             ),
             const SizedBox(height: 16),
@@ -279,27 +328,67 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
-                  if (_noticeBanner != null) ...[
+                  // Active Exercise Inspector Card (Garmin-Style Drilldown)
+                  if (_selectedExerciseIndex != null &&
+                      _selectedExerciseIndex! < _exercises.length) ...[
+                    ActivityExerciseInspectorCard(
+                      exercise: _exercises[_selectedExerciseIndex!],
+                      index: _selectedExerciseIndex!,
+                      lap: _getCorrespondingLap(_selectedExerciseIndex!),
+                      sessionSummary: act.summary,
+                      onClose: () => setState(() => _selectedExerciseIndex = null),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  if (_noticeBanner != null && _selectedExerciseIndex == null) ...[
                     _buildNoticeBanner(theme, _noticeBanner!),
                     const SizedBox(height: 16),
                   ],
+
                   ActivityKpiGrid(summary: act.summary),
+
                   if (_exercises.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    ActivityStrengthExercisesCard(exercises: _exercises),
+                    ActivityStrengthExercisesCard(
+                      exercises: _exercises,
+                      selectedIndex: _selectedExerciseIndex,
+                      onSelectExercise: (index) {
+                        setState(() {
+                          _selectedExerciseIndex =
+                              (_selectedExerciseIndex == index) ? null : index;
+                        });
+                      },
+                    ),
                   ],
+
                   if (act.bestEfforts.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     ActivityBestEffortsCard(bestEfforts: act.bestEfforts),
                   ],
+
                   if (act.laps.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    ActivityLapsChart(laps: act.laps),
+                    ActivityLapsChart(
+                      laps: act.laps,
+                      selectedLapOrder: _selectedExerciseIndex != null
+                          ? _selectedExerciseIndex! + 1
+                          : null,
+                      onSelectLap: (order) {
+                        setState(() {
+                          final targetIdx = order - 1;
+                          _selectedExerciseIndex =
+                              (_selectedExerciseIndex == targetIdx) ? null : targetIdx;
+                        });
+                      },
+                    ),
                   ],
+
                   if (act.splits.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     ActivitySplitsList(splits: act.splits),
                   ],
+
                   if (paceSpots.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     ActivityTelemetryChart(
@@ -316,6 +405,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
                           : null,
                     ),
                   ],
+
                   if (elevationSpots.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     ActivityTelemetryChart(
@@ -332,6 +422,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
                           : null,
                     ),
                   ],
+
                   if (hrSpots.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     ActivityTelemetryChart(
@@ -348,10 +439,12 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
                           : null,
                     ),
                   ],
+
                   if (act.hrZones.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     ActivityHrZonesCard(zones: act.hrZones),
                   ],
+
                   const SizedBox(height: 40),
                 ],
               ),
@@ -384,7 +477,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.info_outline_rounded,
+              Icons.touch_app_outlined,
               color: Color(0xFFFF9800),
               size: 20,
             ),
@@ -395,7 +488,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Sesión híbrida / sin GPS continuo',
+                  'Sesión interactiva por bloques',
                   style: TextStyle(
                     color: theme.text,
                     fontSize: 14,

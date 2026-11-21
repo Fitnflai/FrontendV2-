@@ -4,8 +4,15 @@ import '../../../../models/activity_detail.dart';
 
 class ActivityLapsChart extends StatelessWidget {
   final List<ActivityLap> laps;
+  final int? selectedLapOrder;
+  final ValueChanged<int>? onSelectLap;
 
-  const ActivityLapsChart({super.key, required this.laps});
+  const ActivityLapsChart({
+    super.key,
+    required this.laps,
+    this.selectedLapOrder,
+    this.onSelectLap,
+  });
 
   String _formatPace(double paceSec) {
     if (paceSec <= 0) return '--:--';
@@ -42,7 +49,7 @@ class ActivityLapsChart extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Vueltas',
+                'Vueltas / Intervalos',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -78,6 +85,7 @@ class ActivityLapsChart extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: laps.map((lap) {
+                final isSelected = selectedLapOrder == lap.lapOrder;
                 // In running, lower paceSec is faster, but visually a taller bar represents more effort or relative pace
                 final safeMaxPace = maxPace > 0 ? maxPace : 1.0;
                 final barRatio = maxPace > 0
@@ -86,50 +94,68 @@ class ActivityLapsChart extends StatelessWidget {
                 final actualBarHeight = chartHeight * barRatio * 0.85;
 
                 return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        // Target indicator bar (if defined)
-                        if (lap.targetPaceSecPerKm != null) ...[
-                          Container(
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: theme.border,
-                              borderRadius: BorderRadius.circular(3),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(6),
+                    onTap: onSelectLap != null ? () => onSelectLap!(lap.lapOrder) : null,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          // Target indicator bar (if defined)
+                          if (lap.targetPaceSecPerKm != null) ...[
+                            Container(
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: theme.border,
+                                borderRadius: BorderRadius.circular(3),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                        ],
-                        // Actual pace bar
-                        Container(
-                          height: actualBarHeight,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF66BB6A).withValues(alpha: 0.85),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Center(
-                            child: Text(
-                              _formatPace(lap.actualPaceSecPerKm),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                            const SizedBox(height: 6),
+                          ],
+                          // Actual pace bar
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            height: actualBarHeight,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? theme.primary
+                                  : const Color(0xFF66BB6A).withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(6),
+                              border: isSelected
+                                  ? Border.all(color: Colors.white, width: 2)
+                                  : null,
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: theme.primary.withValues(alpha: 0.5),
+                                        blurRadius: 8,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Center(
+                              child: Text(
+                                _formatPace(lap.actualPaceSecPerKm),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'V${lap.lapOrder}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: theme.textMuted,
-                            fontWeight: FontWeight.w600,
+                          const SizedBox(height: 6),
+                          Text(
+                            'V${lap.lapOrder}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: isSelected ? theme.primary : theme.textMuted,
+                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 );

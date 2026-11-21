@@ -7,11 +7,15 @@ import '../../../../models/activity_detail.dart';
 class ActivityMapHeader extends StatelessWidget {
   final ActivityDetail activity;
   final VoidCallback? onShare;
+  final List<RoutePoint>? highlightedPoints;
+  final String? highlightedLapTitle;
 
   const ActivityMapHeader({
     super.key,
     required this.activity,
     this.onShare,
+    this.highlightedPoints,
+    this.highlightedLapTitle,
   });
 
   String _formatDate(DateTime dt) {
@@ -27,15 +31,22 @@ class ActivityMapHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.themeColors;
     final hasRoute = activity.routePoints.isNotEmpty;
+    final isLapHighlighted = highlightedPoints != null && highlightedPoints!.isNotEmpty;
 
-    // Center map around first coordinate
-    final initialPos = hasRoute
-        ? LatLng(activity.routePoints.first.lat, activity.routePoints.first.lng)
-        : const LatLng(-0.180653, -78.467834);
+    // Center map around first coordinate (or first coordinate of highlighted lap)
+    final initialPos = isLapHighlighted
+        ? LatLng(highlightedPoints!.first.lat, highlightedPoints!.first.lng)
+        : (hasRoute
+            ? LatLng(activity.routePoints.first.lat, activity.routePoints.first.lng)
+            : const LatLng(-0.180653, -78.467834));
 
     final polylinePoints = activity.routePoints
         .map((p) => LatLng(p.lat, p.lng))
         .toList();
+
+    final highlightedLatLngs = isLapHighlighted
+        ? highlightedPoints!.map((p) => LatLng(p.lat, p.lng)).toList()
+        : <LatLng>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,33 +58,97 @@ class ActivityMapHeader extends StatelessWidget {
             height: 240,
             width: double.infinity,
             child: hasRoute
-                ? GoogleMap(
-                    initialCameraPosition: CameraPosition(target: initialPos, zoom: 14),
-                    zoomControlsEnabled: false,
-                    myLocationButtonEnabled: false,
-                    mapToolbarEnabled: false,
-                    polylines: {
-                      Polyline(
-                        polylineId: const PolylineId('activity_route'),
-                        points: polylinePoints,
-                        color: theme.primary,
-                        width: 4,
+                ? Stack(
+                    children: [
+                      GoogleMap(
+                        initialCameraPosition: CameraPosition(target: initialPos, zoom: isLapHighlighted ? 15 : 14),
+                        zoomControlsEnabled: false,
+                        myLocationButtonEnabled: false,
+                        mapToolbarEnabled: false,
+                        polylines: {
+                          Polyline(
+                            polylineId: const PolylineId('activity_route'),
+                            points: polylinePoints,
+                            color: isLapHighlighted
+                                ? Colors.grey.withValues(alpha: 0.4)
+                                : theme.primary,
+                            width: isLapHighlighted ? 3 : 4,
+                          ),
+                          if (isLapHighlighted)
+                            Polyline(
+                              polylineId: const PolylineId('highlighted_lap'),
+                              points: highlightedLatLngs,
+                              color: theme.primary,
+                              width: 6,
+                            ),
+                        },
+                        markers: {
+                          if (isLapHighlighted) ...[
+                            Marker(
+                              markerId: const MarkerId('lap_start'),
+                              position: highlightedLatLngs.first,
+                              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                              infoWindow: InfoWindow(title: 'Inicio: ${highlightedLapTitle ?? "Tramo"}'),
+                            ),
+                            if (highlightedLatLngs.length > 1)
+                              Marker(
+                                markerId: const MarkerId('lap_end'),
+                                position: highlightedLatLngs.last,
+                                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+                                infoWindow: InfoWindow(title: 'Fin: ${highlightedLapTitle ?? "Tramo"}'),
+                              ),
+                          ] else ...[
+                            if (polylinePoints.isNotEmpty)
+                              Marker(
+                                markerId: const MarkerId('start'),
+                                position: polylinePoints.first,
+                                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                              ),
+                            if (polylinePoints.length > 1)
+                              Marker(
+                                markerId: const MarkerId('end'),
+                                position: polylinePoints.last,
+                                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                              ),
+                          ],
+                        },
                       ),
-                    },
-                    markers: {
-                      if (polylinePoints.isNotEmpty)
-                        Marker(
-                          markerId: const MarkerId('start'),
-                          position: polylinePoints.first,
-                          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                      if (isLapHighlighted)
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.8),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: theme.primary, width: 1.5),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: theme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  highlightedLapTitle ?? 'Tramo de intervalo',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      if (polylinePoints.length > 1)
-                        Marker(
-                          markerId: const MarkerId('end'),
-                          position: polylinePoints.last,
-                          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-                        ),
-                    },
+                    ],
                   )
                 : Container(
                     color: theme.cardDark,
@@ -148,87 +223,43 @@ class ActivityMapHeader extends StatelessWidget {
                   ),
                 ],
               ),
-              if (activity.locationName != null && activity.locationName!.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(Icons.place_outlined, size: 14, color: theme.textMuted),
-                    const SizedBox(width: 6),
-                    Text(
-                      activity.locationName!,
-                      style: TextStyle(fontSize: 12, color: theme.textMuted),
-                    ),
-                  ],
-                ),
-              ],
               if (activity.sources.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
+                const SizedBox(height: 8),
+                Row(
                   children: activity.sources.map((src) {
                     final isGarmin = src.toLowerCase().contains('garmin');
+                    final isStrava = src.toLowerCase().contains('strava');
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: theme.cardDark,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: theme.border.withValues(alpha: 0.5)),
+                        color: isGarmin
+                            ? const Color(0xFF007DC3).withValues(alpha: 0.2)
+                            : (isStrava
+                                ? const Color(0xFFFC6100).withValues(alpha: 0.2)
+                                : theme.cardDark),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isGarmin
+                              ? const Color(0xFF007DC3)
+                              : (isStrava ? const Color(0xFFFC6100) : theme.border),
+                          width: 0.8,
+                        ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isGarmin ? Icons.watch : Icons.cloud_done,
-                            size: 14,
-                            color: isGarmin ? Colors.blue : theme.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            src.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: theme.text,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        src.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: isGarmin
+                              ? const Color(0xFF007DC3)
+                              : (isStrava ? const Color(0xFFFC6100) : theme.textMuted),
+                        ),
                       ),
                     );
                   }).toList(),
                 ),
               ],
-              if (activity.description != null && activity.description!.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.cardDark,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: theme.border.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(
-                    activity.description!,
-                    style: TextStyle(fontSize: 13, color: theme.textMuted, height: 1.4),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              // Compartir button
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: onShare,
-                  icon: const Icon(Icons.share_outlined, size: 18),
-                  label: const Text('Compartir actividad'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: theme.text,
-                    side: BorderSide(color: theme.border),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
             ],
           ),
         ),

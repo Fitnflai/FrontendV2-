@@ -3,10 +3,14 @@ import '../../../../config/app_theme_extension.dart';
 
 class ActivityStrengthExercisesCard extends StatelessWidget {
   final List<Map<String, dynamic>> exercises;
+  final int? selectedIndex;
+  final ValueChanged<int>? onSelectExercise;
 
   const ActivityStrengthExercisesCard({
     super.key,
     required this.exercises,
+    this.selectedIndex,
+    this.onSelectExercise,
   });
 
   Color _badgeBgColor(String tipo) {
@@ -140,10 +144,7 @@ class ActivityStrengthExercisesCard extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: exercises.length,
-            separatorBuilder: (_, __) => Divider(
-              color: theme.border.withValues(alpha: 0.2),
-              height: 16,
-            ),
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final ej = exercises[index];
               final nombre = ej['nombre'] as String? ?? 'Ejercicio';
@@ -151,69 +152,94 @@ class ActivityStrengthExercisesCard extends StatelessWidget {
               final tipoUpper = rawTipo.toUpperCase();
               final metricStr = _formatMetric(ej);
               final badgeColor = _badgeBgColor(tipoUpper);
+              final isSelected = selectedIndex == index;
 
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4CAF50).withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check,
-                      size: 14,
-                      color: Color(0xFF4CAF50),
+              return InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: onSelectExercise != null
+                    ? () => onSelectExercise!(index)
+                    : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? theme.primary.withValues(alpha: 0.12)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected
+                          ? theme.primary
+                          : theme.border.withValues(alpha: 0.25),
+                      width: isSelected ? 1.5 : 1,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          nombre,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: theme.text,
-                          ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? theme.primary
+                              : const Color(0xFF4CAF50).withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
                         ),
-                        if (metricStr.isNotEmpty) ...[
-                          const SizedBox(height: 3),
-                          Text(
-                            metricStr,
+                        child: Icon(
+                          isSelected ? Icons.touch_app : Icons.check,
+                          size: 14,
+                          color: isSelected ? Colors.white : const Color(0xFF4CAF50),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              nombre,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                color: isSelected ? theme.primary : theme.text,
+                              ),
+                            ),
+                            if (metricStr.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                metricStr,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: theme.textMuted,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (rawTipo.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            tipoUpper,
                             style: TextStyle(
-                              fontSize: 12,
-                              color: theme.textMuted,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
+                              color: badgeColor,
                             ),
                           ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  if (rawTipo.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: badgeColor.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        tipoUpper,
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.6,
-                          color: badgeColor,
                         ),
-                      ),
-                    ),
-                  ],
-                ],
+                      ],
+                    ],
+                  ),
+                ),
               );
             },
           ),
