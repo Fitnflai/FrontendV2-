@@ -1044,12 +1044,10 @@ class _StatsRowState extends State<_StatsRow> {
     final isEs = Localizations.localeOf(context).languageCode == 'es';
     final stepsLabel = isEs ? 'Pasos\nhoy' : 'Steps\ntoday';
     final heartRateLabel = isEs ? 'Ritmo\ncardíaco' : 'Heart\nrate';
-    final distanceLabel = isEs ? 'Distancia\nhoy' : 'Distance\ntoday';
 
     final stats = [
       ('👟', '${healthProvider.steps}', stepsLabel),
       ('❤️', healthProvider.heartRate > 0 ? '${healthProvider.heartRate.toStringAsFixed(0)} bpm' : '--', heartRateLabel),
-      ('🏃', '${healthProvider.distance.toStringAsFixed(1)} km', distanceLabel),
       ('🌡️', _temp,  l10n.homeTemperatureLabel),
       (_condIcon, _condText, l10n.homeWeatherLabel),
     ];
