@@ -1,20 +1,16 @@
-import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/app_theme_extension.dart';
 import '../../models/activity_detail.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/activity_analytics_service.dart';
 import 'widgets/analytics/activity_best_efforts_card.dart';
-import 'widgets/analytics/activity_exercise_inspector_card.dart';
 import 'widgets/analytics/activity_hr_zones_card.dart';
 import 'widgets/analytics/activity_kpi_grid.dart';
 import 'widgets/analytics/activity_laps_chart.dart';
 import 'widgets/analytics/activity_map_header.dart';
 import 'widgets/analytics/activity_splits_list.dart';
-import 'widgets/analytics/activity_strength_exercises_card.dart';
 import 'widgets/analytics/activity_telemetry_chart.dart';
 
 class ActivityAnalyticsScreen extends StatefulWidget {
@@ -38,16 +34,12 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
   late ActivityDetail _activity;
   bool _isLoading = false;
   String? _noticeBanner;
-  List<Map<String, dynamic>> _exercises = [];
-  int? _selectedExerciseIndex;
 
   @override
   void initState() {
     super.initState();
     _activity = widget.initialActivity ??
         ActivityDetail.empty(title: 'Resumen de actividad');
-
-    _initExercises();
 
     if (widget.initialActivity == null) {
       _loadActivity();
@@ -62,96 +54,11 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
         _activity.telemetry.isNotEmpty;
 
     if (!hasGps) {
-      if (_exercises.isNotEmpty) {
-        _noticeBanner =
-            'Esta sesión incluye ejercicios de fuerza y cardio interior. Podés tocar cualquier ejercicio de la lista para ver su rendimiento específico.';
-      } else {
-        _noticeBanner =
-            'Aún no hay datos de telemetría o GPS registrados para esta sesión.\nCompletala usando el tracking en vivo del móvil o sincronizá tu reloj Garmin para ver los gráficos.';
-      }
+      _noticeBanner =
+          'Aún no hay datos de telemetría o GPS grabados para esta sesión.\nCompletala usando el tracking en vivo del móvil o sincronizá tu reloj Garmin para ver las curvas y mapas reales.';
     } else {
       _noticeBanner = null;
     }
-  }
-
-  Future<void> _initExercises() async {
-    final parsed = _extractExercisesFromMap(widget.workoutData);
-    if (parsed.isNotEmpty) {
-      setState(() {
-        _exercises = parsed;
-      });
-      _cacheExercises(parsed);
-      _checkBanner();
-      return;
-    }
-
-    // Try loading from local storage cache
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final key = 'workout_exercises_${widget.activityId}';
-      final cachedJson = prefs.getString(key);
-      if (cachedJson != null) {
-        final decoded = (json.decode(cachedJson) as List<dynamic>?)
-            ?.map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
-        if (decoded != null && decoded.isNotEmpty && mounted) {
-          setState(() {
-            _exercises = decoded;
-          });
-          _checkBanner();
-        }
-      }
-    } catch (e) {
-      debugPrint('🚨 Error loading cached exercises: $e');
-    }
-  }
-
-  Future<void> _cacheExercises(List<Map<String, dynamic>> list) async {
-    if (widget.activityId.isEmpty) return;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final key = 'workout_exercises_${widget.activityId}';
-      await prefs.setString(key, json.encode(list));
-    } catch (_) {}
-  }
-
-  List<Map<String, dynamic>> _extractExercisesFromMap(Map<String, dynamic>? data) {
-    if (data == null) return const [];
-    final raw = data['ejercicios_asociados'] as List<dynamic>? ??
-        data['ejercicios'] as List<dynamic>? ??
-        const [];
-    final list = <Map<String, dynamic>>[];
-
-    for (final e in raw) {
-      if (e is! Map) continue;
-      final mapE = Map<String, dynamic>.from(e);
-      final ej = mapE['ejercicio'] is Map
-          ? Map<String, dynamic>.from(mapE['ejercicio'] as Map)
-          : mapE;
-
-      final nombre = ej['nombre'] ?? ej['descripcion'] ?? 'Ejercicio';
-      final tipo = ej['tipo'] ?? ej['tipo_movimiento'] ?? mapE['bloque'] ?? '';
-      final series = (mapE['series'] ?? ej['series'])?.toString() ?? '';
-      final reps = (mapE['repeticiones'] ?? mapE['reps'] ?? ej['repeticiones'] ?? ej['reps'])?.toString() ?? '';
-      final durSeg = int.tryParse((mapE['duracion_segundos'] ?? ej['duracion_segundos'] ?? '').toString()) ?? 0;
-      final durMin = (mapE['duracion_minutos'] ?? ej['duracion_minutos'])?.toString() ??
-          (durSeg > 0 ? '${(durSeg / 60).round()} min' : '');
-      final descansoSeg = int.tryParse((mapE['descanso_segundos'] ?? ej['descanso_segundos'] ?? '').toString()) ?? 0;
-      final peso = (mapE['peso_objetivo'] ?? ej['peso_objetivo'] ?? mapE['peso'])?.toString() ?? '';
-
-      list.add({
-        'nombre': nombre,
-        'tipo': tipo,
-        'series': series,
-        'reps': reps,
-        'dur': durMin,
-        'dur_seg': durSeg,
-        'descanso_seg': descansoSeg,
-        'peso': peso,
-      });
-    }
-
-    return list;
   }
 
   Future<void> _loadActivity() async {
@@ -202,43 +109,6 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
         });
       }
     }
-  }
-
-  List<RoutePoint>? _getHighlightedRoutePoints() {
-    if (_selectedExerciseIndex == null) return null;
-    if (_activity.routePoints.isEmpty) return null;
-    if (_selectedExerciseIndex! >= _exercises.length) return null;
-
-    final selectedEj = _exercises[_selectedExerciseIndex!];
-    final tipo = (selectedEj['tipo'] ?? selectedEj['bloque'] ?? '').toString().toUpperCase();
-    final isCardio = tipo.contains('CARDIO') || tipo.contains('CARRERA') || tipo.contains('VELOCIDAD');
-    if (!isCardio) return null;
-
-    final cardioExercises = _exercises.where((e) {
-      final t = (e['tipo'] ?? e['bloque'] ?? '').toString().toUpperCase();
-      return t.contains('CARDIO') || t.contains('CARRERA') || t.contains('VELOCIDAD');
-    }).toList();
-
-    final cardioIdx = cardioExercises.indexOf(selectedEj);
-    if (cardioIdx == -1) return null;
-
-    final totalPoints = _activity.routePoints.length;
-    final segmentLen = (totalPoints / cardioExercises.length).ceil();
-    final startIdx = (cardioIdx * segmentLen).clamp(0, totalPoints - 1);
-    final endIdx = ((cardioIdx + 1) * segmentLen).clamp(0, totalPoints);
-
-    if (endIdx > startIdx) {
-      return _activity.routePoints.sublist(startIdx, endIdx);
-    }
-    return null;
-  }
-
-  ActivityLap? _getCorrespondingLap(int exerciseIndex) {
-    if (_activity.laps.isEmpty) return null;
-    if (exerciseIndex < _activity.laps.length) {
-      return _activity.laps[exerciseIndex];
-    }
-    return _activity.laps.first;
   }
 
   String _formatPace(double paceSec) {
@@ -303,12 +173,6 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
         .map((t) => FlSpot(t.distanceKm, t.heartRateBpm.toDouble()))
         .toList();
 
-    final highlightedPoints = _getHighlightedRoutePoints();
-    final selectedLapTitle = _selectedExerciseIndex != null &&
-            _selectedExerciseIndex! < _exercises.length
-        ? _exercises[_selectedExerciseIndex!]['nombre'] as String?
-        : null;
-
     return RefreshIndicator(
       color: theme.primary,
       backgroundColor: theme.cardDark,
@@ -319,8 +183,6 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
           children: [
             ActivityMapHeader(
               activity: act,
-              highlightedPoints: highlightedPoints,
-              highlightedLapTitle: selectedLapTitle,
               onShare: () {},
             ),
             const SizedBox(height: 16),
@@ -328,39 +190,12 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
-                  // Active Exercise Inspector Card (Garmin-Style Drilldown)
-                  if (_selectedExerciseIndex != null &&
-                      _selectedExerciseIndex! < _exercises.length) ...[
-                    ActivityExerciseInspectorCard(
-                      exercise: _exercises[_selectedExerciseIndex!],
-                      index: _selectedExerciseIndex!,
-                      lap: _getCorrespondingLap(_selectedExerciseIndex!),
-                      sessionSummary: act.summary,
-                      onClose: () => setState(() => _selectedExerciseIndex = null),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  if (_noticeBanner != null && _selectedExerciseIndex == null) ...[
+                  if (_noticeBanner != null) ...[
                     _buildNoticeBanner(theme, _noticeBanner!),
                     const SizedBox(height: 16),
                   ],
 
                   ActivityKpiGrid(summary: act.summary),
-
-                  if (_exercises.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    ActivityStrengthExercisesCard(
-                      exercises: _exercises,
-                      selectedIndex: _selectedExerciseIndex,
-                      onSelectExercise: (index) {
-                        setState(() {
-                          _selectedExerciseIndex =
-                              (_selectedExerciseIndex == index) ? null : index;
-                        });
-                      },
-                    ),
-                  ],
 
                   if (act.bestEfforts.isNotEmpty) ...[
                     const SizedBox(height: 16),
@@ -369,19 +204,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
 
                   if (act.laps.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    ActivityLapsChart(
-                      laps: act.laps,
-                      selectedLapOrder: _selectedExerciseIndex != null
-                          ? _selectedExerciseIndex! + 1
-                          : null,
-                      onSelectLap: (order) {
-                        setState(() {
-                          final targetIdx = order - 1;
-                          _selectedExerciseIndex =
-                              (_selectedExerciseIndex == targetIdx) ? null : targetIdx;
-                        });
-                      },
-                    ),
+                    ActivityLapsChart(laps: act.laps),
                   ],
 
                   if (act.splits.isNotEmpty) ...[
@@ -477,7 +300,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.touch_app_outlined,
+              Icons.info_outline_rounded,
               color: Color(0xFFFF9800),
               size: 20,
             ),
@@ -488,7 +311,7 @@ class _ActivityAnalyticsScreenState extends State<ActivityAnalyticsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Sesión interactiva por bloques',
+                  'Resumen global de actividad',
                   style: TextStyle(
                     color: theme.text,
                     fontSize: 14,

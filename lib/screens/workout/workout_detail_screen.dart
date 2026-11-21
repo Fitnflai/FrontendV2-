@@ -10,6 +10,7 @@ import '../../providers/profile_provider.dart';
 import 'workout_active_screen.dart';
 import 'workout_feedback_screen.dart';
 import 'activity_analytics_screen.dart';
+import 'widgets/exercise_detail_bottom_sheet.dart';
 import '../../l10n/app_localizations.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
@@ -1110,9 +1111,19 @@ class _BloqueCard extends StatelessWidget {
           final isHecho   = estado == 'completado' || estado == 'completo' || estado == 'done';
           final badgeText = _badgeForExercise(ej, nombre, workoutSport);
           return Column(children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(children: [
+            InkWell(
+              onTap: () {
+                ExerciseDetailBottomSheet.show(
+                  context,
+                  exercise: ej,
+                  badgeText: badgeText,
+                  workoutSport: workoutSport,
+                );
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Row(children: [
                 // Número o check
                 Container(
                   width: 28, height: 28,
@@ -1221,8 +1232,11 @@ class _BloqueCard extends StatelessWidget {
                             fontWeight: FontWeight.w700)),
                   ),
                 ],
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right, size: 18, color: theme.textMuted.withValues(alpha: 0.4)),
               ]),
             ),
+          ),
             if (!esUltimo)
               Divider(color: theme.border, height: 1, indent: 14, endIndent: 14),
           ]);
