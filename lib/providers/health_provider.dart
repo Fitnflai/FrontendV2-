@@ -98,40 +98,32 @@ class HealthProvider extends ChangeNotifier {
     _hasExternalActivities = totalActividades > 0 || (fuentesRaw != null && fuentesRaw.isNotEmpty);
     _externalSources = fuentesRaw?.map((e) => e.toString()).toList() ?? [];
 
-    // 3. Regla de negocio: Priorizar sensor de Health Connect / HealthKit
-    // Pasos:
-    if (localSteps > 0) {
+    // 3. Regla de negocio: Priorizar sensor local si hay proveedor conectado
+    final bool isGarminReal = _isGarminConnected && _externalSources.contains('garmin');
+
+    if (_connectedProvider != HealthProviderType.none) {
+      // Prioridad 1: Proveedor de salud conectado en el dispositivo (Huawei Health, Health Connect, HealthKit)
       _steps = localSteps;
-    } else if (tienePasosBackend && backendSteps > 0) {
-      _steps = backendSteps;
-    } else {
-      _steps = localSteps;
-    }
-
-    // Distancia:
-    if (localDistance > 0) {
       _distance = localDistance;
-    } else if (backendDistance > 0) {
-      _distance = backendDistance;
-    } else {
-      _distance = localDistance;
-    }
-
-    // Ritmo cardíaco:
-    if (localHeartRate > 0) {
       _heartRate = localHeartRate;
-    } else if (backendHeartRate > 0) {
-      _heartRate = backendHeartRate;
-    } else {
-      _heartRate = localHeartRate;
-    }
-
-    // Calorías:
-    if (localCalories > 0) {
       _calories = localCalories;
-    } else if (backendCalories > 0) {
+
+      // Si además Garmin está activo con actividades externas reales de hoy, fusionar
+      if (isGarminReal) {
+        if (backendSteps > _steps) _steps = backendSteps;
+        if (backendDistance > _distance) _distance = backendDistance;
+        if (backendHeartRate > 0 && _heartRate == 0) _heartRate = backendHeartRate;
+        if (backendCalories > _calories) _calories = backendCalories;
+      }
+    } else if (isGarminReal || _isStravaConnected) {
+      _steps = backendSteps;
+      _distance = backendDistance;
+      _heartRate = backendHeartRate;
       _calories = backendCalories;
     } else {
+      _steps = localSteps;
+      _distance = localDistance;
+      _heartRate = localHeartRate;
       _calories = localCalories;
     }
 

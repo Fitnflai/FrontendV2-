@@ -268,6 +268,59 @@ class HuaweiHealthService implements BaseHealthService {
         }
       }
 
+      // Fallback: Si la sumatoria directa da 0, intentar leer muestras detalladas del día
+      if (totalDistanceKm == 0.0 || totalCaloriesBurned == 0.0) {
+        try {
+          final startOfDay = DateTime(date.year, date.month, date.day);
+          final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+
+          final ReadOptions sampleReadOptions = ReadOptions(
+            dataCollectors: [
+              DataCollector(
+                dataType: DataType.DT_CONTINUOUS_DISTANCE_TOTAL,
+                dataGenerateType: DataGenerateType.DATA_TYPE_RAW,
+              ),
+              DataCollector(
+                dataType: DataType.DT_CONTINUOUS_CALORIES_BURNT_TOTAL,
+                dataGenerateType: DataGenerateType.DATA_TYPE_RAW,
+              ),
+            ],
+            startTime: startOfDay,
+            endTime: endOfDay,
+          );
+
+          final ReadReply? reply = await dataController.read(sampleReadOptions);
+          if (reply != null && reply.sampleSets.isNotEmpty) {
+            for (final set in reply.sampleSets) {
+              for (final point in set.samplePoints) {
+                if (totalDistanceKm == 0.0) {
+                  final d = _extractNumeric(point, ['distance_total', 'distance', 'distance_delta']);
+                  if (d != null && d > 0) {
+                    final dv = d.toDouble();
+                    totalDistanceKm = dv > 100 ? (dv / 1000.0) : dv;
+                  }
+                }
+                if (totalCaloriesBurned == 0.0) {
+                  final c = _extractNumeric(point, ['calories_total', 'calories', 'calorie']);
+                  if (c != null && c > 0) {
+                    totalCaloriesBurned = c.toDouble();
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ [HuaweiHealth] Error reading samples via ReadOptions: $e');
+        }
+      }
+
+      // Si los pasos no vienen autorizados directamente en la consola de Huawei pero sí la distancia,
+      // estimar los pasos por la cadencia/zancada media del usuario (~0.742m por paso)
+      if (totalSteps == 0 && totalDistanceKm > 0) {
+        totalSteps = (totalDistanceKm * 1000.0 / 0.742).round();
+        debugPrint('ℹ️ [HuaweiHealth] Pasos estimados a partir de la distancia ($totalDistanceKm km): $totalSteps pasos');
+      }
+
       // 4. Fetch Heart Rate
       try {
         final startOfDay = DateTime(date.year, date.month, date.day);
