@@ -27,6 +27,14 @@ class AndroidHealthConnectService implements BaseHealthService {
     HealthDataType.HEART_RATE,
     HealthDataType.SLEEP_SESSION,
     HealthDataType.WEIGHT,
+    HealthDataType.WORKOUT,
+    HealthDataType.RESTING_HEART_RATE,
+    HealthDataType.BASAL_ENERGY_BURNED,
+    HealthDataType.TOTAL_CALORIES_BURNED,
+    HealthDataType.SPEED,
+    HealthDataType.FLIGHTS_CLIMBED,
+    HealthDataType.WATER,
+    HealthDataType.BODY_FAT_PERCENTAGE,
   ];
 
   @override
@@ -44,11 +52,12 @@ class AndroidHealthConnectService implements BaseHealthService {
   @override
   Future<bool> requestPermissions() async {
     await _ensureConfigured();
-    final permissions = List.filled(_types.length, HealthDataAccess.READ);
+    // Solicitamos acceso de Lectura y Escritura (READ_WRITE)
+    final permissions = List.filled(_types.length, HealthDataAccess.READ_WRITE);
     try {
       final hasPerm = await _health.hasPermissions(_types, permissions: permissions) ?? false;
       if (hasPerm) {
-        debugPrint('Health Connect permissions already granted.');
+        debugPrint('Health Connect read/write permissions already granted.');
         return true;
       }
     } catch (e) {
@@ -97,8 +106,14 @@ class AndroidHealthConnectService implements BaseHealthService {
       double caloriasQuemadas = 0.0;
       double distanciaKm = 0.0;
       List<double> heartRates = [];
+      List<double> restingHeartRates = [];
       double pesoKg = 0.0;
       double horasSueno = 0.0;
+      double agua = 0.0;
+      double pisosSubidos = 0.0;
+      double porcentajeGrasa = 0.0;
+      double energiaReposar = 0.0;
+      int workoutsCount = 0;
 
       for (var dp in healthData) {
         switch (dp.type) {
@@ -114,12 +129,30 @@ class AndroidHealthConnectService implements BaseHealthService {
           case HealthDataType.HEART_RATE:
             heartRates.add(_getNumericValue(dp.value));
             break;
+          case HealthDataType.RESTING_HEART_RATE:
+            restingHeartRates.add(_getNumericValue(dp.value));
+            break;
           case HealthDataType.WEIGHT:
             pesoKg = _getNumericValue(dp.value);
             break;
           case HealthDataType.SLEEP_SESSION:
             final diff = dp.dateTo.difference(dp.dateFrom).inMinutes;
             horasSueno += diff / 60.0;
+            break;
+          case HealthDataType.WATER:
+            agua += _getNumericValue(dp.value);
+            break;
+          case HealthDataType.FLIGHTS_CLIMBED:
+            pisosSubidos += _getNumericValue(dp.value);
+            break;
+          case HealthDataType.BODY_FAT_PERCENTAGE:
+            porcentajeGrasa = _getNumericValue(dp.value);
+            break;
+          case HealthDataType.BASAL_ENERGY_BURNED:
+            energiaReposar += _getNumericValue(dp.value);
+            break;
+          case HealthDataType.WORKOUT:
+            workoutsCount++;
             break;
           default:
             break;
@@ -131,6 +164,9 @@ class AndroidHealthConnectService implements BaseHealthService {
       if (heartRates.isNotEmpty) {
         ritmoCardiacoPromedio = heartRates.reduce((a, b) => a + b) / heartRates.length;
         ritmoCardiacoReposo = heartRates.reduce((a, b) => a < b ? a : b);
+      }
+      if (restingHeartRates.isNotEmpty) {
+        ritmoCardiacoReposo = restingHeartRates.last;
       }
 
       final normalizedData = HealthDataModel(
@@ -147,7 +183,15 @@ class AndroidHealthConnectService implements BaseHealthService {
         workouts: [],
       );
 
-      return normalizedData.toMap();
+      final map = normalizedData.toMap();
+      map['agua'] = agua;
+      map['pisos_subidos'] = pisosSubidos;
+      map['porcentaje_grasa_corporal'] = porcentajeGrasa;
+      map['energia_reposar'] = energiaReposar;
+      map['energia_actividad'] = caloriasQuemadas;
+      map['entrenamientos'] = workoutsCount;
+
+      return map;
     } catch (e) {
       debugPrint('Error fetching Health Connect data: $e');
       return null;

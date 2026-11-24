@@ -76,56 +76,172 @@ class HealthProvider extends ChangeNotifier {
     await prefs.setBool('health_strava_connected', strava);
   }
 
+  @visibleForTesting
+  void updateConsolidatedData({
+    Map<String, dynamic>? localData,
+    Map<String, dynamic>? backendSummary,
+  }) => _updateConsolidatedData(localData: localData, backendSummary: backendSummary);
+
   void _updateConsolidatedData({
     Map<String, dynamic>? localData,
     Map<String, dynamic>? backendSummary,
   }) async {
-    // 1. Datos locales del sensor
+    // 1. Datos locales del sensor del dispositivo (Tier 3: Apple Health, Health Connect, Huawei)
     final localSteps = (localData?['pasos'] as int?) ?? 0;
     final localCalories = (localData?['calorias_quemadas'] as num?)?.toDouble() ?? 0.0;
     final localDistance = (localData?['distancia_km'] as num?)?.toDouble() ?? 0.0;
     final localHeartRate = (localData?['ritmo_cardiaco_promedio'] as num?)?.toDouble() ?? 0.0;
 
-    // 2. Datos del backend (Garmin / Strava)
-    final backendDistance = (backendSummary?['distancia_total_km'] as num?)?.toDouble() ?? 0.0;
-    final backendHeartRate = (backendSummary?['frecuencia_cardiaca_promedio'] as num?)?.toDouble() ?? 0.0;
-    final backendCalories = (backendSummary?['calorias_actividad'] as num?)?.toDouble() ?? 0.0;
-    final tienePasosBackend = backendSummary?['tiene_pasos'] == true;
-    final backendSteps = tienePasosBackend ? ((backendSummary?['pasos_dia'] as int?) ?? 0) : 0;
-    
+    // 2. Extracción de datos del backend (Garmin / Strava)
     final totalActividades = (backendSummary?['total_actividades'] as int?) ?? 0;
     final fuentesRaw = backendSummary?['fuentes'] as List<dynamic>?;
-    _hasExternalActivities = totalActividades > 0 || (fuentesRaw != null && fuentesRaw.isNotEmpty);
-    _externalSources = fuentesRaw?.map((e) => e.toString()).toList() ?? [];
+    _externalSources = fuentesRaw?.map((e) => e.toString().toLowerCase()).toList() ?? [];
+    _hasExternalActivities = totalActividades > 0 || _externalSources.isNotEmpty;
 
-    // 3. Regla de negocio: Priorizar sensor local si hay proveedor conectado
-    final bool isGarminReal = _isGarminConnected && _externalSources.contains('garmin');
+    final tienePasosBackend = backendSummary?['tiene_pasos'] == true;
+    final rawBackendSteps = tienePasosBackend ? ((backendSummary?['pasos_dia'] as int?) ?? 0) : 0;
+    final rawBackendDistance = (backendSummary?['distancia_total_km'] as num?)?.toDouble() ?? 0.0;
+    final rawBackendHeartRate = (backendSummary?['frecuencia_cardiaca_promedio'] as num?)?.toDouble() ?? 0.0;
+    final rawBackendCalories = (backendSummary?['calorias_actividad'] as num?)?.toDouble() ?? 0.0;
 
-    if (_connectedProvider != HealthProviderType.none) {
-      // Prioridad 1: Proveedor de salud conectado en el dispositivo (Huawei Health, Health Connect, HealthKit)
-      _steps = localSteps;
-      _distance = localDistance;
-      _heartRate = localHeartRate;
-      _calories = localCalories;
+    // Desglose por fuente si el backend lo provee de forma estructurada
+    final Map<String, dynamic>? garminMap = backendSummary?['garmin'] as Map<String, dynamic>?;
+    final Map<String, dynamic>? stravaMap = backendSummary?['strava'] as Map<String, dynamic>?;
+    final List<dynamic>? actividades = backendSummary?['actividades'] as List<dynamic>?;
 
-      // Si además Garmin está activo con actividades externas reales de hoy, fusionar
-      if (isGarminReal) {
-        if (backendSteps > _steps) _steps = backendSteps;
-        if (backendDistance > _distance) _distance = backendDistance;
-        if (backendHeartRate > 0 && _heartRate == 0) _heartRate = backendHeartRate;
-        if (backendCalories > _calories) _calories = backendCalories;
-      }
-    } else if (isGarminReal || _isStravaConnected) {
-      _steps = backendSteps;
-      _distance = backendDistance;
-      _heartRate = backendHeartRate;
-      _calories = backendCalories;
+    // --- TIER 1: GARMIN ---
+    int? garminSteps;
+    double? garminDistance;
+    double? garminHeartRate;
+    double? garminCalories;
+
+    if (garminMap != null) {
+      garminSteps = (garminMap['pasos'] as int?) ?? (garminMap['pasos_dia'] as int?);
+      garminDistance = (garminMap['distancia_km'] as num?)?.toDouble() ?? (garminMap['distancia_total_km'] as num?)?.toDouble();
+      garminHeartRate = (garminMap['ritmo_cardiaco_promedio'] as num?)?.toDouble() ?? (garminMap['frecuencia_cardiaca_promedio'] as num?)?.toDouble();
+      garminCalories = (garminMap['calorias'] as num?)?.toDouble() ?? (garminMap['calorias_actividad'] as num?)?.toDouble();
     } else {
-      _steps = localSteps;
-      _distance = localDistance;
-      _heartRate = localHeartRate;
-      _calories = localCalories;
+      final bool isGarminInSources = _externalSources.contains('garmin');
+      // En Fitnflai backend, los pasos diarios provienen exclusivamente de Garmin
+      if ((isGarminInSources || _isGarminConnected) && rawBackendSteps > 0) {
+        garminSteps = rawBackendSteps;
+      }
+      // Métricas de actividad Garmin si Garmin está en las fuentes o si Garmin está conectado y no hay Strava en fuentes
+      if (isGarminInSources || (_isGarminConnected && !_externalSources.contains('strava'))) {
+        if (rawBackendDistance > 0) garminDistance = rawBackendDistance;
+        if (rawBackendHeartRate > 0) garminHeartRate = rawBackendHeartRate;
+        if (rawBackendCalories > 0) garminCalories = rawBackendCalories;
+      }
     }
+
+    // --- TIER 2: STRAVA ---
+    int? stravaSteps;
+    double? stravaDistance;
+    double? stravaHeartRate;
+    double? stravaCalories;
+
+    if (stravaMap != null) {
+      stravaSteps = (stravaMap['pasos'] as int?);
+      stravaDistance = (stravaMap['distancia_km'] as num?)?.toDouble() ?? (stravaMap['distancia_total_km'] as num?)?.toDouble();
+      stravaHeartRate = (stravaMap['ritmo_cardiaco_promedio'] as num?)?.toDouble() ?? (stravaMap['frecuencia_cardiaca_promedio'] as num?)?.toDouble();
+      stravaCalories = (stravaMap['calorias'] as num?)?.toDouble() ?? (stravaMap['calorias_actividad'] as num?)?.toDouble();
+    } else {
+      final bool isStravaInSources = _externalSources.contains('strava');
+      if (isStravaInSources || (_isStravaConnected && !_externalSources.contains('garmin'))) {
+        if (rawBackendDistance > 0 && (garminDistance == null || garminDistance == 0)) {
+          stravaDistance = rawBackendDistance;
+        }
+        if (rawBackendHeartRate > 0 && (garminHeartRate == null || garminHeartRate == 0)) {
+          stravaHeartRate = rawBackendHeartRate;
+        }
+        if (rawBackendCalories > 0 && (garminCalories == null || garminCalories == 0)) {
+          stravaCalories = rawBackendCalories;
+        }
+      }
+    }
+
+    // Extracción adicional si vienen actividades individuales desglosadas
+    if (actividades != null && actividades.isNotEmpty) {
+      for (final act in actividades) {
+        if (act is Map<String, dynamic>) {
+          final src = (act['fuente'] ?? act['source'] ?? '').toString().toLowerCase();
+          final d = (act['distancia_km'] as num?)?.toDouble() ?? 0.0;
+          final hr = (act['frecuencia_cardiaca_promedio'] as num?)?.toDouble() ?? (act['ritmo_cardiaco_promedio'] as num?)?.toDouble() ?? 0.0;
+          final cal = (act['calorias'] as num?)?.toDouble() ?? (act['calorias_actividad'] as num?)?.toDouble() ?? 0.0;
+
+          if (src.contains('garmin')) {
+            if (d > 0 && (garminDistance == null || d > garminDistance)) garminDistance = d;
+            if (hr > 0 && (garminHeartRate == null || hr > garminHeartRate)) garminHeartRate = hr;
+            if (cal > 0 && (garminCalories == null || cal > garminCalories)) garminCalories = cal;
+          } else if (src.contains('strava')) {
+            if (d > 0 && (stravaDistance == null || d > stravaDistance)) stravaDistance = d;
+            if (hr > 0 && (stravaHeartRate == null || hr > stravaHeartRate)) stravaHeartRate = hr;
+            if (cal > 0 && (stravaCalories == null || cal > stravaCalories)) stravaCalories = cal;
+          }
+        }
+      }
+    }
+
+    // --- TIER 3: APP LOCAL (Health Connect, HealthKit, Huawei Health) ---
+    final bool hasLocalProvider = _connectedProvider != HealthProviderType.none;
+    final int? localStepsVal = (hasLocalProvider && localSteps > 0) ? localSteps : null;
+    final double? localDistanceVal = (hasLocalProvider && localDistance > 0) ? localDistance : null;
+    final double? localHeartRateVal = (hasLocalProvider && localHeartRate > 0) ? localHeartRate : null;
+    final double? localCaloriesVal = (hasLocalProvider && localCalories > 0) ? localCalories : null;
+
+    // --- RESOLUCIÓN JERÁRQUICA MÉTRICA POR MÉTRICA (SIN SUMAR) ---
+    // 1° Garmin -> 2° Strava -> 3° App de Salud local
+
+    // 1. Pasos:
+    if (garminSteps != null && garminSteps > 0) {
+      _steps = garminSteps;
+    } else if (stravaSteps != null && stravaSteps > 0) {
+      _steps = stravaSteps;
+    } else if (localStepsVal != null && localStepsVal > 0) {
+      _steps = localStepsVal;
+    } else {
+      _steps = 0;
+    }
+
+    // 2. Ritmo cardíaco:
+    if (garminHeartRate != null && garminHeartRate > 0) {
+      _heartRate = garminHeartRate;
+    } else if (stravaHeartRate != null && stravaHeartRate > 0) {
+      _heartRate = stravaHeartRate;
+    } else if (localHeartRateVal != null && localHeartRateVal > 0) {
+      _heartRate = localHeartRateVal;
+    } else {
+      _heartRate = 0.0;
+    }
+
+    // 3. Distancia:
+    if (garminDistance != null && garminDistance > 0) {
+      _distance = garminDistance;
+    } else if (stravaDistance != null && stravaDistance > 0) {
+      _distance = stravaDistance;
+    } else if (localDistanceVal != null && localDistanceVal > 0) {
+      _distance = localDistanceVal;
+    } else {
+      _distance = 0.0;
+    }
+
+    // 4. Calorías:
+    if (garminCalories != null && garminCalories > 0) {
+      _calories = garminCalories;
+    } else if (stravaCalories != null && stravaCalories > 0) {
+      _calories = stravaCalories;
+    } else if (localCaloriesVal != null && localCaloriesVal > 0) {
+      _calories = localCaloriesVal;
+    } else {
+      _calories = 0.0;
+    }
+
+    debugPrint(
+      '📊 [Health Hierarchy Resolved] '
+      'Steps: $_steps (Garmin: $garminSteps, Strava: $stravaSteps, Local: $localStepsVal) | '
+      'HR: $_heartRate (Garmin: $garminHeartRate, Strava: $stravaHeartRate, Local: $localHeartRateVal) | '
+      'Distance: $_distance | Calories: $_calories',
+    );
 
     _lastSyncTime = DateTime.now();
     notifyListeners();

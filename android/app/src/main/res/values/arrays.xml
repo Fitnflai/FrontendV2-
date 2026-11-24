@@ -7,11 +7,28 @@
         <item>android.permission.health.READ_HEART_RATE</item>
         <item>android.permission.health.READ_SLEEP</item>
         <item>android.permission.health.READ_WEIGHT</item>
+        <item>android.permission.health.READ_EXERCISE</item>
+        <item>android.permission.health.READ_RESTING_HEART_RATE</item>
+        <item>android.permission.health.READ_BASAL_METABOLIC_RATE</item>
+        <item>android.permission.health.READ_TOTAL_CALORIES_BURNED</item>
+        <item>android.permission.health.READ_SPEED</item>
+        <item>android.permission.health.READ_FLOORS_CLIMBED</item>
+        <item>android.permission.health.READ_HYDRATION</item>
+        <item>android.permission.health.READ_BODY_FAT</item>
+
         <item>android.permission.health.WRITE_STEPS</item>
         <item>android.permission.health.WRITE_ACTIVE_ENERGY_BURNED</item>
         <item>android.permission.health.WRITE_DISTANCE</item>
         <item>android.permission.health.WRITE_HEART_RATE</item>
         <item>android.permission.health.WRITE_SLEEP</item>
         <item>android.permission.health.WRITE_WEIGHT</item>
+        <item>android.permission.health.WRITE_EXERCISE</item>
+        <item>android.permission.health.WRITE_RESTING_HEART_RATE</item>
+        <item>android.permission.health.WRITE_BASAL_METABOLIC_RATE</item>
+        <item>android.permission.health.WRITE_TOTAL_CALORIES_BURNED</item>
+        <item>android.permission.health.WRITE_SPEED</item>
+        <item>android.permission.health.WRITE_FLOORS_CLIMBED</item>
+        <item>android.permission.health.WRITE_HYDRATION</item>
+        <item>android.permission.health.WRITE_BODY_FAT</item>
     </array>
 </resources>

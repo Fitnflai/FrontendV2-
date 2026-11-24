@@ -554,18 +554,38 @@ class _DeviceConnectedBanner extends StatelessWidget {
     final isEs = Localizations.localeOf(context).languageCode == 'es';
 
     String title = l10n.homeDeviceConnectedTitle;
-    if (healthProvider.connectedProvider == HealthProviderType.none) {
-      if (healthProvider.isGarminConnected && healthProvider.isStravaConnected) {
-        title = isEs ? 'Garmin y Strava conectados' : 'Garmin & Strava connected';
-      } else if (healthProvider.isGarminConnected) {
-        title = isEs ? 'Garmin conectado' : 'Garmin connected';
-      } else if (healthProvider.isStravaConnected) {
-        title = isEs ? 'Strava conectado' : 'Strava connected';
-      } else if (healthProvider.hasExternalActivities) {
-        final sources = healthProvider.externalSources.join(', ');
+    final List<String> activeSources = [];
+    if (healthProvider.isGarminConnected) activeSources.add('Garmin');
+    if (healthProvider.isStravaConnected) activeSources.add('Strava');
+    if (healthProvider.connectedProvider != HealthProviderType.none) {
+      switch (healthProvider.connectedProvider) {
+        case HealthProviderType.healthConnect:
+          activeSources.add('Health Connect');
+          break;
+        case HealthProviderType.healthKit:
+          activeSources.add('Apple Health');
+          break;
+        case HealthProviderType.huaweiHealth:
+          activeSources.add('Huawei Health');
+          break;
+        case HealthProviderType.none:
+          break;
+      }
+    } else if (healthProvider.hasExternalActivities && activeSources.isEmpty) {
+      activeSources.addAll(healthProvider.externalSources.map((s) => s.isNotEmpty ? (s[0].toUpperCase() + s.substring(1)) : s));
+    }
+
+    if (activeSources.isNotEmpty) {
+      if (activeSources.length == 1) {
+        title = isEs ? '${activeSources.first} sincronizado' : '${activeSources.first} synced';
+      } else if (activeSources.length == 2) {
         title = isEs
-            ? 'Actividad conectada${sources.isNotEmpty ? ' ($sources)' : ''}'
-            : 'Activity connected${sources.isNotEmpty ? ' ($sources)' : ''}';
+            ? '${activeSources[0]} y ${activeSources[1]} sincronizados'
+            : '${activeSources[0]} & ${activeSources[1]} synced';
+      } else {
+        title = isEs
+            ? '${activeSources.take(2).join(', ')} y más sincronizados'
+            : '${activeSources.take(2).join(', ')} & more synced';
       }
     }
 
