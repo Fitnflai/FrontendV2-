@@ -7,6 +7,7 @@ import '../../models/progress_report.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/progress_report_provider.dart';
 import '../../providers/wellness_index_provider.dart';
+import '../../services/cached_http.dart';
 
 import '../../config/app_theme_extension.dart';
 import '../../widgets/bottom_nav.dart';
@@ -82,35 +83,49 @@ class _ProgressScreenState extends State<ProgressScreen> {
         child: Column(children: [
           AppHeader(section: l10n.progressHeaderSection),
           Expanded(
-            child: Consumer<ProgressReportProvider>(
-              builder: (context, provider, child) {
-                if (provider.status == ProgressReportStatus.loading && provider.report == null) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (provider.status == ProgressReportStatus.error) {
-                  final isEs = Localizations.localeOf(context).languageCode == 'es';
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          provider.errorMessage ?? (isEs ? 'Error al cargar el informe' : 'Error loading report'),
-                          style: TextStyle(color: theme.redText),
-                          textAlign: TextAlign.center,
+            child: RefreshIndicator(
+              color: theme.primary,
+              backgroundColor: theme.card,
+              onRefresh: () async {
+                CachedHttp.clearCache();
+                final provider = context.read<ProgressReportProvider>();
+                await _fetchData(provider.weekOffset);
+              },
+              child: Consumer<ProgressReportProvider>(
+                builder: (context, provider, child) {
+                  if (provider.status == ProgressReportStatus.loading && provider.report == null) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (provider.status == ProgressReportStatus.error) {
+                    final isEs = Localizations.localeOf(context).languageCode == 'es';
+                    return SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Container(
+                        height: 300,
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              provider.errorMessage ?? (isEs ? 'Error al cargar el informe' : 'Error loading report'),
+                              style: TextStyle(color: theme.redText),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => _fetchData(provider.weekOffset),
+                              child: Text(isEs ? 'Reintentar' : 'Retry'),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => _fetchData(provider.weekOffset),
-                          child: Text(isEs ? 'Reintentar' : 'Retry'),
-                        ),
-                      ],
-                    ),
-                  );
-                } else if (provider.report != null) {
-                  final report = provider.report!;
-                  final isEs = Localizations.localeOf(context).languageCode == 'es';
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
+                      ),
+                    );
+                  } else if (provider.report != null) {
+                    final report = provider.report!;
+                    final isEs = Localizations.localeOf(context).languageCode == 'es';
+                    return SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 16),
@@ -190,6 +205,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               },
             ),
           ),
+        ),
           const AppBottomNav(selectedIndex: 2),
         ]),
       ),

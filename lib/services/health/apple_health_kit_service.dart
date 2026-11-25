@@ -102,6 +102,14 @@ class AppleHealthKitService implements BaseHealthService {
 
     // Accumulate data for normalization
     int pasos = 0;
+    try {
+      final totalSteps = await _health.getTotalStepsInInterval(startOfDay, endOfDay);
+      if (totalSteps != null && totalSteps > 0) {
+        pasos = totalSteps;
+      }
+    } catch (e) {
+      debugPrint("Error getting aggregated steps from HealthKit: $e");
+    }
     double caloriasQuemadas = 0.0;
     double distanciaKm = 0.0;
     List<double> heartRates = [];
@@ -118,7 +126,9 @@ class AppleHealthKitService implements BaseHealthService {
     for (HealthDataPoint dataPoint in healthData) {
       switch (dataPoint.type) {
         case HealthDataType.STEPS:
-          pasos += _getNumericValue(dataPoint.value).toInt();
+          if (pasos == 0) {
+            pasos += _getNumericValue(dataPoint.value).toInt();
+          }
           break;
         case HealthDataType.ACTIVE_ENERGY_BURNED:
           caloriasQuemadas += _getNumericValue(dataPoint.value);
@@ -162,14 +172,18 @@ class AppleHealthKitService implements BaseHealthService {
       }
     }
 
-    double ritmoCardiacoPromedio = 0.0;
+    double ritmoCardiaco = 0.0;
     double ritmoCardiacoReposo = 0.0;
     if (heartRates.isNotEmpty) {
-      ritmoCardiacoPromedio = heartRates.reduce((a, b) => a + b) / heartRates.length;
+      // Priorizar la muestra más reciente (última registrada) en lugar de promediar
+      ritmoCardiaco = heartRates.last;
       ritmoCardiacoReposo = heartRates.reduce((a, b) => a < b ? a : b);
     }
     if (restingHeartRates.isNotEmpty) {
       ritmoCardiacoReposo = restingHeartRates.last;
+      if (ritmoCardiaco == 0.0) {
+        ritmoCardiaco = ritmoCardiacoReposo;
+      }
     }
 
     // Create HealthDataModel instance
@@ -178,7 +192,7 @@ class AppleHealthKitService implements BaseHealthService {
       pasos: pasos,
       caloriasQuemadas: caloriasQuemadas,
       distanciaKm: distanciaKm,
-      ritmoCardiacoPromedio: ritmoCardiacoPromedio,
+      ritmoCardiacoPromedio: ritmoCardiaco,
       ritmoCardiacoReposo: ritmoCardiacoReposo,
       pesoKg: pesoKg,
       horasSueno: horasSueno,
@@ -187,6 +201,12 @@ class AppleHealthKitService implements BaseHealthService {
     );
 
     final map = healthDataModel.toMap();
+    map['frecuencia_cardiaca'] = ritmoCardiaco;
+    map['frecuencia_cardiaca_actual'] = ritmoCardiaco;
+    map['frecuencia_cardiaca_mas_reciente'] = ritmoCardiaco;
+    map['heart_rate'] = ritmoCardiaco;
+    map['fc_reposo'] = ritmoCardiacoReposo;
+    map['frecuencia_cardiaca_reposo'] = ritmoCardiacoReposo;
     map['agua'] = agua;
     map['pisos_subidos'] = pisosSubidos;
     map['porcentaje_grasa_corporal'] = porcentajeGrasa;

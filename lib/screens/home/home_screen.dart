@@ -333,9 +333,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           const SizedBox(height: 16),
 
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
+            child: RefreshIndicator(
+              color: theme.primary,
+              backgroundColor: theme.card,
+              onRefresh: () async {
+                CachedHttp.clearCache();
+                await Future.wait([
+                  _loadWeek(_selectedDay),
+                  _loadCheckinState(),
+                  context.read<HealthProvider>().manualSync(),
+                ]);
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
@@ -463,6 +475,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
             ),
           ),
+        ),
 
           // ── Bottom nav ───────────────────────────
           const AppBottomNav(selectedIndex: 0),

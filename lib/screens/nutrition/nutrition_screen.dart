@@ -195,9 +195,17 @@ class _NutritionScreenState extends State<NutritionScreen> {
           Expanded(
             child: (_loading || isLoadingAuth || user == null)
                 ? Center(child: CircularProgressIndicator(color: theme.primary))
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                    child: Column(
+                : RefreshIndicator(
+                    color: theme.primary,
+                    backgroundColor: theme.card,
+                    onRefresh: () async {
+                      CachedHttp.clearCache();
+                      await _loadPlan();
+                    },
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (canSeeNutrition) ...[
@@ -280,6 +288,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
                       ],
                     ),
                   ),
+                ),
           ),
         ]),
       ),

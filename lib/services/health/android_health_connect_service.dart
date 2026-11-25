@@ -103,6 +103,14 @@ class AndroidHealthConnectService implements BaseHealthService {
       }
 
       int pasos = 0;
+      try {
+        final totalSteps = await _health.getTotalStepsInInterval(startDate, endDate);
+        if (totalSteps != null && totalSteps > 0) {
+          pasos = totalSteps;
+        }
+      } catch (e) {
+        debugPrint('Error getting aggregated steps from Health Connect: $e');
+      }
       double caloriasQuemadas = 0.0;
       double distanciaKm = 0.0;
       List<double> heartRates = [];
@@ -118,7 +126,9 @@ class AndroidHealthConnectService implements BaseHealthService {
       for (var dp in healthData) {
         switch (dp.type) {
           case HealthDataType.STEPS:
-            pasos += _getNumericValue(dp.value).toInt();
+            if (pasos == 0) {
+              pasos += _getNumericValue(dp.value).toInt();
+            }
             break;
           case HealthDataType.ACTIVE_ENERGY_BURNED:
             caloriasQuemadas += _getNumericValue(dp.value);
@@ -159,14 +169,18 @@ class AndroidHealthConnectService implements BaseHealthService {
         }
       }
 
-      double ritmoCardiacoPromedio = 0.0;
+      double ritmoCardiaco = 0.0;
       double ritmoCardiacoReposo = 0.0;
       if (heartRates.isNotEmpty) {
-        ritmoCardiacoPromedio = heartRates.reduce((a, b) => a + b) / heartRates.length;
+        // Priorizar la muestra más reciente (última registrada) en lugar de promediar
+        ritmoCardiaco = heartRates.last;
         ritmoCardiacoReposo = heartRates.reduce((a, b) => a < b ? a : b);
       }
       if (restingHeartRates.isNotEmpty) {
         ritmoCardiacoReposo = restingHeartRates.last;
+        if (ritmoCardiaco == 0.0) {
+          ritmoCardiaco = ritmoCardiacoReposo;
+        }
       }
 
       final normalizedData = HealthDataModel(
@@ -174,7 +188,7 @@ class AndroidHealthConnectService implements BaseHealthService {
         pasos: pasos,
         caloriasQuemadas: caloriasQuemadas,
         distanciaKm: distanciaKm,
-        ritmoCardiacoPromedio: ritmoCardiacoPromedio,
+        ritmoCardiacoPromedio: ritmoCardiaco,
         ritmoCardiacoReposo: ritmoCardiacoReposo,
         pesoKg: pesoKg,
         horasSueno: horasSueno,
@@ -184,6 +198,12 @@ class AndroidHealthConnectService implements BaseHealthService {
       );
 
       final map = normalizedData.toMap();
+      map['frecuencia_cardiaca'] = ritmoCardiaco;
+      map['frecuencia_cardiaca_actual'] = ritmoCardiaco;
+      map['frecuencia_cardiaca_mas_reciente'] = ritmoCardiaco;
+      map['heart_rate'] = ritmoCardiaco;
+      map['fc_reposo'] = ritmoCardiacoReposo;
+      map['frecuencia_cardiaca_reposo'] = ritmoCardiacoReposo;
       map['agua'] = agua;
       map['pisos_subidos'] = pisosSubidos;
       map['porcentaje_grasa_corporal'] = porcentajeGrasa;

@@ -258,9 +258,10 @@ class _PlanScreenState extends State<PlanScreen> {
               color: theme.primary,
               backgroundColor: theme.card,
               onRefresh: () async {
-                _cache.remove(_weekKey(_weekStart));
+                CachedHttp.clearCache();
+                _cache.clear();
                 _dayKeys.clear();
-                await _loadWeek(_weekStart);
+                await _loadUserAndWeek();
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),

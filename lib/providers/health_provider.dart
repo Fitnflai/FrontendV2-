@@ -82,6 +82,31 @@ class HealthProvider extends ChangeNotifier {
     Map<String, dynamic>? backendSummary,
   }) => _updateConsolidatedData(localData: localData, backendSummary: backendSummary);
 
+  double? _extractHeartRate(Map<String, dynamic>? map) {
+    if (map == null) return null;
+    const candidateKeys = [
+      'frecuencia_cardiaca_actual',
+      'ritmo_cardiaco_actual',
+      'frecuencia_cardiaca_mas_reciente',
+      'ritmo_cardiaco_reciente',
+      'frecuencia_cardiaca',
+      'ritmo_cardiaco',
+      'heart_rate',
+      'frecuencia_cardiaca_promedio',
+      'ritmo_cardiaco_promedio',
+      'bpm',
+      'frecuencia_cardiaca_reposo',
+      'ritmo_cardiaco_reposo',
+      'fc_reposo',
+      'resting_heart_rate',
+    ];
+    for (final k in candidateKeys) {
+      final val = map[k];
+      if (val is num && val > 0) return val.toDouble();
+    }
+    return null;
+  }
+
   void _updateConsolidatedData({
     Map<String, dynamic>? localData,
     Map<String, dynamic>? backendSummary,
@@ -90,7 +115,7 @@ class HealthProvider extends ChangeNotifier {
     final localSteps = (localData?['pasos'] as int?) ?? 0;
     final localCalories = (localData?['calorias_quemadas'] as num?)?.toDouble() ?? 0.0;
     final localDistance = (localData?['distancia_km'] as num?)?.toDouble() ?? 0.0;
-    final localHeartRate = (localData?['ritmo_cardiaco_promedio'] as num?)?.toDouble() ?? 0.0;
+    final localHeartRate = _extractHeartRate(localData) ?? 0.0;
 
     // 2. Extracción de datos del backend (Garmin / Strava)
     final totalActividades = (backendSummary?['total_actividades'] as int?) ?? 0;
@@ -101,7 +126,7 @@ class HealthProvider extends ChangeNotifier {
     final tienePasosBackend = backendSummary?['tiene_pasos'] == true;
     final rawBackendSteps = tienePasosBackend ? ((backendSummary?['pasos_dia'] as int?) ?? 0) : 0;
     final rawBackendDistance = (backendSummary?['distancia_total_km'] as num?)?.toDouble() ?? 0.0;
-    final rawBackendHeartRate = (backendSummary?['frecuencia_cardiaca_promedio'] as num?)?.toDouble() ?? 0.0;
+    final rawBackendHeartRate = _extractHeartRate(backendSummary) ?? 0.0;
     final rawBackendCalories = (backendSummary?['calorias_actividad'] as num?)?.toDouble() ?? 0.0;
 
     // Desglose por fuente si el backend lo provee de forma estructurada
@@ -118,7 +143,7 @@ class HealthProvider extends ChangeNotifier {
     if (garminMap != null) {
       garminSteps = (garminMap['pasos'] as int?) ?? (garminMap['pasos_dia'] as int?);
       garminDistance = (garminMap['distancia_km'] as num?)?.toDouble() ?? (garminMap['distancia_total_km'] as num?)?.toDouble();
-      garminHeartRate = (garminMap['ritmo_cardiaco_promedio'] as num?)?.toDouble() ?? (garminMap['frecuencia_cardiaca_promedio'] as num?)?.toDouble();
+      garminHeartRate = _extractHeartRate(garminMap) ?? (rawBackendHeartRate > 0 ? rawBackendHeartRate : null);
       garminCalories = (garminMap['calorias'] as num?)?.toDouble() ?? (garminMap['calorias_actividad'] as num?)?.toDouble();
     } else {
       final bool isGarminInSources = _externalSources.contains('garmin');
@@ -143,7 +168,7 @@ class HealthProvider extends ChangeNotifier {
     if (stravaMap != null) {
       stravaSteps = (stravaMap['pasos'] as int?);
       stravaDistance = (stravaMap['distancia_km'] as num?)?.toDouble() ?? (stravaMap['distancia_total_km'] as num?)?.toDouble();
-      stravaHeartRate = (stravaMap['ritmo_cardiaco_promedio'] as num?)?.toDouble() ?? (stravaMap['frecuencia_cardiaca_promedio'] as num?)?.toDouble();
+      stravaHeartRate = _extractHeartRate(stravaMap) ?? (rawBackendHeartRate > 0 ? rawBackendHeartRate : null);
       stravaCalories = (stravaMap['calorias'] as num?)?.toDouble() ?? (stravaMap['calorias_actividad'] as num?)?.toDouble();
     } else {
       final bool isStravaInSources = _externalSources.contains('strava');
@@ -166,7 +191,7 @@ class HealthProvider extends ChangeNotifier {
         if (act is Map<String, dynamic>) {
           final src = (act['fuente'] ?? act['source'] ?? '').toString().toLowerCase();
           final d = (act['distancia_km'] as num?)?.toDouble() ?? 0.0;
-          final hr = (act['frecuencia_cardiaca_promedio'] as num?)?.toDouble() ?? (act['ritmo_cardiaco_promedio'] as num?)?.toDouble() ?? 0.0;
+          final hr = _extractHeartRate(act) ?? 0.0;
           final cal = (act['calorias'] as num?)?.toDouble() ?? (act['calorias_actividad'] as num?)?.toDouble() ?? 0.0;
 
           if (src.contains('garmin')) {

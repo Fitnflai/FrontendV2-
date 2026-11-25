@@ -156,5 +156,32 @@ void main() {
       expect(provider.distance, equals(7.5));
       expect(provider.calories, equals(480.0));
     });
+
+    test('Rule 5: Tolerant key extraction takes resting or most recent heart rate from Garmin/local', () async {
+      final repo = MockHealthRepository();
+      final provider = HealthProvider(repo);
+      await Future.delayed(Duration.zero);
+
+      provider.setExternalConnectedStatus(garmin: true, strava: false);
+
+      // Garmin sends fc_reposo = 41 bpm without workout average
+      provider.updateConsolidatedData(
+        localData: {
+          'pasos': 1000,
+          'frecuencia_cardiaca_reposo': 56.0,
+        },
+        backendSummary: {
+          'fuentes': ['garmin'],
+          'garmin': {
+            'pasos': 2887,
+            'fc_reposo': 41.0,
+          },
+        },
+      );
+
+      // Must resolve Garmin steps and Garmin resting heart rate 41
+      expect(provider.steps, equals(2887));
+      expect(provider.heartRate, equals(41.0));
+    });
   });
 }
